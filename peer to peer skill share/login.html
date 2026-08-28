@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#03091b">
+
+    <title>Login | SkillShare</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Login CSS -->
+    <link rel="stylesheet" href="login.css">
+</head>
+
+<body>
+
+    <!-- Background Effects -->
+    <div class="page-noise"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+
+    <!-- ==============================
+       MAIN LOGIN CONTAINER
+  =============================== -->
+
+    <main class="auth-shell">
+
+
+        <!-- ==============================
+         LEFT / WELCOME PANEL
+    =============================== -->
+
+        <section class="welcome-panel">
+
+            <!-- Logo -->
+            <a class="brand" href="index.html" aria-label="SkillShare Home">
+
+                <img src="assets/logo.svg" alt="SkillShare" class="brand-logo">
+
+                <span>
+                    <strong>SkillShare</strong>
+
+                    <small>
+                        Share Skills. Grow Together.
+                    </small>
+                </span>
+
+            </a>
+
+
+            <!-- Welcome Heading -->
+
+            <div class="welcome-copy">
+
+                <span class="eyebrow">
+                    <span class="pulse-dot"></span>
+                    PEER TO PEER LEARNING
+                </span>
+
+                <h1>
+                    Welcome <span>Back!</span>
+                </h1>
+
+                <p>
+                    Continue your journey of learning,
+                    <br>
+                    sharing and growing together.
+                </p>
+
+            </div>
+
+
+            <!-- ==============================
+           ANIMATED ORBIT AREA
+      =============================== -->
+
+            <div class="orbit-scene" aria-hidden="true">
+
+                <!-- Orbit Rings -->
+
+                <div class="orbit orbit-a"></div>
+                <div class="orbit orbit-b"></div>
+                <div class="orbit orbit-c"></div>
+
+
+                <!-- Floating Skill Icons -->
+
+                <div class="orbit-node node-code">
+                    &lt;/&gt;
+                </div>
+
+                <div class="orbit-node node-design">
+                    ✦
+                </div>
+
+                <div class="orbit-node node-music">
+                    ♪
+                </div>
+
+                <div class="orbit-node node-learn">
+                    ⌕
+                </div>
+
+
+                <!-- Center Glow -->
+
+                <div class="core-glow"></div>
+
+
+                <!-- Center Skill Sharing -->
+
+                <div class="core">
+
+                    <div class="core-icon">
+                        ♧
+                    </div>
+
+                    <span>
+                        Skill
+                        <br>
+                        Sharing
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================
+           STATISTICS
+      =============================== -->
+
+            <div class="mini-stats">
+
+                <div class="mini-stat">
+
+                    <b>10K+</b>
+
+                    <span>
+                        Active Learners
+                    </span>
+
+                </div>
+
+
+                <div class="mini-stat">
+
+                    <b>500+</b>
+
+                    <span>
+                        Skills Shared
+                    </span>
+
+                </div>
+
+
+                <div class="mini-stat">
+
+                    <b>25K+</b>
+
+                    <span>
+                        Connections Made
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================
+           TESTIMONIAL
+      =============================== -->
+
+            <div class="testimonial">
+
+                <span class="quote-mark">
+                    “
+                </span>
+
+                <p>
+                    SkillShare helped me find amazing people
+                    and learn skills that changed my career path.
+                </p>
+
+                <strong>
+                    — Alex Johnson
+                </strong>
+
+
+                <!-- Slider Dots -->
+
+                <div class="slider-dots">
+
+                    <i class="active"></i>
+                    <i></i>
+                    <i></i>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ==============================
+         RIGHT / LOGIN FORM PANEL
+    =============================== -->
+
+        <section class="form-panel">
+
+
+            <!-- Back To Home -->
+
+            <a class="back-home" href="index.html">
+
+                <span>←</span>
+
+                Back to Home
+
+            </a>
+
+
+
+            <!-- Login Form Wrapper -->
+
+            <div class="form-wrap">
+
+
+                <!-- Heading -->
+
+                <div class="form-heading">
+
+                    <span class="eyebrow">
+                        WELCOME BACK
+                    </span>
+
+                    <h2>
+                        Login to Your Account
+                    </h2>
+
+                    <p>
+                        Enter your credentials to access your account
+                    </p>
+
+                </div>
+
+
+
+                <!-- ==============================
+             LOGIN FORM
+        =============================== -->
+
+                <form id="loginForm" novalidate>
+
+
+                    <!-- ==============================
+               EMAIL
+          =============================== -->
+
+                    <div class="field">
+
+                        <label for="email">
+                            Email Address
+                        </label>
+
+
+                        <div class="input-wrap">
+
+                            <span class="field-icon">
+                                ✉
+                            </span>
+
+
+                            <input id="email" name="email" type="email" autocomplete="email"
+                                placeholder="Enter your email" required>
+
+
+                            <!-- Valid Icon -->
+
+                            <span class="valid-icon" aria-hidden="true">
+                                ✓
+                            </span>
+
+                        </div>
+
+
+                        <!-- Error -->
+
+                        <small class="field-error" id="emailError"></small>
+
+                    </div>
+
+
+
+                    <!-- ==============================
+               PASSWORD
+          =============================== -->
+
+                    <div class="field">
+
+                        <label for="password">
+                            Password
+                        </label>
+
+
+                        <div class="input-wrap">
+
+                            <span class="field-icon">
+                                ▣
+                            </span>
+
+
+                            <input id="password" name="password" type="password" autocomplete="current-password"
+                                placeholder="Enter your password" required>
+
+
+                            <!-- Password Toggle -->
+
+                            <button class="password-toggle" type="button" id="togglePassword"
+                                aria-label="Show password">
+                                ◉
+                            </button>
+
+                        </div>
+
+
+                        <!-- Error -->
+
+                        <small class="field-error" id="passwordError"></small>
+
+                    </div>
+
+
+
+                    <!-- ==============================
+               REMEMBER + FORGOT PASSWORD
+          =============================== -->
+
+                    <div class="form-options">
+
+
+                        <!-- Remember Me -->
+
+                        <label class="check-label">
+
+                            <input type="checkbox" id="remember">
+
+                            <span class="custom-check"></span>
+
+                            Remember me
+
+                        </label>
+
+
+                        <!-- Forgot Password -->
+
+                        <a href="#" class="forgot">
+                            Forgot Password?
+                        </a>
+
+                    </div>
+
+
+
+                    <!-- ==============================
+               LOGIN BUTTON
+          =============================== -->
+
+                    <button class="login-submit" type="submit">
+
+                        <span>
+                            Login
+                        </span>
+
+                        <b>
+                            →
+                        </b>
+
+                        <!-- Animated Shine -->
+
+                        <i class="button-shine"></i>
+
+                    </button>
+
+
+
+                    <!-- ==============================
+               DIVIDER
+          =============================== -->
+
+                    <div class="divider">
+
+                        <span>
+                            Or continue with
+                        </span>
+
+                    </div>
+
+
+
+                    <!-- ==============================
+               SOCIAL LOGIN
+          =============================== -->
+
+                    <div class="socials">
+
+
+                        <!-- Google -->
+
+                        <button type="button" class="social-btn">
+
+                            <img src="images/google.svg" alt="Google">
+
+                            <span>
+                                Google
+                            </span>
+
+                        </button>
+
+
+
+                        <!-- Microsoft -->
+
+                        <button type="button" class="social-btn">
+
+                            <img src="images/microsoft.svg" alt="Microsoft">
+
+                            <span>
+                                Microsoft
+                            </span>
+
+                        </button>
+
+
+
+                        <!-- Apple -->
+
+                        <button type="button" class="social-btn">
+
+                            <img src="images/apple.svg" alt="Apple">
+
+                            <span>
+                                Apple
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+
+                    <!-- ==============================
+               SIGN UP
+          =============================== -->
+
+                    <p class="signup-prompt">
+
+                        Don’t have an account?
+                        <a href="signup.html" style="font-weight: 900;">
+                            <div>
+                                Sign-Up?
+                            </div>
+                        </a>
+
+                    </p>
+
+
+
+                    <!-- ==============================
+               SECURITY MESSAGE
+          =============================== -->
+
+                    <div class="security-note">
+
+                        <span>
+                            ♙
+                        </span>
+
+                        Your data is protected with
+                        end-to-end encryption
+
+                    </div>
+
+
+                </form>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- ==============================
+       TOAST MESSAGE
+  =============================== -->
+
+    <div class="toast" id="toast"></div>
+
+
+
+    <!-- Login JavaScript -->
+
+    <script src="login.js"></script>
+
+</body>
+
+</html>

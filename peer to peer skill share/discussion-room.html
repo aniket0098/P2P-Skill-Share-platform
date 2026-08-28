@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Discussion Room — SkillConnect</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="discussion-room.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-logo">✦</div>
+
+            <div>
+                <h2>SkillConnect</h2>
+                <span>Share Skills. Grow Together.</span>
+            </div>
+        </div>
+
+
+        <nav class="side-nav">
+
+            <a href="dashboard.html">
+                <span>⌂</span>
+                Dashboard
+            </a>
+
+            <a href="explore.html">
+                <span>⌕</span>
+                Explore Skills
+            </a>
+
+            <a href="live-learn.html">
+                <span>◉</span>
+                Live Learn
+            </a>
+
+            <a href="my-learning.html">
+                <span>▣</span>
+                My Learning
+            </a>
+
+            <a href="messages.html">
+                <span>▤</span>
+                Messages
+                <b class="nav-count">3</b>
+            </a>
+
+            <a href="community.html">
+                <span>♧</span>
+                Community
+            </a>
+
+            <a href="live-discussions.html" class="active">
+                <span>▢</span>
+                LiveDiscussion
+            </a>
+
+            <a href="settings.html">
+                <span>⚙</span>
+                Settings
+            </a>
+
+        </nav>
+
+
+        <!-- Promotional card -->
+
+        <div class="teach-card">
+
+            <h3>
+                Teach a skill.<br>
+                Inspire the world.
+            </h3>
+
+            <p>
+                Join thousands of people sharing their knowledge.
+            </p>
+
+            <button onclick="window.location.href='live-discussions.html'">
+                Share Your Skill →
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
+    <main class="main">
+
+        <!-- TOP BAR -->
+
+        <header class="topbar">
+
+            <div class="page-title">
+
+                <button
+                    class="back-btn"
+                    onclick="goBackToDiscussion()"
+                    aria-label="Back to discussion"
+                >
+                    ←
+                </button>
+
+                <div>
+                    <h1>Discussion Room</h1>
+                    <p>Connect, discuss and learn together</p>
+                </div>
+
+            </div>
+
+
+            <div class="top-actions">
+
+                <div class="credits">
+                    <div class="coin">S</div>
+
+                    <div>
+                        <strong id="creditBalance">1,250</strong>
+                        <small>Credits</small>
+                    </div>
+                </div>
+
+
+                <button
+                    class="notification-btn"
+                    onclick="showToast('You have 4 new notifications')"
+                >
+                    ♧
+                    <span>4</span>
+                </button>
+
+
+                <div class="profile">
+
+                    <div class="profile-avatar">
+                        AD
+                    </div>
+
+                    <div class="profile-info">
+                        <strong>Aniket Deshmukh</strong>
+                        <small>Learner</small>
+                    </div>
+
+                    <span>⌄</span>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =====================================================
+             ROOM CONTENT
+        ====================================================== -->
+
+        <section class="room-layout">
+
+
+            <!-- =================================================
+                 VIDEO AREA
+            ================================================== -->
+
+            <section class="video-section">
+
+                <!-- ROOM HEADER -->
+
+                <div class="room-header">
+
+                    <div class="room-title">
+
+                        <div class="room-icon">
+                            ▣
+                        </div>
+
+                        <div>
+                            <h2>
+                                UI/UX Design Discussion
+                                <span class="live-label">● Live</span>
+                            </h2>
+
+                            <p>
+                                Let's discuss best practices in UI/UX design and grow together.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="room-stats">
+
+                        <div>
+                            <span>♧</span>
+                            <strong id="participantCount">10 / 10</strong>
+                            <small>Participants</small>
+                        </div>
+
+                        <div>
+                            <span>◷</span>
+                            <strong id="timer">00:00:00</strong>
+                        </div>
+
+                        <button
+                            class="end-session"
+                            id="endSessionBtn"
+                        >
+                            ⊗ End Session
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     VIDEO GRID
+                ================================================== -->
+
+                <div
+                    class="video-grid"
+                    id="videoGrid"
+                ></div>
+
+
+
+                <!-- =================================================
+                     CONTROL BAR
+                ================================================== -->
+
+                <div class="control-bar">
+
+                    <button
+                        class="control"
+                        id="micBtn"
+                    >
+                        <span>🎙</span>
+                        <small>Mic</small>
+                    </button>
+
+
+                    <button
+                        class="control"
+                        id="cameraBtn"
+                    >
+                        <span>▣</span>
+                        <small>Camera</small>
+                    </button>
+
+
+                    <button
+                        class="control"
+                        id="screenBtn"
+                    >
+                        <span>▤</span>
+                        <small>Share Screen</small>
+                    </button>
+
+
+                    <button
+                        class="control"
+                        id="participantsBtn"
+                    >
+                        <span>♧</span>
+                        <small>Participants</small>
+                    </button>
+
+
+                    <button
+                        class="control"
+                        id="chatBtn"
+                    >
+                        <span>▰</span>
+                        <small>Chat</small>
+                    </button>
+
+
+                    <button
+                        class="control"
+                        id="raiseHandBtn"
+                    >
+                        <span>✋</span>
+                        <small>Raise Hand</small>
+                    </button>
+
+
+                    <button
+                        class="control"
+                        id="recordBtn"
+                    >
+                        <span>◉</span>
+                        <small>Record</small>
+                    </button>
+
+
+                    <button
+                        class="control"
+                        id="moreBtn"
+                    >
+                        <span>•••</span>
+                        <small>More</small>
+                    </button>
+
+
+                    <button
+                        class="leave-btn"
+                        id="leaveBtn"
+                    >
+                        <span>☎</span>
+                        <small>Leave</small>
+                    </button>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     LOWER ROOM INFORMATION
+                ================================================== -->
+
+                <div class="room-bottom">
+
+
+                    <!-- Highlights -->
+
+                    <div class="info-card">
+
+                        <h3>Session Highlights</h3>
+
+                        <ul>
+                            <li>Discussing UI/UX trends 2024</li>
+                            <li>Best tools for UI designers</li>
+                            <li>Real world UX case studies</li>
+                            <li>Career opportunities in UI/UX</li>
+                        </ul>
+
+                        <button>
+                            View All Notes
+                        </button>
+
+                    </div>
+
+
+
+                    <!-- Participants -->
+
+                    <div class="info-card participants-card">
+
+                        <div class="card-heading">
+                            <h3>
+                                Participants
+                                (<span id="participantSmallCount">10</span>)
+                            </h3>
+
+                            <button id="viewParticipantsBtn">
+                                View All
+                            </button>
+                        </div>
+
+                        <div
+                            class="mini-participants"
+                            id="miniParticipants"
+                        ></div>
+
+                    </div>
+
+
+
+                    <!-- Raised Hands -->
+
+                    <div class="info-card">
+
+                        <div class="card-heading">
+
+                            <h3>
+                                Raise Hand
+                                (<span id="raisedCount">2</span>)
+                            </h3>
+
+                            <button>
+                                View All
+                            </button>
+
+                        </div>
+
+                        <div class="raised-user">
+
+                            <div class="small-avatar">
+                                VJ
+                            </div>
+
+                            <div>
+                                <strong>Vikram Joshi</strong>
+                                <small>Wants to speak</small>
+                            </div>
+
+                            <span>✋</span>
+
+                        </div>
+
+
+                        <div class="raised-user">
+
+                            <div class="small-avatar">
+                                KR
+                            </div>
+
+                            <div>
+                                <strong>Kavya Reddy</strong>
+                                <small>Wants to speak</small>
+                            </div>
+
+                            <span>✋</span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     CREATE ROOM - SMALLER AREA
+                ================================================== -->
+
+                <div class="create-room">
+
+                    <div>
+                        <h3>Want to start your own discussion?</h3>
+                        <p>
+                            Create your own discussion room and invite learners to join.
+                        </p>
+                    </div>
+
+
+                    <div class="room-options">
+
+                        <div>
+                            <span>♧</span>
+                            <strong>5 Members</strong>
+                            <small>Small Group</small>
+                            <button onclick="createRoom(5)">
+                                Create Room
+                            </button>
+                        </div>
+
+
+                        <div class="selected">
+                            <span>♧</span>
+                            <strong>10 Members</strong>
+                            <small>Medium Group</small>
+                            <button onclick="createRoom(10)">
+                                Create Room
+                            </button>
+                        </div>
+
+
+                        <div>
+                            <span>♧</span>
+                            <strong>15 Members</strong>
+                            <small>Large Group</small>
+                            <button onclick="createRoom(15)">
+                                Create Room
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =====================================================
+                 RIGHT SIDEBAR
+            ====================================================== -->
+
+            <aside class="right-panel">
+
+
+                <!-- DISCUSSION INFO -->
+
+                <div class="discussion-info">
+
+                    <h3>Discussion Info</h3>
+
+                    <div class="info-room">
+
+                        <div class="large-room-icon">
+                            ▣
+                        </div>
+
+                        <div>
+                            <h3>UI/UX Design Discussion</h3>
+
+                            <p>
+                                Best practices, tips and real world insights.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="detail-row">
+                        <span>Hosted by</span>
+                        <strong>Aman Verma</strong>
+                    </div>
+
+                    <div class="detail-row">
+                        <span>Group Size</span>
+
+                        <div class="size-buttons">
+                            <button>5</button>
+                            <button class="selected">10</button>
+                            <button>15</button>
+                        </div>
+
+                    </div>
+
+
+                    <div class="detail-row">
+                        <span>Room ID</span>
+                        <strong>UIUX-4587</strong>
+                    </div>
+
+
+                    <div class="detail-row">
+                        <span>Created</span>
+                        <strong>Today, 06:00 PM</strong>
+                    </div>
+
+                </div>
+
+
+
+                <!-- RIGHT TABS -->
+
+                <div class="chat-panel">
+
+                    <div class="chat-tabs">
+
+                        <button class="active">
+                            Chat
+                        </button>
+
+                        <button>
+                            Notes
+                        </button>
+
+                        <button>
+                            Resources
+                        </button>
+
+                        <button>
+                            Polls
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="messages"
+                        id="messages"
+                    >
+
+                        <div class="message">
+
+                            <div class="message-avatar">
+                                AV
+                            </div>
+
+                            <div>
+                                <strong>Aman Verma</strong>
+                                <small>06:02 PM</small>
+
+                                <p>
+                                    Welcome everyone! Let's start with UI/UX design trends.
+                                </p>
+
+                                <span class="like">
+                                    ♡ 12
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <div class="message">
+
+                            <div class="message-avatar">
+                                PS
+                            </div>
+
+                            <div>
+                                <strong>Priya Singh</strong>
+                                <small>06:03 PM</small>
+
+                                <p>
+                                    Micro-interactions are game changers.
+                                </p>
+
+                                <span class="like">
+                                    ♡ 8
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <div class="message">
+
+                            <div class="message-avatar">
+                                RS
+                            </div>
+
+                            <div>
+                                <strong>Rahul Sharma</strong>
+                                <small>06:04 PM</small>
+
+                                <p>
+                                    Totally agree! They improve user experience so much.
+                                </p>
+
+                                <span class="like">
+                                    ♡ 5
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CHAT INPUT -->
+
+                    <div class="chat-input">
+
+                        <input
+                            type="text"
+                            id="messageInput"
+                            placeholder="Type a message..."
+                        >
+
+                        <button id="sendMessageBtn">
+                            ➤
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+
+<!-- =========================================================
+     PARTICIPANT MENU
+========================================================= -->
+
+<div
+    class="participant-menu"
+    id="participantMenu"
+>
+    <button data-action="fullscreen">
+        ⛶ View Fullscreen
+    </button>
+
+    <button data-action="mute">
+        🎙 Mute Participant
+    </button>
+
+    <button data-action="profile">
+        👤 View Profile
+    </button>
+
+    <button
+        data-action="kick"
+        class="danger"
+        id="kickButton"
+    >
+        ✕ Remove from Room
+    </button>
+</div>
+
+
+
+<!-- =========================================================
+     MORE MENU
+========================================================= -->
+
+<div
+    class="more-menu"
+    id="moreMenu"
+>
+
+    <button id="speakerBtn">
+        🔊 Speaker
+    </button>
+
+    <button id="settingsBtn">
+        ⚙ Audio & Video Settings
+    </button>
+
+    <button id="layoutBtn">
+        ▦ Change Layout
+    </button>
+
+</div>
+
+
+
+<!-- =========================================================
+     MOBILE CHAT DRAWER
+========================================================= -->
+
+<div
+    class="mobile-chat"
+    id="mobileChat"
+>
+
+    <div class="mobile-chat-header">
+
+        <h3>Room Chat</h3>
+
+        <button id="closeChat">
+            ×
+        </button>
+
+    </div>
+
+    <div
+        class="mobile-messages"
+        id="mobileMessages"
+    ></div>
+
+    <div class="chat-input">
+
+        <input
+            id="mobileMessageInput"
+            placeholder="Type a message..."
+        >
+
+        <button id="mobileSend">
+            ➤
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     TOAST
+========================================================= -->
+
+<div
+    class="toast"
+    id="toast"
+></div>
+
+
+
+<script src="discussion-room.js"></script>
+
+</body>
+</html>

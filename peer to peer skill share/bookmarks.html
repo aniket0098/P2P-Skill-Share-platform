@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Saved Skills | SkillShare</title>
+    <link rel="stylesheet" href="app-pages.css">
+    <script src="app-pages.js" defer></script>
+</head>
+
+<body>
+    <header class="app-head"><a class="app-brand" href="dashboard.html"><b>◇</b>SkillShare</a>
+        <nav class="app-nav"><a href="dashboard.html">Dashboard</a><a href="explore.html">Explore</a><a
+                href="my-learning.html">Learning</a><a href="my-teaching.html">Teaching</a></nav>
+        <div class="head-right"><a href="notifications.html" class="bell">♧<i>3</i></a><a href="profile.html"><img
+                    src="assets/ankit.svg" alt="Profile"></a></div>
+    </header>
+    <main class="page">
+        <div class="page-heading">
+            <div>
+                <h1>Saved skills</h1>
+                <p>Come back to people and skills you are interested in.</p>
+            </div><a class="outline" href="explore.html">Explore more skills</a>
+        </div>
+        <section class="saved-grid">
+            <article class="card skill"><button class="remove" aria-label="Remove">×</button>
+                <div class="icon">▤</div>
+                <h2>Figma for beginners</h2>
+                <p>Learn components, auto layout and clickable prototypes.</p>
+                <div class="teacher"><img src="assets/priya.svg" alt="Priya"> Priya Sharma · ★ 4.9</div>
+            </article>
+            <article class="card skill"><button class="remove" aria-label="Remove">×</button>
+                <div class="icon">⌘</div>
+                <h2>Python basics</h2>
+                <p>Build confidence with variables, loops and small projects.</p>
+                <div class="teacher"><img src="assets/rahul.svg" alt="Rahul"> Rahul Sharma · ★ 4.8</div>
+            </article>
+            <article class="card skill"><button class="remove" aria-label="Remove">×</button>
+                <div class="icon">♬</div>
+                <h2>Acoustic guitar</h2>
+                <p>Start playing chords and your first full song.</p>
+                <div class="teacher"><img src="assets/aman.svg" alt="Aman"> Aman Verma · ★ 4.7</div>
+            </article>
+        </section>
+    </main>
+    <div id="toast" class="toast"></div>
+</body>
+
+</html>

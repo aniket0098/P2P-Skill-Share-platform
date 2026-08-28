@@ -1,0 +1,13 @@
+/* Saved skill card refinements. */
+.skill:hover .icon {
+    transform: rotate(-5deg) scale(1.06)
+}
+
+.skill .icon {
+    transition: transform .25s ease
+}
+
+.skill .remove:hover {
+    background: #ffe8ec;
+    color: #d44759
+}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Calendar | SkillShare</title>
+    <link rel="stylesheet" href="calendar.css">
+    <script src="calendar.js" defer></script>
+</head>
+
+<body>
+    <header class="app-head"><a class="app-brand" href="dashboard.html"><b>◇</b>SkillShare</a>
+        <nav class="app-nav"><a href="dashboard.html">Dashboard</a><a href="explore.html">Explore</a><a
+                href="my-learning.html">Learning</a><a href="my-teaching.html">Teaching</a></nav>
+        <div class="head-right"><a href="notifications.html" class="bell">♧<i>3</i></a><a href="profile.html"><img
+                    src="assets/ankit.svg" alt="Profile"></a></div>
+    </header>
+    <main class="page">
+        <div class="page-heading">
+            <div>
+                <h1>Your calendar</h1>
+                <p>All your upcoming learning and teaching sessions in one place.</p>
+            </div><a class="primary" href="create-session.html">＋ Create a session</a>
+        </div>
+        <section class="cal-layout">
+            <article class="card calendar-scroll">
+                <div class="calendar-head">
+                    <h2>August 2026</h2>
+                    <div class="month-nav"><button>←</button><button>→</button></div>
+                </div>
+                <div class="week">
+                    <div class="day"></div>
+                    <div class="day">Mon 17</div>
+                    <div class="day">Tue 18</div>
+                    <div class="day">Wed 19</div>
+                    <div class="day">Thu 20</div>
+                    <div class="day">Fri 21</div>
+                    <div class="time">10:00</div>
+                    <div></div>
+                    <div>
+                        <div class="event">Figma with Priya<br>10:00–10:45</div>
+                    </div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div class="time">14:00</div>
+                    <div></div>
+                    <div></div>
+                    <div>
+                        <div class="event cyan">Teach: UI/UX basics<br>14:00–15:00</div>
+                    </div>
+                    <div></div>
+                    <div></div>
+                    <div class="time">18:00</div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div>
+                        <div class="event">Portfolio review<br>18:00–18:30</div>
+                    </div>
+                    <div></div>
+                </div>
+            </article>
+            <aside class="card upcoming">
+                <h2>Upcoming</h2>
+                <div class="up"><strong>Figma for beginners</strong>
+                    <p>Tomorrow · 10:00 AM · Priya Sharma</p>
+                </div>
+                <div class="up"><strong>You teach: UI/UX basics</strong>
+                    <p>Wednesday · 2:00 PM · Rohit Mehta</p>
+                </div>
+                <div class="up"><strong>Portfolio review</strong>
+                    <p>Thursday · 6:00 PM · Neha Kapoor</p>
+                </div>
+            </aside>
+        </section>
+    </main>
+</body>
+
+</html>

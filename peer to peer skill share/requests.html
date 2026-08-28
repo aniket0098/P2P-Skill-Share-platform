@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Session Requests | SkillShare</title>
+    <link rel="stylesheet" href="requests.css">
+    <script src="requests.js" defer></script>
+</head>
+
+<body>
+    <header class="app-head"><a class="app-brand" href="dashboard.html"><b>◇</b>SkillShare</a>
+        <nav class="app-nav"><a href="dashboard.html">Dashboard</a><a href="explore.html">Explore</a><a
+                href="my-learning.html">Learning</a><a href="my-teaching.html">Teaching</a></nav>
+        <div class="head-right"><a href="notifications.html" class="bell">♧<i>3</i></a><a href="profile.html"><img
+                    src="assets/ankit.svg" alt="Profile"></a></div>
+    </header>
+    <main class="page">
+        <div class="page-heading">
+            <div>
+                <h1>Session requests</h1>
+                <p>Manage your incoming and outgoing learning requests.</p>
+            </div><a class="primary" href="create-session.html">＋ Create a session</a>
+        </div>
+        <div class="tabs"><button class="active" data-tab="incoming">Incoming <span>2</span></button><button
+                data-tab="outgoing">Sent</button><button data-tab="past">Past</button></div>
+        <section id="incoming" class="tab-panel active cards">
+            <article class="card request"><img src="assets/rohit.svg" alt="Rohit">
+                <div>
+                    <h2>Rohit Mehta wants to learn Figma</h2>
+                    <p>“I know the basics and would like help making a small mobile app prototype.”</p>
+                    <div class="meta">Requested today · 45 minutes · Online</div>
+                </div>
+                <div class="request-actions"><button class="small primary" data-action="accept">Accept</button><button
+                        class="small outline" data-action="decline">Decline</button></div>
+            </article>
+            <article class="card request"><img src="assets/neha.svg" alt="Neha">
+                <div>
+                    <h2>Neha Kapoor wants a portfolio review</h2>
+                    <p>“Could you help me make my case study stronger before I apply for internships?”</p>
+                    <div class="meta">Requested yesterday · 30 minutes · Online</div>
+                </div>
+                <div class="request-actions"><button class="small primary" data-action="accept">Accept</button><button
+                        class="small outline" data-action="decline">Decline</button></div>
+            </article>
+        </section>
+        <section id="outgoing" class="tab-panel cards">
+            <article class="card request"><img src="assets/priya.svg" alt="Priya">
+                <div>
+                    <h2>Figma for beginners with Priya Sharma</h2>
+                    <p>Your request is waiting for Priya to respond.</p>
+                    <div class="meta">Sent 2 hours ago · Preferred: Saturday afternoon</div>
+                </div><span class="status">Pending</span>
+            </article>
+        </section>
+        <section id="past" class="tab-panel">
+            <article class="empty card">
+                <div class="empty-icon">✓</div>
+                <h2>No past requests yet</h2>
+                <p>Completed and declined requests will be saved here.</p>
+            </article>
+        </section>
+    </main>
+    <div id="toast" class="toast"></div>
+</body>
+
+</html>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 250">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+<rect width="420" height="250" rx="28" fill="#0b1028"/>
+<circle cx="145" cy="108" r="48" fill="#24174d" stroke="#8b5cf6" stroke-width="5"/>
+<circle cx="275" cy="108" r="48" fill="#102747" stroke="#22d3ee" stroke-width="5"/>
+<path d="M191 108h38" stroke="url(#g)" stroke-width="12" stroke-linecap="round"/>
+<path d="M219 91l20 17-20 17" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="145" cy="91" r="15" fill="#a78bfa"/><path d="M117 139c9-25 47-25 56 0" fill="#7c3aed"/>
+<circle cx="275" cy="91" r="15" fill="#67e8f9"/><path d="M247 139c9-25 47-25 56 0" fill="#0891b2"/>
+<text x="210" y="224" fill="#e9e7ff" font-size="22" text-anchor="middle" font-family="Arial">CONNECT</text></svg>

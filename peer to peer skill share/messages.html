@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#050817">
+
+    <meta name="description" content="SkillShare advanced messaging interface">
+
+    <title>SkillShare — Messages</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="messages.css">
+</head>
+
+
+<body>
+
+    <div class="app-shell">
+
+
+        <!-- =====================================================
+         TOP NAVIGATION
+    ====================================================== -->
+
+        <header class="topbar">
+
+            <!-- Brand -->
+            <div class="brand">
+
+                <div class="brand-mark">
+                    <span></span>
+                    <i></i>
+                    <b></b>
+                </div>
+
+                <div>
+                    <strong>SkillShare</strong>
+
+                    <small>
+                        Share Skills. Grow Together.
+                    </small>
+                </div>
+
+            </div>
+
+
+            <!-- Main Navigation -->
+            <nav>
+
+
+                <a href="explore.html">
+                    Explore Skills
+                </a>
+
+                <a href="community.html">
+                    Community
+                </a>
+
+                <a href="messages.html" class="active">
+
+                    Messages
+
+                    <em>3</em>
+
+                </a>
+
+            </nav>
+
+
+            <!-- Right Navigation -->
+            <div class="top-actions">
+
+                <!-- Theme -->
+                <button class="icon-btn" id="themeBtn" title="Toggle theme">
+
+                    ☾
+
+                </button>
+
+
+                <!-- Notification -->
+                <button class="icon-btn" id="bellBtn" title="Notifications">
+
+                    ♧
+
+                    <span class="notify-dot"></span>
+
+                </button>
+
+
+                <!-- Current User -->
+                <button class="user-menu">
+                    <a href="profile.html">
+                        <img src="assets/ankit.svg" alt="Aniket">
+
+                        <span>
+                            Profile
+                        </span>
+                    </a>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =====================================================
+         LEFT SIDEBAR
+    ====================================================== -->
+
+        <aside class="sidebar">
+
+            <div class="side-links">
+
+
+                <a href="dashboard.html">
+                    <span class="side-icon">⌂</span>
+                    <span>Dashboard</span>
+                </a>
+
+
+                <a href="explore.html">
+                    <span class="side-icon">⌕</span>
+                    <span>Explore Skills</span>
+                </a>
+
+
+                <a href="my-learning.html">
+                    <span class="side-icon">◇</span>
+                    <span>My Learning</span>
+                </a>
+
+
+                <a href="live-learning.html">
+                    <span class="side-icon">♧</span>
+                    <span>Live learning</span>
+                </a>
+
+
+                <a href="requests.html">
+
+                    <span class="side-icon">
+                        ➤
+                    </span>
+
+                    <span>
+                        Requests
+                    </span>
+
+                    <b>
+                        2
+                    </b>
+
+                </a>
+
+
+                <!-- Active -->
+                <a href="messages.html" class="selected">
+
+                    <span class="side-icon">
+                        ▣
+                    </span>
+
+                    <span>
+                        Messages
+                    </span>
+
+                    <b>
+                        3
+                    </b>
+
+                </a>
+
+
+                <a href="bookmarks.html">
+                    <span class="side-icon">♡</span>
+                    <span>Bookmarks</span>
+                </a>
+
+
+                <a href="calendar.html">
+                    <span class="side-icon">▣</span>
+                    <span>Calendar</span>
+                </a>
+
+
+                <a href="setting.html">
+                    <span class="side-icon">⚙</span>
+                    <span>Settings</span>
+                </a>
+
+            </div>
+
+
+
+            <!-- =================================================
+             TEACH PROMOTION CARD
+        ================================================== -->
+
+            <div class="teach-card">
+
+                <h3>
+                    Teach a skill.
+                    <br>
+                    Inspire the world.
+                </h3>
+
+                <p>
+                    Join thousands of people sharing
+                    their knowledge.
+                </p>
+
+
+                <div class="mini-people">
+
+                    <img src="assets/priya.svg" alt="User">
+
+                    <img src="assets/rahul.svg" alt="User">
+
+                    <img src="assets/aman.svg" alt="User">
+
+                </div>
+
+
+                <button class="primary">
+
+                    Share Your Skill
+
+                    <span>
+                        →
+                    </span>
+
+                </button>
+
+            </div>
+
+        </aside>
+
+
+
+        <!-- =====================================================
+         MAIN WORKSPACE
+    ====================================================== -->
+
+        <main class="workspace">
+
+
+            <!-- =================================================
+             CONVERSATION LIST
+        ================================================== -->
+
+            <section class="inbox panel">
+
+
+                <!-- Inbox Header -->
+                <div class="section-head">
+
+                    <div>
+
+                        <h2>
+                            Messages
+                        </h2>
+
+                        <span class="muted" id="onlineCount">
+
+                            8 conversations
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="head-actions">
+
+                        <!-- New chat -->
+                        <button class="round" id="newChat" title="New conversation">
+
+                            ＋
+
+                        </button>
+
+
+                        <!-- Filters -->
+                        <button class="round" id="filterBtn" title="Filters">
+
+                            ☷
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- Search -->
+                <div class="search">
+
+                    <span>
+                        ⌕
+                    </span>
+
+                    <input id="search" type="text" autocomplete="off" placeholder="Search conversations...">
+
+                    <kbd>
+                        ⌘ K
+                    </kbd>
+
+                </div>
+
+
+
+                <!-- Conversation Filters -->
+                <div class="tabs">
+
+                    <button class="tab active" data-filter="all">
+
+                        All
+
+                    </button>
+
+
+                    <button class="tab" data-filter="unread">
+
+                        Unread
+
+                        <i>
+                            3
+                        </i>
+
+                    </button>
+
+
+                    <button class="tab" data-filter="groups">
+
+                        Groups
+
+                    </button>
+
+                </div>
+
+
+
+                <!-- Dynamic Conversation List -->
+                <div class="conversation-list" id="conversationList">
+
+                    <!--
+                    Conversations are automatically
+                    generated by messages.js
+                -->
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+             MAIN CHAT
+        ================================================== -->
+
+            <section class="chat panel">
+
+
+                <!-- Chat Header -->
+                <div class="chat-head">
+
+
+                    <!-- Mobile Back -->
+                    <button class="mobile-back" id="mobileBack">
+
+                        ←
+
+                    </button>
+
+
+                    <!-- Current Chat User -->
+                    <button class="chat-user" id="chatUserBtn">
+
+                        <img id="chatAvatar" src="assets/rahul.svg" alt="Rahul Sharma">
+
+
+                        <span>
+
+                            <strong id="chatName">
+                                Rahul Sharma
+                            </strong>
+
+
+                            <small id="chatStatus">
+
+                                <i></i>
+
+                                Online
+
+                            </small>
+
+                        </span>
+
+                    </button>
+
+
+
+                    <!-- Chat Actions -->
+                    <div class="chat-tools">
+
+
+                        <!-- Audio Call -->
+                        <button class="icon-btn" id="audioBtn" title="Audio call">
+
+                            ☎
+
+                        </button>
+
+
+                        <!-- Video Call -->
+                        <button class="icon-btn" id="videoBtn" title="Video call">
+
+                            ▣
+
+                        </button>
+
+
+                        <!-- More -->
+                        <button class="icon-btn" id="moreBtn" title="More options">
+
+                            ⋮
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                 MESSAGE BODY
+            ================================================== -->
+
+                <div class="chat-body" id="chatBody">
+
+                    <!-- Messages are dynamically generated -->
+
+                    <div class="date-chip">
+                        Today
+                    </div>
+
+                </div>
+
+
+
+                <!-- Typing Indicator -->
+                <div class="typing" id="typing">
+
+                    <span></span>
+
+                    is typing
+
+                    <b>
+                        •••
+                    </b>
+
+                </div>
+
+
+
+                <!-- =================================================
+                 MESSAGE COMPOSER
+            ================================================== -->
+
+                <div class="composer">
+
+
+                    <!-- Attachment -->
+                    <button class="attach" id="attachBtn" title="Attachments">
+
+                        ⌕
+
+                    </button>
+
+
+                    <!-- Attachment Popup -->
+                    <div class="attach-menu" id="attachMenu">
+
+                        <button>
+                            📎 File
+                        </button>
+
+                        <button>
+                            🖼 Image
+                        </button>
+
+                        <button>
+                            📍 Location
+                        </button>
+
+                    </div>
+
+
+
+                    <!-- Message Input -->
+                    <div class="input-wrap">
+
+                        <textarea id="messageInput" rows="1" maxlength="2000"
+                            placeholder="Type a message..."></textarea>
+
+
+                        <!-- Emoji -->
+                        <button id="emojiBtn" title="Emoji">
+
+                            ☺
+
+                        </button>
+
+                    </div>
+
+
+
+                    <!-- Send -->
+                    <button class="send" id="sendBtn" title="Send message">
+
+                        ➤
+
+                    </button>
+
+
+
+                    <!-- Emoji Panel -->
+                    <div class="emoji-panel" id="emojiPanel">
+
+                        😀 😎 😍 😂 🙌
+                        🔥 🚀 ❤️ 👍 🎯
+                        💡 🎉
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+             RIGHT PROFILE PANEL
+        ================================================== -->
+
+            <aside class="profile panel" id="profilePanel">
+
+
+                <!-- Profile Cover -->
+                <div class="profile-cover"></div>
+
+
+                <div class="profile-main">
+
+
+                    <!-- Close for future mobile usage -->
+                    <button class="close-profile" id="closeProfile">
+
+                        ×
+
+                    </button>
+
+
+                    <!-- Avatar -->
+                    <img class="profile-avatar" id="profileAvatar" src="assets/rahul.svg" alt="Harshal dakhre">
+
+
+                    <!-- Name -->
+                    <h2 id="profileName">
+                        Harshal dakhre
+                    </h2>
+
+
+                    <!-- Online Status -->
+                    <div class="online">
+
+                        <i></i>
+
+                        <span id="profileOnline">
+                            Online
+                        </span>
+
+                    </div>
+
+
+
+                    <!-- Profile Action Buttons -->
+                    <div class="profile-actions">
+
+
+                        <button id="profileBtn">
+
+                            ♙
+
+                            <span>
+                                Profile
+                            </span>
+
+                        </button>
+
+
+                        <button id="callBtn">
+
+                            ☎
+
+                            <span>
+                                Call
+                            </span>
+
+                        </button>
+
+
+                        <button id="profileVideoBtn">
+
+                            ▣
+
+                            <span>
+                                Video
+                            </span>
+
+                        </button>
+
+
+                        <button id="moreProfile">
+
+                            •••
+
+                            <span>
+                                More
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                     ABOUT
+                ================================================== -->
+
+                    <div class="info-block">
+
+                        <label>
+                            About
+                        </label>
+
+                        <p id="profileAbout">
+
+                            Python Developer & ML Enthusiast
+                            <br>
+                            Loves teaching and sharing knowledge.
+
+                        </p>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                     SKILLS
+                ================================================== -->
+
+                    <div class="info-block">
+
+                        <label>
+                            Skills
+                        </label>
+
+                        <div class="chips" id="skills">
+
+                            <!-- Dynamic -->
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                     SHARED CONTENT
+                ================================================== -->
+
+                    <div class="info-block">
+
+                        <label>
+
+                            Shared Content
+
+                            <a href="#">
+                                View All
+                            </a>
+
+                        </label>
+
+
+                        <div class="shared" id="shared">
+
+                            <!-- Dynamic -->
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                     MEDIA
+                ================================================== -->
+
+                    <div class="info-block">
+
+                        <label>
+
+                            Media
+
+                            <a href="#">
+                                View All
+                            </a>
+
+                        </label>
+
+
+                        <div class="media-grid">
+
+
+                            <img src="assets/code.svg" alt="Shared code">
+
+
+                            <img src="assets/diagram.svg" alt="Shared diagram">
+
+
+                            <img src="assets/chart.svg" alt="Shared chart">
+
+
+                            <div>
+                                +12
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+        </main>
+
+    </div>
+
+
+
+    <!-- =========================================================
+     MODAL
+========================================================== -->
+
+    <div class="modal-backdrop" id="modal">
+
+
+        <div class="modal">
+
+
+            <button class="modal-close" id="modalClose">
+
+                ×
+
+            </button>
+
+
+            <div id="modalContent">
+
+                <!-- Dynamic modal content -->
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =========================================================
+     TOAST NOTIFICATION
+========================================================== -->
+
+    <div class="toast" id="toast">
+
+        Message sent
+
+    </div>
+
+
+
+    <!-- =========================================================
+     JAVASCRIPT
+========================================================== -->
+
+    <script src="messages.js"></script>
+
+</body>
+
+</html>

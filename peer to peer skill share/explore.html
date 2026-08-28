@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillShare - Explore Skills</title>
+
+    <link rel="stylesheet" href="explore.css">
+    <script src="explore.js"></script>
+    <script src="profile-quick.js" defer></script>
+</head>
+
+<body>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Mouse Glow -->
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+
+    <!-- =====================================================
+         TOP NAVBAR
+    ====================================================== -->
+
+    <header class="topbar">
+
+        <!-- Logo -->
+        <a href="#" class="brand">
+
+            <span class="brand-logo">
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+            </span>
+
+            <span>
+                <b>SkillShare</b>
+                <small>Share Skills. Grow Together.</small>
+            </span>
+
+        </a>
+
+
+        <!-- Navigation -->
+        <nav class="topnav">
+
+            <a href="explore.html" class="active">
+                Explore Skills
+            </a>
+
+
+            <a href="community.html">
+                Community
+            </a>
+
+            <a href="messages.html">
+                Messages
+                <em>3</em>
+            </a>
+
+        </nav>
+
+
+        <!-- Profile -->
+        <div class="profile">
+
+            <button class="icon-btn" id="themeBtn">
+                ◐
+            </button>
+
+            <button class="icon-btn">
+                ♧
+            </button>
+
+            <div class="mini-avatar">
+                <a href="profile.html">P</a>
+            </div>
+
+            <di class="profile-text">
+                <a href="profile.html">Profile</a>
+
+        </div>
+
+        <span class="chevron">
+
+        </span>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =====================================================
+         APPLICATION LAYOUT
+    ====================================================== -->
+
+    <div class="app">
+
+
+        <!-- =================================================
+             LEFT SIDEBAR
+        ================================================== -->
+
+        <aside class="sidebar">
+
+            <nav class="side-menu">
+
+                <a href="dashboard.html">
+                    <span>⌂</span>
+                    Dashboard
+                </a>
+
+
+                <a href="explore.html" class="selected">
+                    <span>⌕</span>
+                    Explore Skills
+                </a>
+
+
+                <a href="my-learning.html">
+                    <span>◇</span>
+                    My Learning
+                </a>
+
+
+                <a href="live-learning.html">
+                    <span>♙</span>
+                    Live Learning
+                </a>
+
+
+                <a href="requests.html">
+                    <span>✈</span>
+                    Requests
+
+                    <b class="badge">
+                        2
+                    </b>
+                </a>
+
+
+                <a href="messages.html">
+                    <span>▢</span>
+                    Messages
+
+                    <b class="badge">
+                        3
+                    </b>
+                </a>
+
+
+                <a href="bookmarks.html">
+                    <span>♡</span>
+                    Bookmarks
+                </a>
+
+
+                <a href="calendar.html">
+                    <span>□</span>
+                    Calendar
+                </a>
+
+
+                <a href="setting.html">
+                    <span>⚙</span>
+                    Settings
+                </a>
+
+            </nav>
+
+
+
+            <!-- Teach Skill Card -->
+
+            <div class="teach-card">
+
+                <div class="orb"></div>
+
+                <h3>
+                    Teach a skill.
+                    <br>
+                    Inspire the world.
+                </h3>
+
+                <p>
+                    Join thousands of people sharing
+                    their knowledge.
+                </p>
+
+
+                <div class="people-illustration">
+
+                    <span>●</span>
+                    <span>●</span>
+                    <span>●</span>
+                    <span>●</span>
+
+                </div>
+
+
+                <button class="primary-btn share-btn">
+
+                    Share Your Skill
+
+                    <span>
+                        →
+                    </span>
+
+                </button>
+
+            </div>
+
+        </aside>
+
+
+
+        <!-- =================================================
+             MAIN CONTENT
+        ================================================== -->
+
+        <main class="main">
+
+
+            <!-- =================================================
+                 HERO SECTION
+            ================================================== -->
+
+            <section class="explore-hero reveal">
+
+
+                <!-- Hero Text -->
+
+                <div class="hero-copy">
+
+                    <div class="tiny-label">
+
+                        <span>✦</span>
+
+                        EXPLORE SKILLS
+
+                    </div>
+
+
+                    <h1>
+
+                        Explore
+
+                        <span>
+                            Skills
+                        </span>
+
+                    </h1>
+
+
+                    <p>
+                        Discover, connect, and learn
+                        from amazing people around you.
+                    </p>
+
+
+                    <!-- Search -->
+
+                    <div class="search-box">
+
+                        <input id="skillSearch" type="text" placeholder="Search skills, people or categories...">
+
+                        <button id="searchBtn">
+                            ⌕
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- Hero Image -->
+
+                <div class="hero-art">
+
+                    <img src="assets/hero-illustration.png" alt="Skill learner">
+
+
+                    <span class="floating-icon code">
+                        &lt;/&gt;
+                    </span>
+
+
+                    <span class="floating-icon ps">
+                        Ps
+                    </span>
+
+
+                    <span class="floating-icon globe">
+                        ✦
+                    </span>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 SKILL CATEGORIES
+            ================================================== -->
+
+            <section class="category-row reveal">
+
+
+                <button class="category active" data-category="all">
+                    ▦
+                    <span>All Skills</span>
+                </button>
+
+
+                <button class="category" data-category="programming">
+                    ⌘
+                    <span>Programming</span>
+                </button>
+
+
+                <button class="category" data-category="design">
+                    ◇
+                    <span>Design</span>
+                </button>
+
+
+                <button class="category" data-category="business">
+                    ◈
+                    <span>Business</span>
+                </button>
+
+
+                <button class="category" data-category="languages">
+                    文
+                    <span>Languages</span>
+                </button>
+
+
+                <button class="category" data-category="music">
+                    ♫
+                    <span>Music</span>
+                </button>
+
+
+                <button class="category" data-category="lifestyle">
+                    ♧
+                    <span>Lifestyle</span>
+                </button>
+
+
+                <button class="category" data-category="academic">
+                    ⌘
+                    <span>Academic</span>
+                </button>
+
+
+                <button class="category" data-category="more">
+                    More ⌄
+                </button>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 CONTENT GRID
+            ================================================== -->
+
+            <div class="content-grid">
+
+
+                <!-- =================================================
+                     SKILLS AREA
+                ================================================== -->
+
+                <section class="skills-area">
+
+
+                    <!-- Section Header -->
+
+                    <div class="section-title reveal">
+
+                        <h2>
+                            Popular Skills
+                        </h2>
+
+                        <button>
+                            View All
+                        </button>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                         SKILL CARDS
+                    ================================================== -->
+
+                    <div class="skill-grid" id="skillGrid">
+
+
+                        <!-- PYTHON -->
+
+                        <article class="skill-card reveal-item" data-category="programming"
+                            data-search="python programming coding">
+
+                            <div class="card-image">
+
+                                <img src="assets/python.png" alt="Python Programming">
+
+
+                                <span class="trending">
+                                    🔥 Trending
+                                </span>
+
+
+                                <button class="heart" aria-label="Bookmark">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    Python Programming
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    1.2K learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level beginner">
+                                        Beginner
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.8
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- WEB DEVELOPMENT -->
+
+                        <article class="skill-card reveal-item" data-category="programming"
+                            data-search="web development html css javascript">
+
+                            <div class="card-image">
+
+                                <img src="assets/web-dev.png" alt="Web Development">
+
+
+                                <button class="heart">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    Web Development
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    980 learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level intermediate">
+                                        Intermediate
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.7
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- UI UX -->
+
+                        <article class="skill-card reveal-item" data-category="design" data-search="ui ux design figma">
+
+                            <div class="card-image">
+
+                                <img src="assets/uiux.png" alt="UI UX Design">
+
+
+                                <button class="heart">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    UI/UX Design
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    850 learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level intermediate">
+                                        Intermediate
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.9
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- VIDEO EDITING -->
+
+                        <article class="skill-card reveal-item" data-category="design"
+                            data-search="video editing premiere pro">
+
+                            <div class="card-image">
+
+                                <img src="assets/video-editing.png" alt="Video Editing">
+
+
+                                <button class="heart">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    Video Editing
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    760 learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level beginner">
+                                        Beginner
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.6
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- DIGITAL MARKETING -->
+
+                        <article class="skill-card reveal-item" data-category="business"
+                            data-search="digital marketing marketing">
+
+                            <div class="card-image">
+
+                                <img src="assets/marketing.png" alt="Digital Marketing">
+
+
+                                <button class="heart">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    Digital Marketing
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    620 learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level beginner">
+                                        Beginner
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.5
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- ENGLISH -->
+
+                        <article class="skill-card reveal-item" data-category="languages"
+                            data-search="english speaking language">
+
+                            <div class="card-image">
+
+                                <img src="assets/english.png" alt="English Speaking">
+
+
+                                <button class="heart">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    English Speaking
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    1K learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level all">
+                                        All Levels
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.8
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- GUITAR -->
+
+                        <article class="skill-card reveal-item" data-category="music" data-search="guitar music">
+
+                            <div class="card-image">
+
+                                <img src="assets/guitar.png" alt="Guitar">
+
+
+                                <button class="heart">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    Guitar
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    540 learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level beginner">
+                                        Beginner
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.7
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- DATA SCIENCE -->
+
+                        <article class="skill-card reveal-item" data-category="academic"
+                            data-search="data science analytics python">
+
+                            <div class="card-image">
+
+                                <img src="assets/data-science.png" alt="Data Science">
+
+
+                                <button class="heart">
+                                    ♡
+                                </button>
+
+                            </div>
+
+
+                            <div class="card-body">
+
+                                <h3>
+                                    Data Science
+                                </h3>
+
+
+                                <p class="learners">
+
+                                    <span>
+                                        ● ●
+                                    </span>
+
+                                    430 learners
+
+                                </p>
+
+
+                                <div class="card-bottom">
+
+                                    <span class="level advanced">
+                                        Advanced
+                                    </span>
+
+                                    <span class="rating">
+                                        ★ 4.9
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                         RECOMMENDED
+                    ================================================== -->
+
+                    <div class="section-title recommended reveal">
+
+                        <h2>
+                            Recommended For You
+                        </h2>
+
+                        <button>
+                            View All
+                        </button>
+
+                    </div>
+
+
+                    <div class="recommend-line reveal">
+
+                        <div>
+
+                            <b>
+                                Based on your interests
+                            </b>
+
+                            <span>
+                                Python · Web Development · AI
+                            </span>
+
+                        </div>
+
+
+                        <button class="outline-btn">
+                            Personalize →
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- =================================================
+                     RIGHT SIDEBAR
+                ================================================== -->
+
+                <aside class="right-rail">
+
+
+                    <!-- TOP SKILL SHARERS -->
+
+                    <section class="rail-card reveal">
+
+                        <div class="rail-title">
+
+                            <h3>
+                                Top Skill Sharers
+                            </h3>
+
+                            <button>
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <!-- Rahul -->
+
+                        <div class="person">
+
+                            <span class="person-avatar a1">
+                                R
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Rahul Sharma
+                                </b>
+
+                                <small>
+                                    Python, ML
+                                </small>
+
+                            </div>
+
+                            <strong>
+                                ★ 4.9
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Priya -->
+
+                        <div class="person">
+
+                            <span class="person-avatar a2">
+                                P
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Priya Singh
+                                </b>
+
+                                <small>
+                                    UI/UX, Figma
+                                </small>
+
+                            </div>
+
+                            <strong>
+                                ★ 4.8
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Aman -->
+
+                        <div class="person">
+
+                            <span class="person-avatar a3">
+                                A
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Aman Verma
+                                </b>
+
+                                <small>
+                                    Web Dev
+                                </small>
+
+                            </div>
+
+                            <strong>
+                                ★ 4.8
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Neha -->
+
+                        <div class="person">
+
+                            <span class="person-avatar a4">
+                                N
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Neha Patel
+                                </b>
+
+                                <small>
+                                    English, Soft Skills
+                                </small>
+
+                            </div>
+
+                            <strong>
+                                ★ 4.9
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Rohit -->
+
+                        <div class="person">
+
+                            <span class="person-avatar a5">
+                                R
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Rohit Kumar
+                                </b>
+
+                                <small>
+                                    Video Editing
+                                </small>
+
+                            </div>
+
+                            <strong>
+                                ★ 4.7
+                            </strong>
+
+                        </div>
+
+                    </section>
+
+
+
+                    <!-- =================================================
+                         FILTERS
+                    ================================================== -->
+
+                    <section class="rail-card filters reveal">
+
+
+                        <div class="rail-title">
+
+                            <h3>
+                                Filters
+                            </h3>
+
+                            <button id="clearFilters">
+                                Clear All
+                            </button>
+
+                        </div>
+
+
+                        <!-- Skill Level -->
+
+                        <label>
+                            Skill Level
+                        </label>
+
+                        <select id="levelFilter">
+
+                            <option value="all">
+                                All Levels
+                            </option>
+
+                            <option value="beginner">
+                                Beginner
+                            </option>
+
+                            <option value="intermediate">
+                                Intermediate
+                            </option>
+
+                            <option value="advanced">
+                                Advanced
+                            </option>
+
+                        </select>
+
+
+                        <!-- Availability -->
+
+                        <label>
+                            Availability
+                        </label>
+
+                        <select>
+
+                            <option>
+                                Anytime
+                            </option>
+
+                            <option>
+                                Online
+                            </option>
+
+                            <option>
+                                Weekend
+                            </option>
+
+                        </select>
+
+
+                        <!-- Type -->
+
+                        <label>
+                            Type
+                        </label>
+
+
+                        <label class="check">
+
+                            <input type="checkbox" checked>
+
+                            I want to learn
+
+                        </label>
+
+
+                        <label class="check">
+
+                            <input type="checkbox" checked>
+
+                            I want to teach
+
+                        </label>
+
+
+                        <!-- Sort -->
+
+                        <label>
+                            Sort By
+                        </label>
+
+                        <select id="sortSelect">
+
+                            <option value="popular">
+                                Most Popular
+                            </option>
+
+                            <option value="rating">
+                                Highest Rated
+                            </option>
+
+                            <option value="az">
+                                A — Z
+                            </option>
+
+                        </select>
+
+                    </section>
+
+                </aside>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- JavaScript -->
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

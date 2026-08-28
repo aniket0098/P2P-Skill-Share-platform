@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillConnect - Discussion</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <link rel="stylesheet" href="live-discussions.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-logo">
+                <i class="fa-solid fa-share-nodes"></i>
+            </div>
+
+            <div>
+                <h2>SkillConnect</h2>
+                <span>Share Skills. Grow Together.</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a href="dashboard.html">
+                <i class="fa-solid fa-house"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="explore.html">
+                <i class="fa-solid fa-compass"></i>
+                <span>Explore Skills</span>
+            </a>
+
+            <a href="live-learn.html">
+                <i class="fa-solid fa-tower-broadcast"></i>
+                <span>Live Learn</span>
+            </a>
+
+            <a href="my-learning.html">
+                <i class="fa-solid fa-book-open"></i>
+                <span>My Learning</span>
+            </a>
+
+            <a href="messages.html">
+                <i class="fa-regular fa-message"></i>
+                <span>Messages</span>
+                <b class="nav-badge">3</b>
+            </a>
+
+            <a href="community.html">
+                <i class="fa-solid fa-users"></i>
+                <span>Community</span>
+            </a>
+
+            <a href="live-discussions.html" class="active">
+                <i class="fa-regular fa-comments"></i>
+                <span>Discussion</span>
+            </a>
+
+            <a href="settings.html">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+            </a>
+
+        </nav>
+
+        <!-- PROMO -->
+
+        <div class="teach-card">
+
+            <h3>Teach a skill.<br>Inspire the world.</h3>
+
+            <p>
+                Join thousands of people sharing
+                their knowledge.
+            </p>
+
+            <div class="people-illustration">
+                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-user"></i>
+            </div>
+
+            <button onclick="openCreateRoom()">
+                Share Your Skill
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="main">
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <div class="page-heading">
+
+                <div class="heading-icon">
+                    <i class="fa-regular fa-comments"></i>
+                </div>
+
+                <div>
+                    <h1>Discussion</h1>
+                    <p>Join live discussions, share ideas and learn together.</p>
+                </div>
+
+            </div>
+
+
+            <div class="top-actions">
+
+                <!-- Credits -->
+
+                <a href="credits.html" class="credits-box">
+
+                    <div class="coin">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+
+                    <div>
+                        <strong id="topCredits">1,250</strong>
+                        <span>Credits</span>
+                    </div>
+
+                </a>
+
+
+                <!-- Notification -->
+
+                <button class="notification-btn" id="notificationBtn">
+
+                    <i class="fa-regular fa-bell"></i>
+
+                    <span id="notificationCount">4</span>
+
+                </button>
+
+
+                <!-- Profile -->
+
+                <div class="profile-wrapper">
+
+                    <button class="profile-btn" id="profileBtn">
+
+                        <div class="avatar">
+                            A
+                        </div>
+
+                        <div class="profile-info">
+                            <strong id="profileName">
+                                Aniket Deshmukh
+                            </strong>
+
+                            <span>Learner</span>
+                        </div>
+
+                        <i class="fa-solid fa-chevron-down"></i>
+
+                    </button>
+
+
+                    <div class="profile-menu" id="profileMenu">
+
+                        <a href="profile.html">
+                            <i class="fa-regular fa-user"></i>
+                            View Profile
+                        </a>
+
+                        <a href="my-learning.html">
+                            <i class="fa-solid fa-book-open"></i>
+                            My Learning
+                        </a>
+
+                        <a href="credits.html">
+                            <i class="fa-solid fa-coins"></i>
+                            Credits
+                        </a>
+
+                        <a href="notifications.html">
+                            <i class="fa-regular fa-bell"></i>
+                            Notifications
+                        </a>
+
+                        <a href="settings.html">
+                            <i class="fa-solid fa-gear"></i>
+                            Settings
+                        </a>
+
+                        <div class="menu-line"></div>
+
+                        <button onclick="logout()">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            Logout
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- SEARCH -->
+
+        <section class="search-section">
+
+            <div class="search-box">
+
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search discussion rooms, topics or people..."
+                >
+
+                <button onclick="performSearch()">
+                    Search
+                </button>
+
+            </div>
+
+
+            <button class="create-top-btn" onclick="openCreateRoom()">
+
+                <i class="fa-solid fa-plus"></i>
+
+                Create Discussion Room
+
+            </button>
+
+        </section>
+
+
+        <!-- TABS -->
+
+        <section class="room-controls">
+
+            <div class="tabs">
+
+                <button class="tab active" data-tab="all">
+                    All Rooms
+                </button>
+
+                <button class="tab" data-tab="mine">
+                    My Rooms
+                </button>
+
+                <button class="tab" data-tab="joined">
+                    Joined
+                </button>
+
+                <button class="tab" data-tab="saved">
+                    Saved
+                    <span id="savedCount">0</span>
+                </button>
+
+            </div>
+
+
+            <div class="filters">
+
+                <select id="categoryFilter">
+
+                    <option value="all">Category</option>
+                    <option value="Design">Design</option>
+                    <option value="Programming">Programming</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Communication">Communication</option>
+
+                </select>
+
+
+                <select id="sortFilter">
+
+                    <option value="upcoming">Sort By: Upcoming</option>
+                    <option value="popular">Most Popular</option>
+                    <option value="newest">Newest</option>
+
+                </select>
+
+                <button class="view-btn active">
+                    <i class="fa-solid fa-grip"></i>
+                </button>
+
+                <button class="view-btn">
+                    <i class="fa-solid fa-list"></i>
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- CONTENT -->
+
+        <section class="content-layout">
+
+
+            <!-- CENTER -->
+
+            <div class="rooms-area">
+
+                <div class="section-title">
+
+                    <div>
+
+                        <h2>
+                            Choose a Room to Join
+
+                            <span class="live-count">
+                                <i class="fa-solid fa-circle"></i>
+                                <span id="liveCount">12</span> Live Rooms
+                            </span>
+
+                        </h2>
+
+                    </div>
+
+                    <button class="filter-button">
+                        <i class="fa-solid fa-sliders"></i>
+                        Filters
+                    </button>
+
+                </div>
+
+
+                <!-- ROOMS -->
+
+                <div id="roomsContainer"></div>
+
+
+                <!-- CREATE ROOM BOTTOM -->
+
+                <div class="bottom-create">
+
+                    <div class="bottom-create-icon">
+                        <i class="fa-regular fa-comments"></i>
+                    </div>
+
+                    <div class="bottom-create-text">
+
+                        <h3>Create Your Own Discussion Room</h3>
+
+                        <p>
+                            Start a room, invite learners and have meaningful discussions.
+                        </p>
+
+                    </div>
+
+
+                    <div class="room-size-options">
+
+                        <button class="size-option" data-size="5">
+
+                            <i class="fa-solid fa-user-group"></i>
+
+                            <span>
+                                <b>5 Members</b>
+                                Small Group
+                            </span>
+
+                        </button>
+
+
+                        <button class="size-option selected" data-size="10">
+
+                            <i class="fa-solid fa-users"></i>
+
+                            <span>
+                                <b>10 Members</b>
+                                Medium Group
+                            </span>
+
+                        </button>
+
+
+                        <button class="size-option" data-size="15">
+
+                            <i class="fa-solid fa-users"></i>
+
+                            <span>
+                                <b>15 Members</b>
+                                Large Group
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <button class="create-room-bottom"
+                            onclick="openCreateRoom()">
+
+                        Create Room
+                        <i class="fa-solid fa-arrow-right"></i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- RIGHT SIDEBAR -->
+
+            <aside class="right-panel">
+
+
+                <!-- FEATURED -->
+
+                <div class="side-card">
+
+                    <div class="side-card-header">
+
+                        <h3>Featured Rooms</h3>
+
+                        <a href="#">View All</a>
+
+                    </div>
+
+
+                    <div class="featured-room">
+
+                        <div class="mini-image uiux">
+                            UI/UX
+                        </div>
+
+                        <div class="mini-info">
+
+                            <strong>Web Development Talk</strong>
+
+                            <span class="green">
+                                15 / 15 Live
+                            </span>
+
+                        </div>
+
+                        <button onclick="joinRoomByTitle('Web Development Talk')">
+                            Join
+                        </button>
+
+                    </div>
+
+
+                    <div class="featured-room">
+
+                        <div class="mini-image ai">
+                            AI
+                        </div>
+
+                        <div class="mini-info">
+
+                            <strong>AI Tools & Productivity</strong>
+
+                            <span class="green">
+                                9 / 10 Live
+                            </span>
+
+                        </div>
+
+                        <button onclick="joinRoomByTitle('AI Tools & Productivity')">
+                            Join
+                        </button>
+
+                    </div>
+
+
+                    <div class="featured-room">
+
+                        <div class="mini-image english">
+                            ENG
+                        </div>
+
+                        <div class="mini-info">
+
+                            <strong>English Speaking Practice</strong>
+
+                            <span class="green">
+                                10 / 10 Live
+                            </span>
+
+                        </div>
+
+                        <button onclick="joinRoomByTitle('English Speaking Practice')">
+                            Join
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- UPCOMING -->
+
+                <div class="side-card">
+
+                    <div class="side-card-header">
+
+                        <h3>My Upcoming</h3>
+
+                        <a href="#">View All</a>
+
+                    </div>
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-icon purple">
+                            UI
+                        </div>
+
+                        <div>
+                            <strong>UI/UX Design Discussion</strong>
+                            <span>Today, 06:00 PM</span>
+                        </div>
+
+                        <b class="joined">Joined</b>
+
+                    </div>
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-icon green-icon">
+                            PY
+                        </div>
+
+                        <div>
+                            <strong>Python Programming Help</strong>
+                            <span>Today, 07:30 PM</span>
+                        </div>
+
+                        <b class="joined">Joined</b>
+
+                    </div>
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-icon orange">
+                            DM
+                        </div>
+
+                        <div>
+                            <strong>Digital Marketing Trends</strong>
+                            <span>Tomorrow, 06:00 PM</span>
+                        </div>
+
+                        <b class="reminder">Reminder</b>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ACTIVITY -->
+
+                <div class="side-card">
+
+                    <div class="side-card-header">
+
+                        <h3>Recent Activity</h3>
+
+                    </div>
+
+                    <div id="activityList"></div>
+
+                </div>
+
+            </aside>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- ================= CREATE ROOM MODAL ================= -->
+
+<div class="modal-overlay" id="createModal">
+
+    <div class="modal">
+
+        <button class="close-modal" onclick="closeCreateRoom()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="modal-icon">
+            <i class="fa-regular fa-comments"></i>
+        </div>
+
+        <h2>Create Discussion Room</h2>
+
+        <p>
+            Create a room and invite other learners to discuss and learn together.
+        </p>
+
+
+        <form id="createRoomForm">
+
+            <label>Room Name</label>
+
+            <input
+                type="text"
+                id="roomName"
+                placeholder="e.g. JavaScript Beginners Discussion"
+                required
+            >
+
+
+            <label>Category</label>
+
+            <select id="roomCategory" required>
+
+                <option value="">Select Category</option>
+                <option value="Programming">Programming</option>
+                <option value="Design">Design</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Communication">Communication</option>
+
+            </select>
+
+
+            <label>Description</label>
+
+            <textarea
+                id="roomDescription"
+                placeholder="What will learners discuss?"
+                required
+            ></textarea>
+
+
+            <label>Room Size</label>
+
+            <div class="modal-room-size">
+
+                <button type="button" data-modal-size="5">
+                    5 Members
+                </button>
+
+                <button type="button"
+                        data-modal-size="10"
+                        class="active">
+                    10 Members
+                </button>
+
+                <button type="button" data-modal-size="15">
+                    15 Members
+                </button>
+
+            </div>
+
+
+            <label>Start Time</label>
+
+            <input type="datetime-local" id="roomTime">
+
+
+            <button class="submit-room" type="submit">
+
+                <i class="fa-solid fa-plus"></i>
+
+                Create Room
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- TOAST -->
+
+<div class="toast" id="toast">
+
+    <i class="fa-solid fa-circle-check"></i>
+
+    <span id="toastText">
+        Done
+    </span>
+
+</div>
+
+
+<script src="live-discussions.js"></script>
+
+</body>
+</html>

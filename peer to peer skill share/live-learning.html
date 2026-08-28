@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillShare - My Teaching</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="live-learning.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- ================= TOP NAVBAR ================= -->
+        <header class="topbar">
+
+            <div class="brand">
+                <div class="brand-logo">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
+                <div class="brand-text">
+                    <h2>SkillShare</h2>
+                    <p>Share Skills. Grow Together.</p>
+                </div>
+            </div>
+
+            <nav class="top-nav">
+                <a href="index.html">Home</a>
+                <a href="explore.html">Explore Skills</a>
+                <a href="how-it-works.html">How It Works</a>
+
+                <a href="community.html" class="community-link">
+                    Community
+                    <span class="nav-badge">3</span>
+                </a>
+
+                <a href="messages.html" class="messages-link">
+                    Messages
+                    <span class="nav-badge">3</span>
+                </a>
+            </nav>
+
+            <div class="top-actions">
+
+                <button class="icon-btn search-btn" title="Search">
+                    <i data-lucide="search"></i>
+                </button>
+
+                <button class="icon-btn theme-btn" title="Toggle theme">
+                    <i data-lucide="moon"></i>
+                </button>
+
+                <button class="icon-btn notification-btn">
+                    <i data-lucide="bell"></i>
+                    <span>6</span>
+                </button>
+
+                <div class="profile">
+
+                    <div class="avatar">
+                        <span>AD</span>
+                        <div class="online-dot"></div>
+                    </div>
+
+                    <div class="profile-info">
+                        <a href="profile.html">
+                            <strong>Aniket</strong>
+                            <small>Instructor</small>
+                        </a>
+                    </div>
+
+                    <i data-lucide="chevron-down" class="profile-arrow"></i>
+
+                </div>
+
+            </div>
+        </header>
+
+
+        <!-- ================= SIDEBAR ================= -->
+        <aside class="sidebar">
+
+            <div class="sidebar-menu">
+
+                <a href="dashboard.html" class="side-link">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="explore.html" class="side-link">
+                    <i data-lucide="map-pin"></i>
+                    <span>Explore Skills</span>
+                </a>
+
+                <a href="my-learning.html" class="side-link">
+                    <i data-lucide="book-open"></i>
+                    <span>My Learning</span>
+                </a>
+
+                <a href="my-teaching.html" class="side-link active">
+                    <i data-lucide="graduation-cap"></i>
+                    <span>My Teaching</span>
+                </a>
+
+                <a href="reviews.html" class="side-link">
+                    <i data-lucide="star"></i>
+                    <span>Reviews</span>
+                    <b>24</b>
+                </a>
+
+                <a href="requests.html" class="side-link">
+                    <i data-lucide="send"></i>
+                    <span>Requests</span>
+                    <b>5</b>
+                </a>
+
+                <a href="messages.html" class="side-link">
+                    <i data-lucide="message-square"></i>
+                    <span>Messages</span>
+                    <b>3</b>
+                </a>
+
+                <a href="calendar.html" class="side-link">
+                    <i data-lucide="calendar-days"></i>
+                    <span>Calendar</span>
+                </a>
+
+                <a href="setting.html" class="side-link">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+
+            </div>
+
+
+            <!-- SIDEBAR CTA -->
+            <div class="teacher-card">
+
+                <div class="teacher-content">
+                    <h3>Teach. Inspire. Earn.</h3>
+
+                    <p>
+                        Share your knowledge and build a global learning community.
+                    </p>
+
+                    <button class="small-create-btn">
+                        Create New Class
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="teacher-illustration">
+                    <div class="person-head"></div>
+                    <div class="person-body"></div>
+                    <div class="laptop"></div>
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- ================= MAIN CONTENT ================= -->
+        <main class="main">
+
+            <!-- MOBILE MENU -->
+            <button class="mobile-menu">
+                <i data-lucide="menu"></i>
+            </button>
+
+
+            <!-- PAGE HEADER -->
+            <section class="page-header reveal">
+
+                <div>
+                    <h1>
+                        My <span>Teaching</span>
+                    </h1>
+
+                    <p>
+                        Manage your classes, track performance, and engage with your students.
+                    </p>
+                </div>
+
+                <button class="create-btn" id="createClassBtn">
+                    <i data-lucide="plus"></i>
+                    Create New Class
+                    <i data-lucide="chevron-down"></i>
+                </button>
+
+            </section>
+
+
+            <!-- ================= STATS ================= -->
+            <section class="stats-grid">
+
+                <!-- CARD -->
+                <div class="stat-card purple reveal">
+
+                    <div class="stat-top">
+                        <div class="stat-icon">
+                            <i data-lucide="users"></i>
+                        </div>
+
+                        <div>
+                            <p>Total Students</p>
+                            <h2 class="counter" data-target="128">0</h2>
+                        </div>
+                    </div>
+
+                    <div class="growth purple-text">
+                        +18 this month
+                    </div>
+
+                    <div class="mini-chart">
+                        <svg viewBox="0 0 260 70">
+                            <polyline
+                                points="0,52 25,37 48,51 70,41 95,46 120,29 143,40 166,28 190,43 215,34 240,42 260,24"
+                                fill="none" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card blue reveal">
+
+                    <div class="stat-top">
+                        <div class="stat-icon">
+                            <i data-lucide="book-open"></i>
+                        </div>
+
+                        <div>
+                            <p>Total Classes</p>
+                            <h2 class="counter" data-target="8">0</h2>
+                        </div>
+                    </div>
+
+                    <div class="growth">
+                        +1 this month
+                    </div>
+
+                    <div class="mini-chart">
+                        <svg viewBox="0 0 260 70">
+                            <polyline
+                                points="0,52 25,43 48,48 70,23 95,41 120,31 143,52 166,37 190,27 215,17 240,28 260,19"
+                                fill="none" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card green reveal">
+
+                    <div class="stat-top">
+                        <div class="stat-icon">
+                            <i data-lucide="dollar-sign"></i>
+                        </div>
+
+                        <div>
+                            <p>Total Earnings</p>
+                            <h2>$<span class="counter" data-target="2540">0</span></h2>
+                        </div>
+                    </div>
+
+                    <div class="growth green-text">
+                        +12% this month
+                    </div>
+
+                    <div class="mini-chart">
+                        <svg viewBox="0 0 260 70">
+                            <polyline
+                                points="0,50 25,30 48,45 70,35 95,21 120,37 143,38 166,27 190,39 215,31 240,43 260,22"
+                                fill="none" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card orange reveal">
+
+                    <div class="stat-top">
+                        <div class="stat-icon">
+                            <i data-lucide="star"></i>
+                        </div>
+
+                        <div>
+                            <p>Total Reviews</p>
+                            <h2 class="counter" data-target="24">0</h2>
+                        </div>
+                    </div>
+
+                    <div class="growth orange-text">
+                        +6 this month
+                    </div>
+
+                    <div class="mini-chart">
+                        <svg viewBox="0 0 260 70">
+                            <polyline
+                                points="0,48 25,39 48,43 70,19 95,36 120,30 143,40 166,35 190,48 215,32 240,24 260,14"
+                                fill="none" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                    </div>
+
+                </div>
+
+
+                <!-- RATING -->
+                <div class="rating-card reveal">
+
+                    <p>Average Rating</p>
+
+                    <div class="rating-content">
+
+                        <div class="rating-circle">
+                            <i data-lucide="star"></i>
+                        </div>
+
+                        <div>
+                            <h2>4.8</h2>
+                            <span>Excellent</span>
+                        </div>
+
+                    </div>
+
+                    <div class="stars">
+                        ★ ★ ★ ★ ★
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= CONTENT GRID ================= -->
+            <div class="dashboard-grid">
+
+
+                <!-- ================= LEFT ================= -->
+                <div class="left-column">
+
+                    <!-- CLASSES -->
+                    <section class="panel classes-panel reveal">
+
+                        <div class="panel-header">
+
+                            <div>
+                                <h2>Your Classes</h2>
+                            </div>
+
+                            <button class="ghost-btn">
+                                View All Classes
+                                <i data-lucide="arrow-right"></i>
+                            </button>
+
+                        </div>
+
+
+                        <div class="class-list">
+
+
+                            <!-- CLASS -->
+                            <div class="class-item">
+
+                                <div class="course-icon python">
+                                    <span>🐍</span>
+                                </div>
+
+                                <div class="course-info">
+                                    <h3>
+                                        Python Programming for Beginners
+                                        <em>Published</em>
+                                    </h3>
+
+                                    <p>
+                                        Beginner
+                                        <span>•</span>
+                                        12 Lessons
+                                    </p>
+                                </div>
+
+                                <div class="course-students">
+                                    <strong>42</strong>
+                                    <span>Students</span>
+                                </div>
+
+                                <div class="course-rating">
+                                    <strong>★</strong>
+                                    <span>4.9</span>
+                                    <small>Rating</small>
+                                </div>
+
+                                <button class="more-btn">
+                                    <i data-lucide="more-vertical"></i>
+                                </button>
+
+                            </div>
+
+
+                            <!-- CLASS -->
+                            <div class="class-item">
+
+                                <div class="course-icon uiux">
+                                    <i data-lucide="layout"></i>
+                                </div>
+
+                                <div class="course-info">
+                                    <h3>
+                                        UI/UX Design Fundamentals
+                                        <em>Published</em>
+                                    </h3>
+
+                                    <p>
+                                        Beginner
+                                        <span>•</span>
+                                        10 Lessons
+                                    </p>
+                                </div>
+
+                                <div class="course-students">
+                                    <strong>35</strong>
+                                    <span>Students</span>
+                                </div>
+
+                                <div class="course-rating">
+                                    <strong>★</strong>
+                                    <span>4.7</span>
+                                    <small>Rating</small>
+                                </div>
+
+                                <button class="more-btn">
+                                    <i data-lucide="more-vertical"></i>
+                                </button>
+
+                            </div>
+
+
+                            <!-- CLASS -->
+                            <div class="class-item">
+
+                                <div class="course-icon premiere">
+                                    <strong>Pr</strong>
+                                </div>
+
+                                <div class="course-info">
+                                    <h3>
+                                        Video Editing with Premiere Pro
+                                        <em>Published</em>
+                                    </h3>
+
+                                    <p>
+                                        Intermediate
+                                        <span>•</span>
+                                        15 Lessons
+                                    </p>
+                                </div>
+
+                                <div class="course-students">
+                                    <strong>28</strong>
+                                    <span>Students</span>
+                                </div>
+
+                                <div class="course-rating">
+                                    <strong>★</strong>
+                                    <span>4.8</span>
+                                    <small>Rating</small>
+                                </div>
+
+                                <button class="more-btn">
+                                    <i data-lucide="more-vertical"></i>
+                                </button>
+
+                            </div>
+
+
+                            <!-- CLASS -->
+                            <div class="class-item">
+
+                                <div class="course-icon marketing">
+                                    <i data-lucide="megaphone"></i>
+                                </div>
+
+                                <div class="course-info">
+                                    <h3>
+                                        Digital Marketing Masterclass
+                                        <em>Published</em>
+                                    </h3>
+
+                                    <p>
+                                        Advanced
+                                        <span>•</span>
+                                        18 Lessons
+                                    </p>
+                                </div>
+
+                                <div class="course-students">
+                                    <strong>23</strong>
+                                    <span>Students</span>
+                                </div>
+
+                                <div class="course-rating">
+                                    <strong>★</strong>
+                                    <span>4.6</span>
+                                    <small>Rating</small>
+                                </div>
+
+                                <button class="more-btn">
+                                    <i data-lucide="more-vertical"></i>
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- ENGAGEMENT -->
+                    <section class="panel engagement-panel reveal">
+
+                        <div class="panel-header">
+
+                            <h2>Student Engagement</h2>
+
+                            <select id="periodSelect">
+                                <option>This Month</option>
+                                <option>Last Month</option>
+                                <option>Last 3 Months</option>
+                            </select>
+
+                        </div>
+
+
+                        <div class="engagement-content">
+
+                            <div class="watch-time">
+
+                                <p>Total Watch Time</p>
+
+                                <div class="watch-number">
+                                    <div>
+                                        <i data-lucide="clock-3"></i>
+                                    </div>
+
+                                    <strong>1,245 <small>hrs</small></strong>
+                                </div>
+
+                                <span class="positive">
+                                    +15% this month
+                                </span>
+
+                            </div>
+
+
+                            <div class="large-chart">
+
+                                <svg viewBox="0 0 700 280" preserveAspectRatio="none">
+
+                                    <defs>
+                                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#7c3aed" stop-opacity=".35" />
+                                            <stop offset="100%" stop-color="#7c3aed" stop-opacity="0" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    <line x1="0" y1="50" x2="700" y2="50" class="grid-line" />
+                                    <line x1="0" y1="110" x2="700" y2="110" class="grid-line" />
+                                    <line x1="0" y1="170" x2="700" y2="170" class="grid-line" />
+                                    <line x1="0" y1="230" x2="700" y2="230" class="grid-line" />
+
+                                    <path class="chart-area" d="M0 205
+                                    L30 205
+                                    L55 170
+                                    L80 210
+                                    L105 185
+                                    L130 195
+                                    L155 175
+                                    L180 190
+                                    L205 125
+                                    L230 165
+                                    L255 178
+                                    L280 145
+                                    L305 160
+                                    L330 110
+                                    L355 130
+                                    L380 160
+                                    L405 140
+                                    L430 115
+                                    L455 90
+                                    L480 120
+                                    L505 140
+                                    L530 105
+                                    L555 130
+                                    L580 75
+                                    L605 105
+                                    L630 95
+                                    L655 65
+                                    L680 75
+                                    L700 55
+                                    L700 280
+                                    L0 280 Z" />
+
+                                    <path class="chart-line" d="M0 205
+                                    L30 205
+                                    L55 170
+                                    L80 210
+                                    L105 185
+                                    L130 195
+                                    L155 175
+                                    L180 190
+                                    L205 125
+                                    L230 165
+                                    L255 178
+                                    L280 145
+                                    L305 160
+                                    L330 110
+                                    L355 130
+                                    L380 160
+                                    L405 140
+                                    L430 115
+                                    L455 90
+                                    L480 120
+                                    L505 140
+                                    L530 105
+                                    L555 130
+                                    L580 75
+                                    L605 105
+                                    L630 95
+                                    L655 65
+                                    L680 75
+                                    L700 55" />
+
+                                </svg>
+
+                                <div class="chart-labels">
+                                    <span>May 01</span>
+                                    <span>May 05</span>
+                                    <span>May 10</span>
+                                    <span>May 15</span>
+                                    <span>May 20</span>
+                                    <span>May 25</span>
+                                    <span>May 30</span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+
+                <!-- ================= RIGHT ================= -->
+                <aside class="right-column">
+
+
+                    <!-- REVIEWS -->
+                    <section class="panel reviews-panel reveal">
+
+                        <div class="panel-header">
+                            <h2>Recent Reviews</h2>
+                            <a href="#">View All</a>
+                        </div>
+
+
+                        <div class="review">
+
+                            <div class="review-avatar avatar-one">
+                                RM
+                            </div>
+
+                            <div class="review-body">
+
+                                <div class="review-title">
+                                    <strong>Rohan Mehta</strong>
+
+                                    <span class="review-stars">
+                                        ★★★★★
+                                    </span>
+
+                                    <small>2 days ago</small>
+                                </div>
+
+                                <p>
+                                    Great explanation and practical examples!
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="review">
+
+                            <div class="review-avatar avatar-two">
+                                SK
+                            </div>
+
+                            <div class="review-body">
+
+                                <div class="review-title">
+                                    <strong>Sneha Kapoor</strong>
+
+                                    <span class="review-stars">
+                                        ★★★★★
+                                    </span>
+
+                                    <small>1 week ago</small>
+                                </div>
+
+                                <p>
+                                    Very engaging and easy to understand.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="review">
+
+                            <div class="review-avatar avatar-three">
+                                AV
+                            </div>
+
+                            <div class="review-body">
+
+                                <div class="review-title">
+                                    <strong>Arjun Verma</strong>
+
+                                    <span class="review-stars">
+                                        ★★★★★
+                                    </span>
+
+                                    <small>2 weeks ago</small>
+                                </div>
+
+                                <p>
+                                    This class helped me a lot. Thank you!
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- UPCOMING -->
+                    <section class="panel sessions-panel reveal">
+
+                        <div class="panel-header">
+                            <h2>Upcoming Sessions</h2>
+                            <a href="#">View Calendar</a>
+                        </div>
+
+
+                        <div class="session">
+
+                            <div class="date-box blue-date">
+                                <strong>24</strong>
+                                <span>May</span>
+                            </div>
+
+                            <div class="session-info">
+                                <strong>Live Q&A: Python Basics</strong>
+                                <span>Today, 7:00 PM</span>
+                            </div>
+
+                            <button class="join-btn">
+                                Join
+                            </button>
+
+                        </div>
+
+
+                        <div class="session">
+
+                            <div class="date-box purple-date">
+                                <strong>26</strong>
+                                <span>May</span>
+                            </div>
+
+                            <div class="session-info">
+                                <strong>UI/UX Design Live Workshop</strong>
+                                <span>Tomorrow, 6:00 PM</span>
+                            </div>
+
+                            <button class="join-btn">
+                                Join
+                            </button>
+
+                        </div>
+
+
+                        <div class="session">
+
+                            <div class="date-box green-date">
+                                <strong>29</strong>
+                                <span>May</span>
+                            </div>
+
+                            <div class="session-info">
+                                <strong>Video Editing Tips & Tricks</strong>
+                                <span>Wed, 7:30 PM</span>
+                            </div>
+
+                            <button class="join-btn">
+                                Join
+                            </button>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- RESOURCES -->
+                    <section class="panel resources-panel reveal">
+
+                        <div class="panel-header">
+                            <h2>Teaching Resources</h2>
+                            <a href="#">View All</a>
+                        </div>
+
+
+                        <div class="resource">
+
+                            <div class="resource-icon blue-resource">
+                                <i data-lucide="book-open"></i>
+                            </div>
+
+                            <div>
+                                <strong>Instructor Guide</strong>
+                                <span>Professional teaching resources</span>
+                            </div>
+
+                            <i data-lucide="chevron-right"></i>
+
+                        </div>
+
+
+                        <div class="resource">
+
+                            <div class="resource-icon green-resource">
+                                <i data-lucide="wallet"></i>
+                            </div>
+
+                            <div>
+                                <strong>Earning Guide</strong>
+                                <span>How you can earn more</span>
+                            </div>
+
+                            <i data-lucide="chevron-right"></i>
+
+                        </div>
+
+
+                        <div class="resource">
+
+                            <div class="resource-icon purple-resource">
+                                <i data-lucide="users"></i>
+                            </div>
+
+                            <div>
+                                <strong>Community</strong>
+                                <span>Connect with other teachers</span>
+                            </div>
+
+                            <i data-lucide="chevron-right"></i>
+
+                        </div>
+
+                    </section>
+
+                </aside>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- SEARCH OVERLAY -->
+    <div class="search-overlay" id="searchOverlay">
+
+        <div class="search-box">
+
+            <button class="close-search" id="closeSearch">
+                <i data-lucide="x"></i>
+            </button>
+
+            <i data-lucide="search"></i>
+
+            <input type="text" id="searchInput" placeholder="Search classes, students, resources...">
+
+        </div>
+
+    </div>
+
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+        <i data-lucide="check-circle"></i>
+        <span>Action completed successfully!</span>
+    </div>
+
+
+    <script src="live-learning.js"></script>
+    <script src="profile-quick.js" defer></script>
+
+</body>
+
+</html>

@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+<defs><linearGradient id="g"><stop stop-color="#101b45"/><stop offset="1" stop-color="#08102d"/></linearGradient></defs>
+<rect width="100%" height="100%" rx="18" fill="url(#g)"/><path d="M45 125L100 70L130 95L185 48L220 80L270 42" fill="none" stroke="#a64dff" stroke-width="11"/><circle cx="45" cy="125" r="12" fill="#ff5d73"/><circle cx="270" cy="42" r="12" fill="#36d6a0"/><text x="55" y="158" fill="#e0e3ff" font-size="15">MARKETING</text></svg>

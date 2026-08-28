@@ -1,0 +1,1 @@
+const sessionRoomSetup=()=>document.querySelector(".round.end")?.addEventListener("click",()=>{if(confirm("Leave this demo session?"))location.href="calendar.html";});document.readyState==="loading"?document.addEventListener("DOMContentLoaded",sessionRoomSetup):sessionRoomSetup();

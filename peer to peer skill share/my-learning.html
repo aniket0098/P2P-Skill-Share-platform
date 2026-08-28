@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillShare — My Learning</title>
+
+    <link rel="stylesheet" href="my-learning.css">
+
+</head>
+
+<body>
+
+    <!-- =========================
+         TOP NAVIGATION
+    ========================== -->
+    <header class="topbar">
+
+        <a href="#" class="brand">
+            <span class="logo">✦</span>
+
+            <span>
+                <b>SkillShare</b>
+                <small>Share Skills. Grow Together.</small>
+            </span>
+        </a>
+
+        <nav class="top-navigation">
+
+
+            <a href="explore.html">Explore Skills</a>
+
+            <a href="community.html">Community</a>
+
+            <a href="messages.html">
+                Messages
+                <i>3</i>
+            </a>
+        </nav>
+
+        <div class="actions">
+
+            <button class="icon" aria-label="Search">
+                ⌕
+            </button>
+
+            <button class="icon" id="theme" aria-label="Toggle theme">
+                ☾
+            </button>
+
+            <button class="icon" aria-label="Notifications">
+                ♧
+            </button>
+
+            <button class="profile">
+                <a href="profile.html">Profile</a>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         SIDEBAR
+    ========================== -->
+    <aside class="sidebar">
+
+        <nav class="side">
+
+            <a href="dashboard.html">
+                <span>⌂</span>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="explore.html">
+                <span>⌕</span>
+                <span>Explore Skills</span>
+            </a>
+
+            <a href="my-learning.html" class="active">
+                <span>◇</span>
+                <span>My Learning</span>
+            </a>
+
+            <a href="live-learning.html">
+                <span>♧</span>
+                <span>Live Learning</span>
+            </a>
+
+            <a href="requests.html">
+                <span>➤</span>
+                <span>Requests</span>
+                <b>2</b>
+            </a>
+
+            <a href="messages.html">
+                <span>▣</span>
+                <span>Messages</span>
+                <b>3</b>
+            </a>
+
+            <a href="bookmarks.html">
+                <span>♡</span>
+                <span>Bookmarks</span>
+            </a>
+
+            <a href="calendar.html">
+                <span>□</span>
+                <span>Calendar</span>
+            </a>
+
+            <a href="setting.html">
+                <span>⚙</span>
+                <span>Settings</span>
+            </a>
+
+        </nav>
+
+
+        <!-- SIDEBAR PROMO -->
+        <div class="promo">
+
+            <em>KEEP GOING</em>
+
+            <h3>
+                Keep learning,
+                <br>
+                keep growing!
+            </h3>
+
+            <p>
+                Every skill you learn today
+                builds your better tomorrow.
+            </p>
+
+            <img src="assets/learning.svg" alt="Learning illustration">
+
+            <button class="btn" data-toast="Opening Explore Skills…">
+
+                Explore More Skills →
+
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+    <main>
+
+        <!-- PAGE HEADER -->
+        <section class="head reveal">
+
+            <div>
+
+                <em>YOUR LEARNING JOURNEY</em>
+
+                <h1>
+                    My
+                    <span>Learning</span>
+                </h1>
+
+                <p>
+                    Track your progress, continue learning,
+                    and achieve your goals.
+                </p>
+
+            </div>
+
+            <button class="btn" data-toast="Browse New Skills opened">
+
+                ＋ Browse New Skills⌄
+
+            </button>
+
+        </section>
+
+
+        <!-- =========================
+             STATISTICS
+        ========================== -->
+        <section class="stats reveal">
+
+            <!-- Overall Progress -->
+            <article class="panel progress">
+
+                <header>
+
+                    <b>Overall Progress</b>
+
+                    <button>
+                        This Month ⌄
+                    </button>
+
+                </header>
+
+
+                <div class="progressbody">
+
+                    <div class="donut">
+
+                        <strong>72%</strong>
+
+                        <small>
+                            Completed
+                        </small>
+
+                    </div>
+
+
+                    <div class="metric">
+
+                        <b>22</b>
+
+                        <small>
+                            Skills Enrolled
+                        </small>
+
+                    </div>
+
+
+                    <div class="metric">
+
+                        <b>16</b>
+
+                        <small>
+                            Skills Completed
+                        </small>
+
+                    </div>
+
+
+                    <div class="metric">
+
+                        <b>48</b>
+
+                        <small>
+                            Learning Hours
+                        </small>
+
+                    </div>
+
+
+                    <div class="chart"></div>
+
+                </div>
+
+            </article>
+
+
+            <!-- Current Streak -->
+            <article class="panel">
+
+                <header>
+                    <b>Current Streak</b>
+                </header>
+
+                <div class="streak">
+
+                    <span>🔥</span>
+
+                    <strong>12</strong>
+
+                    <small>
+                        Days
+                    </small>
+
+                </div>
+
+                <p>
+                    Keep it up!
+                </p>
+
+
+                <div class="days">
+
+                    <b>✓</b>
+                    <b>✓</b>
+                    <b>✓</b>
+                    <b>✓</b>
+                    <b>✓</b>
+
+                    <i>S</i>
+                    <i>S</i>
+
+                </div>
+
+            </article>
+
+
+            <!-- Certificates -->
+            <article class="panel">
+
+                <header>
+                    <b>Certificates Earned</b>
+                </header>
+
+
+                <div class="cert">
+
+                    <img src="assets/certificate.svg" alt="Certificate">
+
+                    <strong>8</strong>
+
+                </div>
+
+
+                <a href="#">
+                    View All
+                </a>
+
+                <p class="muted">
+                    Keep learning to earn more!
+                </p>
+
+            </article>
+
+
+            <!-- Learning Level -->
+            <article class="panel">
+
+                <header>
+                    <b>Learning Level</b>
+                </header>
+
+
+                <div class="level">
+
+                    <img src="assets/level.svg" alt="Learning level">
+
+                    <div>
+
+                        <strong>
+                            Advanced Learner
+                        </strong>
+
+                        <small>
+                            2450 / 3000 XP
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="xp">
+                    <span></span>
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <!-- =========================
+             CONTENT GRID
+        ========================== -->
+        <div class="grid reveal">
+
+
+            <!-- LEFT COLUMN -->
+            <div>
+
+
+                <!-- CONTINUE LEARNING -->
+                <section class="block">
+
+                    <div class="sectionhead">
+
+                        <h2>
+                            Continue Learning
+                        </h2>
+
+                        <a href="#">
+                            View All
+                        </a>
+
+                    </div>
+
+
+                    <div class="courses">
+
+
+                        <!-- Python -->
+                        <article class="course">
+
+                            <img src="assets/python.svg" alt="Python Programming">
+
+                            <div>
+
+                                <strong>
+                                    Python Programming
+                                </strong>
+
+                                <label>
+                                    Intermediate
+                                </label>
+
+                                <div class="bar">
+
+                                    <span style="width:65%">
+                                    </span>
+
+                                </div>
+
+                                <small>
+                                    Last lesson:
+                                    Functions in Python
+                                </small>
+
+                            </div>
+
+
+                            <b>
+                                65%
+                            </b>
+
+
+                            <button class="btn small" data-toast="Continuing Python Programming…">
+
+                                Continue
+
+                            </button>
+
+
+                            <i>⋮</i>
+
+                        </article>
+
+
+                        <!-- UI UX -->
+                        <article class="course">
+
+                            <img src="assets/uiux.svg" alt="UI UX Design">
+
+                            <div>
+
+                                <strong>
+                                    UI/UX Design Fundamentals
+                                </strong>
+
+                                <label class="green">
+                                    Beginner
+                                </label>
+
+                                <div class="bar">
+
+                                    <span style="width:45%">
+                                    </span>
+
+                                </div>
+
+                                <small>
+                                    Last lesson:
+                                    Color & Typography
+                                </small>
+
+                            </div>
+
+
+                            <b>
+                                45%
+                            </b>
+
+
+                            <button class="btn small" data-toast="Continuing UI/UX Design…">
+
+                                Continue
+
+                            </button>
+
+
+                            <i>⋮</i>
+
+                        </article>
+
+
+                        <!-- Video Editing -->
+                        <article class="course">
+
+                            <img src="assets/video.svg" alt="Video Editing">
+
+                            <div>
+
+                                <strong>
+                                    Video Editing with
+                                    Premiere Pro
+                                </strong>
+
+                                <label>
+                                    Intermediate
+                                </label>
+
+                                <div class="bar">
+
+                                    <span style="width:30%">
+                                    </span>
+
+                                </div>
+
+                                <small>
+                                    Last lesson:
+                                    Transitions & Effects
+                                </small>
+
+                            </div>
+
+
+                            <b>
+                                30%
+                            </b>
+
+
+                            <button class="btn small" data-toast="Continuing Video Editing…">
+
+                                Continue
+
+                            </button>
+
+
+                            <i>⋮</i>
+
+                        </article>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================
+                     RECENTLY COMPLETED
+                ========================== -->
+                <section class="block">
+
+                    <div class="sectionhead">
+
+                        <h2>
+                            Recently Completed
+                        </h2>
+
+                        <a href="#">
+                            View All
+                        </a>
+
+                    </div>
+
+
+                    <div class="completed">
+
+
+                        <!-- Web -->
+                        <article>
+
+                            <img src="assets/web.svg" alt="Web Development">
+
+                            <b>
+                                Web Development Basics
+                            </b>
+
+                            <small>
+                                Completed on
+                                10 May 2024
+                            </small>
+
+                        </article>
+
+
+                        <!-- Marketing -->
+                        <article>
+
+                            <img src="assets/marketing.svg" alt="Digital Marketing">
+
+                            <b>
+                                Digital Marketing Basics
+                            </b>
+
+                            <small>
+                                Completed on
+                                05 May 2024
+                            </small>
+
+                        </article>
+
+
+                        <!-- English -->
+                        <article>
+
+                            <img src="assets/english.svg" alt="English Speaking">
+
+                            <b>
+                                English Speaking
+                            </b>
+
+                            <small>
+                                Completed on
+                                01 May 2024
+                            </small>
+
+                        </article>
+
+
+                        <!-- Guitar -->
+                        <article>
+
+                            <img src="assets/guitar.svg" alt="Guitar">
+
+                            <b>
+                                Guitar for Beginners
+                            </b>
+
+                            <small>
+                                Completed on
+                                28 Apr 2024
+                            </small>
+
+                        </article>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- =========================
+                 RIGHT COLUMN
+            ========================== -->
+            <div>
+
+
+                <!-- UPCOMING SESSIONS -->
+                <section class="panel sessions">
+
+                    <div class="sectionhead">
+
+                        <h2>
+                            Upcoming Sessions
+                        </h2>
+
+                        <a href="#">
+                            View Calendar
+                        </a>
+
+                    </div>
+
+
+                    <!-- Session 1 -->
+                    <article>
+
+                        <img src="assets/avatar1.svg" alt="Priya Singh">
+
+                        <div>
+
+                            <b>
+                                Web Development
+                                Mentorship
+                            </b>
+
+                            <small>
+                                with Priya Singh
+                            </small>
+
+                            <small>
+                                ▣ Today, 7:00 PM
+                            </small>
+
+                        </div>
+
+                        <button class="btn small" data-toast="Joining Web Development Mentorship…">
+
+                            Join
+
+                        </button>
+
+                    </article>
+
+
+                    <!-- Session 2 -->
+                    <article>
+
+                        <img src="assets/avatar2.svg" alt="Aman Verma">
+
+                        <div>
+
+                            <b>
+                                UI/UX Design Review
+                            </b>
+
+                            <small>
+                                with Aman Verma
+                            </small>
+
+                            <small>
+                                ▣ Tomorrow, 5:30 PM
+                            </small>
+
+                        </div>
+
+                        <button class="btn small" data-toast="Joining UI/UX Design Review…">
+
+                            Join
+
+                        </button>
+
+                    </article>
+
+
+                    <!-- Session 3 -->
+                    <article>
+
+                        <img src="assets/avatar3.svg" alt="Rahul Sharma">
+
+                        <div>
+
+                            <b>
+                                Python Doubt Clearing
+                            </b>
+
+                            <small>
+                                with Rahul Sharma
+                            </small>
+
+                            <small>
+                                ▣ Sat, 24 May, 6:00 PM
+                            </small>
+
+                        </div>
+
+                        <button class="btn small" data-toast="Joining Python Doubt Clearing…">
+
+                            Join
+
+                        </button>
+
+                    </article>
+
+                </section>
+
+
+                <!-- =========================
+                     ACHIEVEMENTS
+                ========================== -->
+                <section class="panel achievements">
+
+                    <div class="sectionhead">
+
+                        <h2>
+                            Achievements
+                        </h2>
+
+                        <a href="#">
+                            View All
+                        </a>
+
+                    </div>
+
+
+                    <div class="ach">
+
+
+                        <!-- Achievement 1 -->
+                        <div>
+
+                            <img src="assets/rocket.svg" alt="Quick Learner">
+
+                            <b>
+                                Quick Learner
+                            </b>
+
+                            <small>
+                                Learn 5 skills
+                            </small>
+
+                        </div>
+
+
+                        <!-- Achievement 2 -->
+                        <div>
+
+                            <img src="assets/calendar.svg" alt="Consistent">
+
+                            <b>
+                                Consistent
+                            </b>
+
+                            <small>
+                                7 day streak
+                            </small>
+
+                        </div>
+
+
+                        <!-- Achievement 3 -->
+                        <div>
+
+                            <img src="assets/book.svg" alt="Knowledge Seeker">
+
+                            <b>
+                                Knowledge Seeker
+                            </b>
+
+                            <small>
+                                Complete 10 skills
+                            </small>
+
+                        </div>
+
+
+                        <!-- Achievement 4 -->
+                        <div>
+
+                            <img src="assets/trophy.svg" alt="Top Performer">
+
+                            <b>
+                                Top Performer
+                            </b>
+
+                            <small>
+                                Earn 1000 XP
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+        <footer>
+
+            © 2026 SkillShare ·
+            Learn something new every day.
+
+        </footer>
+
+    </main>
+
+
+    <!-- Mouse glow -->
+    <div class="cursor"></div>
+
+
+    <!-- Toast notification -->
+    <div id="toast"></div>
+
+
+    <!-- JavaScript -->
+    <script src="my-learning.js"></script>
+    <script src="profile-quick.js" defer></script>
+
+</body>
+
+</html>

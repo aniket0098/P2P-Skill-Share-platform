@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Create a Session | SkillShare</title>
+    <link rel="stylesheet" href="create-session.css">
+    <script src="create-session.js" defer></script>
+</head>
+
+<body>
+    <header class="app-head"><a class="app-brand" href="dashboard.html"><b>◇</b>SkillShare</a>
+        <nav class="app-nav"><a href="dashboard.html">Dashboard</a><a href="explore.html">Explore</a><a
+                href="my-learning.html">Learning</a><a href="my-teaching.html">Teaching</a></nav>
+        <div class="head-right"><a href="notifications.html" class="bell">♧<i>3</i></a><a href="profile.html"><img
+                    src="assets/ankit.svg" alt="Profile"></a></div>
+    </header>
+    <main class="page">
+        <div class="page-heading">
+            <div>
+                <h1>Create a teaching session</h1>
+                <p>Share what you know and make it easy for the right learner to find you.</p>
+            </div>
+        </div>
+        <section class="create-layout">
+            <form id="sessionForm" class="card form-card">
+                <h2>Session details</h2><label for="title">Session title</label><input id="title" required
+                    placeholder="e.g. Figma fundamentals for beginners"><label for="skill">Skill</label><select
+                    id="skill">
+                    <option>UI/UX Design</option>
+                    <option>Figma</option>
+                    <option>Portfolio review</option>
+                    <option>Other</option>
+                </select>
+                <div class="two">
+                    <div><label for="level">Learner level</label><select id="level">
+                            <option>Beginner</option>
+                            <option>Intermediate</option>
+                            <option>Advanced</option>
+                        </select></div>
+                    <div><label for="duration">Duration</label><select id="duration">
+                            <option>45 minutes</option>
+                            <option>30 minutes</option>
+                            <option>60 minutes</option>
+                        </select></div>
+                </div><label for="description">What will learners get from this?</label><textarea id="description"
+                    required
+                    placeholder="Describe what you will cover, any preparation needed, and what learners will leave with."></textarea><label
+                    for="availability">Availability</label><input id="availability" required
+                    placeholder="e.g. Weekends, 10 AM–4 PM IST">
+                <p class="helper">By publishing, you confirm this is a respectful peer-learning session. You can update
+                    or pause it anytime.</p><button class="primary" style="margin-top:18px">Publish session</button>
+            </form>
+            <aside class="card preview"><span class="mini-tag">SESSION PREVIEW</span>
+                <h2>Your session will appear in Explore</h2>
+                <p>Use a specific title and tell learners what they will be able to do after the session.</p><small>Tip:
+                    New tutors usually get more requests when they add availability and a short personal note.</small>
+            </aside>
+        </section>
+    </main>
+    <div id="toast" class="toast"></div>
+</body>
+
+</html>

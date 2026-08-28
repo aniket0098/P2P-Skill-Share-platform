@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+<defs><linearGradient id="g"><stop stop-color="#101b45"/><stop offset="1" stop-color="#08102d"/></linearGradient></defs>
+<rect width="100%" height="100%" rx="18" fill="url(#g)"/><rect x="45" y="38" width="42" height="70" rx="10" fill="#f24b9a"/><rect x="87" y="38" width="42" height="70" rx="10" fill="#7b42ff"/><circle cx="87" cy="130" r="28" fill="#20d29e"/><text x="155" y="82" fill="#eef1ff" font-size="19" font-weight="800">UI / UX</text><text x="155" y="109" fill="#8994bb" font-size="12">Design</text></svg>

@@ -1,0 +1,830 @@
+/* =========================================================
+   SKILLSHARE — CALENDAR
+   Advanced responsive calendar UI
+   ========================================================= */
+
+:root {
+    --bg: #f5f7fb;
+    --surface: rgba(255, 255, 255, 0.92);
+    --surface-solid: #ffffff;
+    --text: #172033;
+    --muted: #718096;
+    --border: #e7ebf2;
+    --primary: #635bff;
+    --primary-dark: #5148e8;
+    --cyan: #06b6d4;
+    --cyan-dark: #0891b2;
+    --green: #16a34a;
+    --danger: #ef4444;
+    --shadow-sm: 0 5px 20px rgba(28, 39, 68, 0.06);
+    --shadow-md: 0 16px 45px rgba(28, 39, 68, 0.10);
+    --shadow-lg: 0 25px 70px rgba(28, 39, 68, 0.14);
+    --radius: 20px;
+    --transition: 0.25s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at 8% 5%, rgba(99, 91, 255, 0.08), transparent 28%),
+        radial-gradient(circle at 95% 20%, rgba(6, 182, 212, 0.07), transparent 25%),
+        var(--bg);
+    overflow-x: hidden;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.app-head {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 76px;
+    padding: 0 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(226, 231, 240, 0.85);
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+
+.app-brand b {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    color: white;
+    font-size: 21px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--primary), #8b5cf6);
+    box-shadow: 0 8px 20px rgba(99, 91, 255, 0.25);
+    transition: transform var(--transition);
+}
+
+.app-brand:hover b {
+    transform: rotate(12deg) scale(1.06);
+}
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.app-nav a {
+    position: relative;
+    padding: 9px 13px;
+    color: #667085;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all var(--transition);
+}
+
+.app-nav a::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    width: 0;
+    height: 2px;
+    border-radius: 10px;
+    background: var(--primary);
+    transform: translateX(-50%);
+    transition: width var(--transition);
+}
+
+.app-nav a:hover {
+    color: var(--primary);
+    background: rgba(99, 91, 255, 0.06);
+}
+
+.app-nav a:hover::after {
+    width: 55%;
+}
+
+.head-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.head-right>a:last-child {
+    display: flex;
+    align-items: center;
+}
+
+.head-right img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid white;
+    box-shadow: 0 5px 15px rgba(20, 30, 60, 0.12);
+    transition: all var(--transition);
+}
+
+.head-right img:hover {
+    transform: scale(1.07);
+    border-color: rgba(99, 91, 255, 0.4);
+}
+
+.bell {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    color: #596579;
+    text-decoration: none;
+    font-size: 22px;
+    border-radius: 12px;
+    transition: all var(--transition);
+}
+
+.bell:hover {
+    color: var(--primary);
+    background: rgba(99, 91, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.bell i {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    display: grid;
+    place-items: center;
+    color: white;
+    background: var(--danger);
+    border: 2px solid white;
+    border-radius: 50%;
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 800;
+}
+
+/* =========================================================
+   MAIN PAGE
+   ========================================================= */
+
+.page {
+    width: min(1400px, 92%);
+    margin: 0 auto;
+    padding: 48px 0 70px;
+}
+
+.page-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 30px;
+    margin-bottom: 32px;
+}
+
+.page-heading h1 {
+    font-size: clamp(30px, 4vw, 43px);
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    font-weight: 800;
+    background: linear-gradient(120deg, #151b2d, #635bff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.page-heading p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 15px;
+}
+
+/* =========================================================
+   PRIMARY BUTTON
+   ========================================================= */
+
+.primary {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 46px;
+    padding: 0 20px;
+    color: white;
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+    border-radius: 13px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 10px 25px rgba(99, 91, 255, 0.25);
+    transition:
+        transform var(--transition),
+        box-shadow var(--transition);
+}
+
+.primary::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.25),
+            transparent);
+    transform: skewX(-20deg);
+    transition: left 0.55s ease;
+}
+
+.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 32px rgba(99, 91, 255, 0.32);
+}
+
+.primary:hover::before {
+    left: 140%;
+}
+
+.primary:active {
+    transform: translateY(-1px);
+}
+
+/* =========================================================
+   MAIN LAYOUT
+   ========================================================= */
+
+.cal-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 24px;
+    align-items: start;
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid rgba(226, 231, 240, 0.9);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+/* =========================================================
+   CALENDAR
+   ========================================================= */
+
+.calendar-scroll {
+    overflow: hidden;
+    min-width: 0;
+}
+
+.calendar-head {
+    min-height: 82px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+}
+
+.calendar-head h2 {
+    font-size: 19px;
+    letter-spacing: -0.3px;
+}
+
+.month-nav {
+    display: flex;
+    gap: 8px;
+}
+
+.month-nav button {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border);
+    background: white;
+    color: #556070;
+    border-radius: 11px;
+    cursor: pointer;
+    font-size: 18px;
+    display: grid;
+    place-items: center;
+    transition: all var(--transition);
+}
+
+.month-nav button:hover {
+    color: white;
+    border-color: var(--primary);
+    background: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 7px 17px rgba(99, 91, 255, 0.22);
+}
+
+.month-nav button:active {
+    transform: translateY(0);
+}
+
+/* =========================================================
+   CALENDAR GRID
+   ========================================================= */
+
+.week {
+    display: grid;
+    grid-template-columns: 75px repeat(5, minmax(130px, 1fr));
+    min-width: 725px;
+    position: relative;
+    background: white;
+}
+
+.week>div {
+    min-height: 115px;
+    border-right: 1px solid #edf0f5;
+    border-bottom: 1px solid #edf0f5;
+}
+
+.week>div:nth-child(6n) {
+    border-right: 0;
+}
+
+.week .day {
+    min-height: 62px;
+    padding: 18px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c7688;
+    background: #fafbfe;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.week .day:first-of-type {
+    color: var(--primary);
+    background: rgba(99, 91, 255, 0.06);
+}
+
+.week .time {
+    min-height: 115px;
+    padding-top: 16px;
+    padding-right: 13px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    color: #8a94a6;
+    background: #fbfcfe;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* =========================================================
+   EVENTS
+   ========================================================= */
+
+.event {
+    position: relative;
+    margin: 12px 8px;
+    padding: 12px 13px;
+    min-height: 70px;
+    overflow: hidden;
+    color: #4338ca;
+    background: linear-gradient(135deg,
+            rgba(99, 91, 255, 0.12),
+            rgba(139, 92, 246, 0.07));
+    border: 1px solid rgba(99, 91, 255, 0.18);
+    border-left: 4px solid var(--primary);
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 1.55;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(99, 91, 255, 0.08);
+    transition:
+        transform var(--transition),
+        box-shadow var(--transition),
+        border-color var(--transition);
+}
+
+.event::after {
+    content: "";
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.event:hover {
+    z-index: 5;
+    transform: translateY(-4px) scale(1.015);
+    box-shadow: 0 13px 25px rgba(70, 70, 130, 0.15);
+    border-color: rgba(99, 91, 255, 0.4);
+}
+
+.event.cyan {
+    color: #0e7490;
+    background: linear-gradient(135deg,
+            rgba(6, 182, 212, 0.13),
+            rgba(34, 211, 238, 0.06));
+    border-color: rgba(6, 182, 212, 0.18);
+    border-left-color: var(--cyan);
+}
+
+.event.cyan:hover {
+    border-color: rgba(6, 182, 212, 0.4);
+}
+
+/* =========================================================
+   UPCOMING PANEL
+   ========================================================= */
+
+.upcoming {
+    padding: 24px;
+    position: sticky;
+    top: 100px;
+}
+
+.upcoming h2 {
+    margin-bottom: 18px;
+    font-size: 19px;
+    letter-spacing: -0.3px;
+}
+
+.up {
+    position: relative;
+    padding: 17px 15px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg,
+            #ffffff,
+            #fafbff);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.up:last-child {
+    margin-bottom: 0;
+}
+
+.up::before {
+    content: "";
+    position: absolute;
+    top: 15px;
+    left: 0;
+    width: 3px;
+    height: calc(100% - 30px);
+    border-radius: 10px;
+    background: var(--primary);
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+
+.up:hover {
+    transform: translateX(5px);
+    border-color: rgba(99, 91, 255, 0.25);
+    box-shadow: var(--shadow-sm);
+}
+
+.up:hover::before {
+    opacity: 1;
+}
+
+.up strong {
+    display: block;
+    color: #252d3d;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.up p {
+    margin-top: 7px;
+    color: #8791a2;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   ACTIVE / SELECTED STATES
+   ========================================================= */
+
+.up.active {
+    border-color: rgba(99, 91, 255, 0.35);
+    background: rgba(99, 91, 255, 0.045);
+    transform: translateX(5px);
+}
+
+.up.active::before {
+    opacity: 1;
+}
+
+.event.active {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 14px 28px rgba(99, 91, 255, 0.2);
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.calendar-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cdd3df transparent;
+}
+
+.calendar-scroll::-webkit-scrollbar {
+    height: 7px;
+}
+
+.calendar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.calendar-scroll::-webkit-scrollbar-thumb {
+    background: #cdd3df;
+    border-radius: 10px;
+}
+
+.calendar-scroll::-webkit-scrollbar-thumb:hover {
+    background: #aeb7c7;
+}
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.calendar-toast {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+    z-index: 999;
+    max-width: 330px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    background: rgba(24, 31, 48, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 13px;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(12px);
+    font-size: 13px;
+    font-weight: 600;
+    animation: toastIn 0.35s ease forwards;
+}
+
+.calendar-toast.hide {
+    animation: toastOut 0.3s ease forwards;
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+/* =========================================================
+   PAGE ANIMATION
+   ========================================================= */
+
+.page-heading,
+.cal-layout {
+    animation: pageEnter 0.55s ease both;
+}
+
+.cal-layout {
+    animation-delay: 0.08s;
+}
+
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1050px) {
+    .app-head {
+        padding: 0 3%;
+    }
+
+    .app-nav {
+        gap: 2px;
+    }
+
+    .app-nav a {
+        padding: 8px 9px;
+    }
+
+    .cal-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .upcoming {
+        position: static;
+    }
+
+    .upcoming {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .upcoming h2 {
+        grid-column: 1 / -1;
+        margin-bottom: 0;
+    }
+
+    .up {
+        margin: 0;
+    }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 720px) {
+    .app-head {
+        height: 68px;
+        padding: 0 16px;
+    }
+
+    .app-brand {
+        font-size: 18px;
+    }
+
+    .app-brand b {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+
+    .app-nav {
+        display: none;
+    }
+
+    .head-right {
+        gap: 7px;
+    }
+
+    .head-right img,
+    .bell {
+        width: 36px;
+        height: 36px;
+    }
+
+    .page {
+        width: calc(100% - 28px);
+        padding: 30px 0 50px;
+    }
+
+    .page-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .page-heading h1 {
+        font-size: 32px;
+    }
+
+    .primary {
+        width: 100%;
+    }
+
+    .calendar-head {
+        padding: 0 17px;
+    }
+
+    .calendar-head h2 {
+        font-size: 16px;
+    }
+
+    .upcoming {
+        grid-template-columns: 1fr;
+    }
+
+    .upcoming h2 {
+        grid-column: auto;
+    }
+
+    .calendar-toast {
+        right: 14px;
+        left: 14px;
+        bottom: 14px;
+        max-width: none;
+    }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+    .page-heading h1 {
+        font-size: 28px;
+    }
+
+    .page-heading p {
+        font-size: 13px;
+    }
+
+    .calendar-head {
+        min-height: 70px;
+    }
+
+    .month-nav button {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

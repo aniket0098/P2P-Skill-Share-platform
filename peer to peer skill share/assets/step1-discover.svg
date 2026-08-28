@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 250">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#6d28d9"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs>
+<rect width="420" height="250" rx="28" fill="#0b1028"/>
+<circle cx="210" cy="112" r="74" fill="#171642"/>
+<circle cx="210" cy="112" r="53" fill="none" stroke="url(#g)" stroke-width="14"/>
+<path d="M249 151l43 43" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+<circle cx="210" cy="112" r="17" fill="#9d6cff" opacity=".8"/>
+<circle cx="76" cy="58" r="8" fill="#22d3ee"/><circle cx="342" cy="74" r="6" fill="#a855f7"/>
+<text x="210" y="224" fill="#e9e7ff" font-size="22" text-anchor="middle" font-family="Arial">DISCOVER</text></svg>

@@ -1,0 +1,1514 @@
+/* =========================================================
+   SKILLSHARE SIGNUP PAGE
+   Advanced UI / Hover / Scroll / Animation Effects
+========================================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+:root {
+    --purple: #6740ef;
+    --purple-light: #8d68ff;
+    --purple-dark: #4f2dd4;
+
+    --text: #171b2c;
+    --muted: #737c91;
+
+    --border: #e7e7f0;
+    --green: #35c777;
+
+    --shadow: 0 25px 70px rgba(70, 52, 150, .15);
+}
+
+body {
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    min-height: 100vh;
+
+    display: grid;
+    place-items: center;
+
+    padding: 25px;
+
+    color: var(--text);
+
+    background:
+        radial-gradient(circle at 10% 10%,
+            #e8e1ff,
+            transparent 30%),
+        radial-gradient(circle at 90% 90%,
+            #e5ddff,
+            transparent 30%),
+        #f7f6ff;
+
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   LINKS
+========================================================= */
+
+a {
+    color: var(--purple);
+
+    font-weight: 700;
+
+    text-decoration: none;
+
+    transition:
+        color .25s ease,
+        opacity .25s ease;
+}
+
+a:hover {
+    color: var(--purple-dark);
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
+
+.shell {
+    width: min(1300px, 96vw);
+
+    min-height: 750px;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr);
+
+    background: #fff;
+
+    border-radius: 28px;
+
+    overflow: hidden;
+
+    position: relative;
+
+    box-shadow: var(--shadow);
+
+    animation:
+        pageEnter .8s cubic-bezier(.2, .8, .2, 1);
+}
+
+
+/* Entrance animation */
+
+@keyframes pageEnter {
+
+    from {
+        opacity: 0;
+        transform:
+            translateY(25px) scale(.98);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0) scale(1);
+    }
+}
+
+
+/* =========================================================
+   LEFT FORM PANEL
+========================================================= */
+
+.form-panel {
+    padding: 34px 7%;
+
+    background:
+        linear-gradient(145deg,
+            #ffffff,
+            #fcfbff);
+}
+
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+.topbar {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    font-size: 12px;
+
+    color: var(--muted);
+}
+
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.brand {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    color: var(--text);
+
+    font-size: 20px;
+
+    font-weight: 800;
+
+    text-decoration: none;
+}
+
+.brand b {
+    width: 33px;
+    height: 33px;
+
+    display: grid;
+
+    place-items: center;
+
+    color: white;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(135deg,
+            var(--purple),
+            var(--purple-light));
+
+    box-shadow:
+        0 8px 20px rgba(103, 64, 239, .3);
+
+    transition:
+        transform .35s ease,
+        box-shadow .35s ease;
+}
+
+.brand:hover b {
+    transform:
+        rotate(-8deg) scale(1.08);
+
+    box-shadow:
+        0 12px 28px rgba(103, 64, 239, .4);
+}
+
+
+/* =========================================================
+   FORM WRAPPER
+========================================================= */
+
+.form-wrap {
+    max-width: 520px;
+
+    margin: 80px auto 0;
+
+    animation:
+        contentReveal .8s .15s both;
+}
+
+@keyframes contentReveal {
+
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* =========================================================
+   HEADING
+========================================================= */
+
+.eyebrow {
+    font-size: 10px;
+
+    letter-spacing: .16em;
+
+    color: var(--purple);
+
+    font-weight: 800;
+}
+
+.form-wrap h1 {
+    margin-top: 12px;
+
+    font-size: 40px;
+
+    line-height: 1.12;
+
+    letter-spacing: -1.5px;
+}
+
+.form-wrap h1 em {
+    color: var(--purple);
+
+    font-style: normal;
+
+    background:
+        linear-gradient(90deg,
+            var(--purple),
+            #9b78ff);
+
+    background-clip: text;
+
+    -webkit-background-clip: text;
+
+    color: transparent;
+
+    background-size: 200%;
+
+    animation:
+        gradientText 4s ease infinite;
+}
+
+@keyframes gradientText {
+
+    0% {
+        background-position: 0%;
+    }
+
+    50% {
+        background-position: 100%;
+    }
+
+    100% {
+        background-position: 0%;
+    }
+}
+
+.form-wrap>p {
+    margin-top: 10px;
+
+    color: var(--muted);
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   SOCIAL BUTTONS
+========================================================= */
+
+.socials {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 10px;
+
+    margin-top: 30px;
+}
+
+.socials button {
+    height: 48px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 11px;
+
+    background: #fff;
+
+    color: #303649;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    position: relative;
+
+    overflow: hidden;
+
+    transition:
+        transform .3s cubic-bezier(.2, .8, .2, 1),
+        box-shadow .3s ease,
+        border-color .3s ease,
+        background .3s ease;
+}
+
+
+/* Shine effect */
+
+.socials button::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: -120%;
+
+    width: 80%;
+
+    height: 100%;
+
+    background:
+        linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, .8),
+            transparent);
+
+    transform: skewX(-20deg);
+
+    transition: left .65s ease;
+}
+
+.socials button:hover::before {
+    left: 140%;
+}
+
+.socials button:hover {
+    transform:
+        translateY(-4px) scale(1.01);
+
+    border-color: #d2cafb;
+
+    background: #fcfbff;
+
+    box-shadow:
+        0 14px 30px rgba(78, 53, 190, .12);
+}
+
+.socials button:active {
+    transform:
+        translateY(-1px) scale(.97);
+}
+
+
+/* =========================================================
+   DIVIDER
+========================================================= */
+
+.divider {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin: 25px 0;
+
+    color: #9299aa;
+
+    font-size: 11px;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+
+    height: 1px;
+
+    flex: 1;
+
+    background:
+        linear-gradient(90deg,
+            transparent,
+            var(--border));
+}
+
+
+/* =========================================================
+   INPUT FIELDS
+========================================================= */
+
+.field {
+    height: 56px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 0 15px;
+
+    margin-top: 11px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 11px;
+
+    background: #fff;
+
+    color: #8b92a4;
+
+    position: relative;
+
+    overflow: hidden;
+
+    transition:
+        border-color .3s ease,
+        box-shadow .3s ease,
+        transform .3s ease,
+        background .3s ease;
+}
+
+
+/* Animated top border */
+
+.field::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    bottom: 0;
+
+    width: 0;
+
+    height: 2px;
+
+    background:
+        linear-gradient(90deg,
+            var(--purple),
+            #9b78ff);
+
+    transition: width .4s ease;
+}
+
+.field:focus-within::before {
+    width: 100%;
+}
+
+.field:focus-within {
+    border-color: #917af3;
+
+    background: #fff;
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 0 0 4px rgba(103, 64, 239, .08),
+
+        0 12px 30px rgba(103, 64, 239, .08);
+}
+
+.field input {
+    width: 100%;
+
+    border: 0;
+
+    outline: 0;
+
+    background: transparent;
+
+    color: var(--text);
+
+    font-size: 13px;
+}
+
+.field input::placeholder {
+    color: #9299aa;
+
+    transition:
+        opacity .25s ease,
+        transform .25s ease;
+}
+
+.field:focus-within input::placeholder {
+    opacity: .5;
+
+    transform:
+        translateX(4px);
+}
+
+.field button {
+    border: 0;
+
+    background: transparent;
+
+    color: #8b92a4;
+
+    cursor: pointer;
+
+    transition:
+        color .25s ease,
+        transform .25s ease;
+}
+
+.field button:hover {
+    color: var(--purple);
+
+    transform: scale(1.15);
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.error {
+    display: block;
+
+    min-height: 14px;
+
+    padding: 4px;
+
+    color: #df5050;
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   PASSWORD STRENGTH
+========================================================= */
+
+.strength {
+    margin: 10px 3px;
+
+    color: #7b8396;
+
+    font-size: 10px;
+}
+
+.strength>span:nth-child(2) {
+    float: right;
+}
+
+.strength b {
+    color: #d39129;
+
+    transition: color .3s ease;
+}
+
+.strength i {
+    display: block;
+
+    height: 5px;
+
+    margin-top: 7px;
+
+    overflow: hidden;
+
+    border-radius: 10px;
+
+    background: #eeeef4;
+}
+
+.strength u {
+    display: block;
+
+    width: 0;
+
+    height: 100%;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(90deg,
+            #f0a12f,
+            var(--green));
+
+    transition:
+        width .4s cubic-bezier(.2, .8, .2, 1);
+}
+
+
+/* =========================================================
+   TERMS
+========================================================= */
+
+.terms {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 18px;
+
+    color: #697287;
+
+    font-size: 11px;
+
+    cursor: pointer;
+
+    transition: color .2s ease;
+}
+
+.terms:hover {
+    color: #4e566b;
+}
+
+.terms input {
+    display: none;
+}
+
+.terms>span {
+    width: 17px;
+    height: 17px;
+
+    display: grid;
+
+    place-items: center;
+
+    flex-shrink: 0;
+
+    border:
+        1px solid #d8d9e5;
+
+    border-radius: 4px;
+
+    color: transparent;
+
+    transition:
+        background .25s ease,
+        border-color .25s ease,
+        transform .25s ease;
+}
+
+.terms input:checked+span {
+    color: #fff;
+
+    background: var(--purple);
+
+    border-color: var(--purple);
+
+    transform: scale(1.08);
+
+    box-shadow:
+        0 5px 15px rgba(103, 64, 239, .3);
+}
+
+
+/* =========================================================
+   CREATE ACCOUNT BUTTON
+========================================================= */
+
+.create {
+    width: 100%;
+
+    height: 58px;
+
+    margin-top: 22px;
+
+    border: 0;
+
+    border-radius: 13px;
+
+    position: relative;
+
+    overflow: hidden;
+
+    color: white;
+
+    background:
+        linear-gradient(100deg,
+            #5c32ed,
+            #8d65ff,
+            #5c32ed);
+
+    background-size: 200% 100%;
+
+    box-shadow:
+        0 14px 30px rgba(103, 64, 239, .25);
+
+    cursor: pointer;
+
+    font-weight: 700;
+
+    transition:
+        transform .3s cubic-bezier(.2, .8, .2, 1),
+        box-shadow .3s ease,
+        background-position .6s ease;
+}
+
+
+/* Moving gradient */
+
+.create:hover {
+    transform:
+        translateY(-4px);
+
+    background-position:
+        100% 0;
+
+    box-shadow:
+        0 20px 42px rgba(103, 64, 239, .38);
+}
+
+
+/* Press */
+
+.create:active {
+    transform:
+        translateY(-1px) scale(.98);
+
+    box-shadow:
+        0 8px 18px rgba(103, 64, 239, .25);
+}
+
+
+/* Arrow circle */
+
+.create>b {
+    position: absolute;
+
+    right: 8px;
+    top: 8px;
+
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 255, 255, .15);
+
+    font-size: 20px;
+
+    transition:
+        transform .35s ease,
+        background .35s ease;
+}
+
+.create:hover>b {
+    transform:
+        translateX(4px) rotate(-5deg);
+
+    background:
+        rgba(255, 255, 255, .25);
+}
+
+
+/* Button shine */
+
+.create>i {
+    position: absolute;
+
+    inset: 0;
+
+    transform:
+        translateX(-130%) skewX(-20deg);
+
+    background:
+        linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, .35),
+            transparent);
+
+    transition:
+        transform .8s ease;
+}
+
+.create:hover>i {
+    transform:
+        translateX(130%) skewX(-20deg);
+}
+
+
+/* Loading / success states (added: used by signup.js) */
+
+.create:disabled {
+    cursor: not-allowed;
+    opacity: .9;
+}
+
+.create.loading {
+    background:
+        linear-gradient(100deg, #7a5bf0, #8d65ff, #7a5bf0);
+}
+
+.create.success {
+    background:
+        linear-gradient(100deg, #25a85f, #35c777, #25a85f);
+    box-shadow:
+        0 14px 30px rgba(53, 199, 119, .3);
+}
+
+
+/* =========================================================
+   SECURITY MESSAGE
+========================================================= */
+
+.safe {
+    margin-top: 18px;
+
+    text-align: center;
+
+    color: #858da0;
+
+    font-size: 10px;
+
+    transition:
+        color .25s ease,
+        transform .25s ease;
+}
+
+.safe:hover {
+    color: var(--purple);
+
+    transform:
+        translateY(-2px);
+}
+
+
+/* =========================================================
+   RIGHT VISUAL PANEL
+========================================================= */
+
+.visual {
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 70px 10%;
+
+    color: white;
+
+    background:
+        linear-gradient(145deg,
+            #d9ccff 0%,
+            #8463ef 45%,
+            #4f3bdc 100%);
+}
+
+
+/* Animated background glow */
+
+.visual::before {
+    content: "";
+
+    position: absolute;
+
+    width: 400px;
+    height: 400px;
+
+    left: -180px;
+    top: 100px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 255, 255, .08);
+
+    filter: blur(5px);
+
+    animation:
+        glowMove 7s ease-in-out infinite;
+}
+
+@keyframes glowMove {
+
+    0%,
+    100% {
+        transform:
+            translate(0, 0) scale(1);
+    }
+
+    50% {
+        transform:
+            translate(70px, 30px) scale(1.15);
+    }
+}
+
+
+/* =========================================================
+   DOT PATTERN
+========================================================= */
+
+.dots {
+    position: absolute;
+
+    right: 25px;
+    top: 25px;
+
+    width: 120px;
+    height: 90px;
+
+    opacity: .45;
+
+    background-image:
+        radial-gradient(#fff 1px,
+            transparent 1px);
+
+    background-size: 16px 16px;
+
+    animation:
+        dotsFloat 5s ease-in-out infinite;
+}
+
+@keyframes dotsFloat {
+
+    50% {
+        transform:
+            translateY(8px);
+    }
+}
+
+
+/* =========================================================
+   FLOATING CARD
+========================================================= */
+
+.card {
+    background:
+        rgba(255, 255, 255, .94);
+
+    color: var(--text);
+
+    border-radius: 17px;
+
+    box-shadow:
+        0 25px 50px rgba(50, 34, 155, .18);
+
+    backdrop-filter:
+        blur(12px);
+
+    transition:
+        transform .35s ease,
+        box-shadow .35s ease;
+}
+
+.card:hover {
+    box-shadow:
+        0 30px 65px rgba(40, 25, 140, .28);
+}
+
+
+/* =========================================================
+   PROGRESS CARD
+========================================================= */
+
+.progress {
+    position: relative;
+
+    z-index: 2;
+
+    padding: 17px;
+
+    animation:
+        floatCard 5s ease-in-out infinite;
+}
+
+.progress:hover {
+    transform:
+        translateY(-8px) rotate(.5deg);
+}
+
+@keyframes floatCard {
+
+    0%,
+    100% {
+        transform:
+            translateY(0);
+    }
+
+    50% {
+        transform:
+            translateY(-9px);
+    }
+}
+
+
+/* =========================================================
+   MINI PROFILE
+========================================================= */
+
+.mini {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+.mini>b {
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 11px;
+
+    color: white;
+
+    background:
+        linear-gradient(135deg,
+            #ffc94f,
+            #ee8a47);
+}
+
+.mini strong,
+.mini small {
+    display: block;
+}
+
+.mini strong {
+    font-size: 12px;
+}
+
+.mini small {
+    margin-top: 3px;
+
+    color: #8790a4;
+
+    font-size: 9px;
+}
+
+
+/* =========================================================
+   MINI CHART
+========================================================= */
+
+.chart {
+    margin-top: 15px;
+
+    padding: 14px;
+
+    border-radius: 12px;
+
+    background: #fafaff;
+}
+
+.chart>strong {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    font-size: 10px;
+}
+
+.chart>strong b {
+    padding: 4px 7px;
+
+    border-radius: 6px;
+
+    color: white;
+
+    background: #292542;
+}
+
+.chart>div {
+    height: 70px;
+
+    display: flex;
+
+    align-items: flex-end;
+
+    gap: 8px;
+
+    margin: 9px 0;
+}
+
+.chart i {
+    width: 10%;
+
+    border-radius:
+        8px 8px 2px 2px;
+
+    background:
+        linear-gradient(#8c69ff,
+            #5c39ed);
+
+    transform-origin: bottom;
+
+    animation:
+        chartGrow .9s cubic-bezier(.2, .8, .2, 1) backwards;
+
+    transition:
+        filter .25s ease,
+        transform .25s ease;
+}
+
+.chart i:hover {
+    transform:
+        scaleY(1.08);
+
+    filter:
+        brightness(1.15);
+}
+
+.chart i:nth-child(1) {
+    height: 25%;
+    animation-delay: .1s;
+}
+
+.chart i:nth-child(2) {
+    height: 42%;
+    animation-delay: .2s;
+}
+
+.chart i:nth-child(3) {
+    height: 32%;
+    animation-delay: .3s;
+}
+
+.chart i:nth-child(4) {
+    height: 58%;
+    animation-delay: .4s;
+}
+
+.chart i:nth-child(5) {
+    height: 48%;
+    animation-delay: .5s;
+}
+
+.chart i:nth-child(6) {
+    height: 76%;
+    animation-delay: .6s;
+}
+
+.chart i:nth-child(7) {
+    height: 92%;
+    animation-delay: .7s;
+}
+
+@keyframes chartGrow {
+
+    from {
+        transform:
+            scaleY(0);
+    }
+
+    to {
+        transform:
+            scaleY(1);
+    }
+}
+
+.chart small {
+    color: var(--green);
+
+    font-size: 9px;
+}
+
+
+/* =========================================================
+   ACHIEVEMENT CARD
+========================================================= */
+
+.achievement {
+    width: max-content;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 11px 16px;
+
+    margin: 14px auto;
+
+    animation:
+        achievementFloat 4.5s ease-in-out infinite;
+}
+
+.achievement:hover {
+    transform:
+        translateY(-6px) scale(1.03);
+}
+
+@keyframes achievementFloat {
+
+    0%,
+    100% {
+        transform:
+            translateY(0);
+    }
+
+    50% {
+        transform:
+            translateY(-7px);
+    }
+}
+
+.achievement>span {
+    font-size: 20px;
+
+    color: #efa51e;
+
+    transition:
+        transform .3s ease;
+}
+
+.achievement:hover>span {
+    transform:
+        rotate(20deg) scale(1.2);
+}
+
+.achievement strong,
+.achievement small {
+    display: block;
+}
+
+.achievement strong {
+    font-size: 10px;
+}
+
+.achievement small {
+    margin-top: 3px;
+
+    color: #8991a4;
+
+    font-size: 9px;
+}
+
+
+/* =========================================================
+   HERO CONTENT
+========================================================= */
+
+.hero {
+    position: relative;
+
+    z-index: 2;
+
+    margin-top: 52px;
+
+    animation:
+        heroReveal .9s .3s both;
+}
+
+@keyframes heroReveal {
+
+    from {
+        opacity: 0;
+        transform:
+            translateY(25px);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0);
+    }
+}
+
+.hero h2 {
+    font-size: 43px;
+
+    letter-spacing: -1.7px;
+}
+
+.hero h2 b {
+    color: #ffd34f;
+}
+
+.hero h2 em {
+    color: #64e19d;
+
+    font-style: normal;
+}
+
+.hero>p {
+    max-width: 430px;
+
+    margin: 12px 0 28px;
+
+    color: rgba(255, 255, 255, .85);
+
+    font-size: 13px;
+
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   BENEFIT CARDS
+========================================================= */
+
+.hero article {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    margin: 19px 0;
+
+    padding: 9px;
+
+    border-radius: 14px;
+
+    transition:
+        transform .3s ease,
+        background .3s ease;
+}
+
+.hero article:hover {
+    transform:
+        translateX(8px);
+
+    background:
+        rgba(255, 255, 255, .08);
+}
+
+.hero article>b {
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+
+    place-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 255, 255, .18);
+
+    transition:
+        transform .35s ease;
+}
+
+.hero article:hover>b {
+    transform:
+        scale(1.12) rotate(-6deg);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .shell {
+        grid-template-columns: 1fr;
+    }
+
+    .visual {
+        display: none;
+    }
+
+}
+
+
+/* =========================================================
+   ADDED: RIPPLE EFFECT
+   (created dynamically by signup.js as
+    <span class="ripple"> inside any button)
+========================================================= */
+
+button {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple {
+    position: absolute;
+
+    width: 12px;
+    height: 12px;
+
+    margin-left: -6px;
+    margin-top: -6px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, .55);
+
+    transform: scale(0);
+
+    pointer-events: none;
+
+    animation: rippleEffect .6s ease-out;
+}
+
+@keyframes rippleEffect {
+
+    to {
+        transform: scale(18);
+        opacity: 0;
+    }
+
+}
+
+
+/* =========================================================
+   ADDED: TOAST NOTIFICATIONS
+   (created dynamically by signup.js as
+    <div id="signupToast" class="signup-toast TYPE">)
+========================================================= */
+
+.signup-toast {
+    position: fixed;
+
+    bottom: 28px;
+    left: 50%;
+
+    transform: translate(-50%, 20px);
+
+    padding: 13px 22px;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: #fff;
+
+    background: #292542;
+
+    box-shadow: 0 18px 40px rgba(30, 20, 70, .28);
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    z-index: 999;
+
+    transition:
+        opacity .3s ease,
+        transform .3s ease;
+
+    max-width: 90vw;
+    text-align: center;
+}
+
+.signup-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.signup-toast.success {
+    background: linear-gradient(100deg, #25a85f, #35c777);
+}
+
+.signup-toast.error {
+    background: linear-gradient(100deg, #d64545, #ef6a6a);
+}
+
+.signup-toast.info {
+    background: linear-gradient(100deg, #4a3fc9, #6740ef);
+}

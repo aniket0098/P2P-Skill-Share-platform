@@ -1,0 +1,477 @@
+﻿ 
+ <!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Dashboard — SkillShare</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- CSS -->
+   
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body data-page="dashboard">
+
+    <!-- =========================
+         SIDEBAR
+    ========================== -->
+    <div id="app-sidebar"></div>
+
+    <!-- =========================
+         MAIN APPLICATION
+    ========================== -->
+    <div class="app-main">
+
+        <!-- Top Navigation -->
+        <div id="app-topbar"></div>
+
+        <!-- =========================
+             PAGE CONTENT
+        ========================== -->
+        <main class="page-content">
+
+            <!-- Welcome Section -->
+            <section class="welcome-row">
+                <div>
+                    <h1>
+                        Welcome back,
+                        <span>Admin</span> 👋
+                    </h1>
+
+                    <p>
+                        Ready to learn, share and grow today?
+                    </p>
+                </div>
+            </section>
+
+
+            <!-- =========================
+                 SEARCH + FILTER BAR
+            ========================== -->
+            <section class="search-shell">
+
+                <div class="search-box">
+                    <span>⌕</span>
+
+                    <input
+                        id="globalSearch"
+                        type="text"
+                        placeholder="Search skills, mentors, courses..."
+                    >
+
+                    <button id="searchBtn">
+                        Search
+                    </button>
+                </div>
+
+
+                <!-- Category -->
+                <select id="categorySelect">
+                    <option value="">Categories</option>
+                    <option>Programming</option>
+                    <option>Design</option>
+                    <option>Marketing</option>
+                    <option>Communication</option>
+                    <option>Data Science</option>
+                    <option>Languages</option>
+                </select>
+
+
+                <!-- Skill Level -->
+                <select id="levelSelect">
+                    <option value="">Skill Level</option>
+                    <option>Beginner</option>
+                    <option>Intermediate</option>
+                    <option>Advanced</option>
+                </select>
+
+
+                <!-- Filters -->
+                <button
+                    class="btn ghost"
+                    id="filterBtn"
+                >
+                    ☷ Filters
+                </button>
+
+            </section>
+
+
+            <!-- =========================
+                 TRENDING SKILLS
+            ========================== -->
+            <section class="section">
+
+                <div class="section-head">
+
+                    <div>
+                        <h2>
+                            🔥 Trending Skills
+                        </h2>
+
+                        <p>
+                            Most learners are learning these skills right now
+                        </p>
+                    </div>
+
+                    <a href="explore.html">
+                        View All
+                    </a>
+
+                </div>
+
+
+                <!-- Skills generated dynamically -->
+                <div
+                    class="skill-grid"
+                    id="trendingSkills"
+                ></div>
+
+            </section>
+
+
+            <!-- =========================
+                 MAIN DASHBOARD GRID
+            ========================== -->
+            <section class="three-grid">
+
+
+                <!-- =========================
+                     LIVE LEARNING
+                ========================== -->
+                <div class="panel live-panel">
+
+                    <div class="section-head">
+
+                        <div>
+                            <h2>
+                                Live Learning
+                            </h2>
+
+                            <p>
+                                Recommended live session for you
+                            </p>
+                        </div>
+
+                        <span class="live-badge">
+                            ● Live Now
+                        </span>
+
+                    </div>
+
+
+                    <div class="live-card">
+
+                        <div class="avatar big">
+                            RS
+                        </div>
+
+
+                        <div>
+
+                            <h3>
+                                Master Python Basics
+                            </h3>
+
+                            <p>
+                                by Rahul Sharma
+                            </p>
+
+                            <span class="tag">
+                                Python
+                            </span>
+
+                        </div>
+
+
+                        <button
+                            class="btn primary"
+                            onclick="location.href='live-learn.html?session=python'"
+                        >
+                            Join Live
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================
+                     GROUP DISCUSSIONS
+                ========================== -->
+                <div class="panel">
+
+                    <div class="section-head">
+
+                        <div>
+
+                            <h2>
+                                Discussion with Groups
+                            </h2>
+
+                            <p>
+                                Upcoming peer-to-peer sessions
+                            </p>
+
+                        </div>
+
+                        <a href="discussion.html">
+                            View All
+                        </a>
+
+                    </div>
+
+
+                    <!-- Discussion cards populated by JS -->
+                    <div id="discussionPreview"></div>
+
+                </div>
+
+
+
+                <!-- =========================
+                     CONTINUE LEARNING
+                ========================== -->
+                <div class="panel">
+
+                    <div class="section-head">
+
+                        <div>
+
+                            <h2>
+                                Continue Learning
+                            </h2>
+
+                            <p>
+                                Pick up where you left off
+                            </p>
+
+                        </div>
+
+                        <a href="my-learning.html">
+                            View All
+                        </a>
+
+                    </div>
+
+
+                    <!-- Learning progress populated by JS -->
+                    <div id="continueLearning"></div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =========================
+                 LOWER DASHBOARD GRID
+            ========================== -->
+            <section class="three-grid lower">
+
+
+                <!-- =========================
+                     LEARNING PROGRESS
+                ========================== -->
+                <div class="panel">
+
+                    <div class="section-head">
+
+                        <h2>
+                            Learning Progress Overview
+                        </h2>
+
+                        <select>
+                            <option>
+                                This Month
+                            </option>
+                        </select>
+
+                    </div>
+
+
+                    <!-- Metrics -->
+                    <div class="metric-grid">
+
+                        <div>
+                            <b>24</b>
+                            <span>
+                                Skills Learned
+                            </span>
+                        </div>
+
+
+                        <div>
+                            <b>3</b>
+                            <span>
+                                Active Learning
+                            </span>
+                        </div>
+
+
+                        <div>
+                            <b>15</b>
+                            <span>
+                                Completed
+                            </span>
+                        </div>
+
+
+                        <div>
+                            <b>12 🔥</b>
+                            <span>
+                                Day Streak
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <!-- Credit Activity -->
+                    <div class="credit-chart">
+
+                        <div>
+                            <b>
+                                +1000
+                            </b>
+
+                            <span>
+                                Credits earned this month
+                            </span>
+                        </div>
+
+
+                        <div class="bars">
+                            ▂ ▅ ▃ ▆ ▄ ▇ ▅ ▆ ▃ ▇
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================
+                     RECENTLY ADDED SKILLS
+                ========================== -->
+                <div class="panel">
+
+                    <div class="section-head">
+
+                        <h2>
+                            Recently Added Skills
+                        </h2>
+
+                        <a href="explore.html">
+                            View All
+                        </a>
+
+                    </div>
+
+
+                    <!-- Generated by JavaScript -->
+                    <div id="recentSkills"></div>
+
+                </div>
+
+
+
+                <!-- =========================
+                     COMMUNITY SPOTLIGHT
+                ========================== -->
+                <div class="panel community-spotlight">
+
+                    <div class="section-head">
+
+                        <h2>
+                            Community Spotlight
+                        </h2>
+
+                        <a href="community.html">
+                            View All
+                        </a>
+
+                    </div>
+
+
+                    <div class="spotlight">
+
+                        <div class="avatar xl">
+                            MJ
+                        </div>
+
+
+                        <div>
+
+                            <h3>
+                                Meera Joshi
+                            </h3>
+
+                            <p>
+                                Top Skill Sharer
+                            </p>
+
+                            <p>
+                                Helping 250+ learners grow their Design skills.
+                            </p>
+
+
+                            <button
+                                class="btn ghost follow-btn"
+                                data-user="Meera Joshi"
+                            >
+                                Follow
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+
+    <!-- =========================
+         GLOBAL UI CONTAINERS
+    ========================== -->
+
+    <!-- Modal container -->
+    <div id="modal-root"></div>
+
+    <!-- Toast notification container -->
+    <div id="toast-root"></div>
+
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================== -->
+
+    <!-- Global application logic -->
+    <script src="app.js"></script>
+
+    <!-- Dashboard-specific logic -->
+    <script src="dashboard.js"></script>
+
+</body>
+</html>
+
+

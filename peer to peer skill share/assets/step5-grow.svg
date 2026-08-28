@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 250">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+<rect width="420" height="250" rx="28" fill="#0b1028"/>
+<path d="M105 177h45v-40h45v40h45V92h45v85h30" fill="none" stroke="url(#g)" stroke-width="20" stroke-linejoin="round"/>
+<path d="M104 177h245" stroke="#6b7280" stroke-width="4"/>
+<path d="M210 63l10 20 22 3-16 15 4 22-20-10-20 10 4-22-16-15 22-3z" fill="#facc15"/>
+<text x="210" y="224" fill="#e9e7ff" font-size="22" text-anchor="middle" font-family="Arial">GROW TOGETHER</text></svg>

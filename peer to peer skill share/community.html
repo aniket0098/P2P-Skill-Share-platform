@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillShare — Community</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- Community CSS -->
+    <link rel="stylesheet" href="community.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         BACKGROUND EFFECTS
+    ========================== -->
+
+    <div class="cursor-glow"></div>
+
+    <div class="background-effects">
+        <span class="orb orb-1"></span>
+        <span class="orb orb-2"></span>
+        <span class="orb orb-3"></span>
+
+        <div class="particles"></div>
+    </div>
+
+
+    <!-- =========================
+         MOBILE OVERLAY
+    ========================== -->
+
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+
+    <!-- =========================
+         SIDEBAR
+    ========================== -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-logo">
+            <img src="assets/logo.svg" alt="SkillShare Logo">
+
+            <div>
+                <h2>SkillShare</h2>
+                <span>Share Skills. Grow Together.</span>
+            </div>
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <a href="dashboard.html" class="nav-item">
+                <i class="fa-solid fa-house"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="explore.html" class="nav-item">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>Explore Skills</span>
+            </a>
+
+            <a href="my-learning.html" class="nav-item">
+                <i class="fa-regular fa-bookmark"></i>
+                <span>My Learning</span>
+            </a>
+
+            <a href="my-teaching.html" class="nav-item">
+                <i class="fa-solid fa-users"></i>
+                <span>My Teaching</span>
+            </a>
+
+            <a href="requests.html" class="nav-item">
+                <i class="fa-regular fa-paper-plane"></i>
+                <span>Requests</span>
+
+                <span class="nav-badge">2</span>
+            </a>
+
+            <a href="messages.html" class="nav-item">
+                <i class="fa-regular fa-comment-dots"></i>
+                <span>Messages</span>
+
+                <span class="nav-badge">3</span>
+            </a>
+
+            <a href="bookmarks.html" class="nav-item">
+                <i class="fa-regular fa-bookmark"></i>
+                <span>Bookmarks</span>
+            </a>
+
+            <a href="calendar.html" class="nav-item">
+                <i class="fa-regular fa-calendar"></i>
+                <span>Calendar</span>
+            </a>
+
+            <a href="setting.html" class="nav-item">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+            </a>
+
+        </nav>
+
+
+        <!-- Sidebar CTA -->
+
+        <div class="sidebar-cta">
+
+            <div class="cta-glow"></div>
+
+            <h3>Build Together.<br>Grow Together.</h3>
+
+            <p>
+                Join an amazing community
+                of learners and skill sharers.
+            </p>
+
+            <img src="assets/community-side.svg" alt="Community">
+
+            <button class="primary-btn magnetic-btn" id="createPostSide">
+                <span>Create a Post</span>
+                <i class="fa-solid fa-pen"></i>
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================
+         MAIN PAGE
+    ========================== -->
+
+    <main class="main-content">
+
+
+        <!-- =========================
+             TOP NAVBAR
+        ========================== -->
+
+        <header class="topbar">
+
+            <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+
+            <nav class="top-nav">
+
+                <a href="index.html">
+                    Home
+                </a>
+
+                <a href="explore.html">
+                    Explore Skills
+                </a>
+
+                <a href="how-it-works.html">
+                    How It Works
+                </a>
+
+                <a href="community.html" class="active">
+                    Community
+                </a>
+
+                <a href="messages.html">
+                    Messages
+
+                    <span class="message-badge">
+                        3
+                    </span>
+                </a>
+
+            </nav>
+
+
+            <div class="top-actions">
+
+                <!-- Theme -->
+
+                <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+
+
+                <!-- Notification -->
+
+                <button class="icon-btn notification-btn" id="notificationBtn">
+                    <i class="fa-regular fa-bell"></i>
+
+                    <span class="notification-dot"></span>
+                </button>
+
+
+                <!-- Profile -->
+
+                <div class="profile">
+
+                    <div class="profile-image">
+
+                        <img src="assets/aniket.svg" alt="Aniket">
+
+                        <span class="online-dot"></span>
+
+                    </div>
+
+                    <span class="profile-name">
+                        Aniket
+                    </span>
+
+                    <i class="fa-solid fa-chevron-down"></i>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =========================
+             PAGE CONTAINER
+        ========================== -->
+
+        <section class="page-container">
+
+
+            <!-- =========================
+                 HERO
+            ========================== -->
+
+            <section class="community-hero reveal">
+
+                <div class="hero-content">
+
+                    <div class="eyebrow">
+                        <span class="eyebrow-line"></span>
+                        COMMUNITY
+                    </div>
+
+                    <h1>
+                        Community
+                        <span class="gradient-text">✦</span>
+                    </h1>
+
+                    <h2>
+                        Connect. Collaborate.
+                        Create Impact.
+                    </h2>
+
+                    <p>
+                        Share ideas, ask questions, help others
+                        and grow together as a strong community.
+                    </p>
+
+
+                    <!-- Search -->
+
+                    <div class="search-box">
+
+                        <i class="fa-solid fa-magnifying-glass"></i>
+
+                        <input type="text" id="discussionSearch" placeholder="Search discussions, people or topics...">
+
+                        <button id="searchBtn" class="search-button">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Hero Visual -->
+
+                <div class="hero-visual">
+
+                    <div class="hero-glow"></div>
+
+                    <img src="assets/community-hero.svg" alt="SkillShare Community">
+
+                    <div class="floating-card card-message">
+
+                        <div class="mini-avatar">
+                            <img src="assets/priya.svg" alt="">
+                        </div>
+
+                        <span>
+                            Great explanation!
+                        </span>
+
+                    </div>
+
+
+                    <div class="floating-card card-like">
+
+                        <i class="fa-solid fa-heart"></i>
+
+                        <strong>24</strong>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 COMMUNITY STATS
+            ========================== -->
+
+            <section class="stats-grid reveal">
+
+                <div class="stat-card tilt-card">
+
+                    <div class="stat-icon purple">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+
+                    <div>
+                        <strong class="counter" data-target="12800">
+                            0
+                        </strong>
+
+                        <span>Active Members</span>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card tilt-card">
+
+                    <div class="stat-icon blue">
+                        <i class="fa-regular fa-message"></i>
+                    </div>
+
+                    <div>
+                        <strong class="counter" data-target="256">
+                            0
+                        </strong>
+
+                        <span>Discussions</span>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card tilt-card">
+
+                    <div class="stat-icon green">
+                        <i class="fa-solid fa-shield-heart"></i>
+                    </div>
+
+                    <div>
+                        <strong class="counter" data-target="1200">
+                            0
+                        </strong>
+
+                        <span>Questions Solved</span>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card tilt-card">
+
+                    <div class="stat-icon pink">
+                        <i class="fa-regular fa-calendar"></i>
+                    </div>
+
+                    <div>
+                        <strong class="counter" data-target="89">
+                            0
+                        </strong>
+
+                        <span>Events Hosted</span>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 CONTENT GRID
+            ========================== -->
+
+            <div class="content-grid">
+
+
+                <!-- =========================
+                     DISCUSSIONS
+                ========================== -->
+
+                <section class="discussions-section">
+
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>
+                                🔥 Trending Discussions
+                            </h2>
+
+                            <p>
+                                Join conversations happening right now.
+                            </p>
+                        </div>
+
+                        <button class="text-button">
+                            View All
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+
+                    </div>
+
+
+                    <!-- Tabs -->
+
+                    <div class="discussion-tabs">
+
+                        <button class="tab active" data-filter="all">
+                            All
+                        </button>
+
+                        <button class="tab" data-filter="questions">
+                            Questions
+                        </button>
+
+                        <button class="tab" data-filter="help">
+                            Help Others
+                        </button>
+
+                        <button class="tab" data-filter="showcase">
+                            Showcase
+                        </button>
+
+                        <button class="tab" data-filter="general">
+                            General
+                        </button>
+
+                        <button class="tab" data-filter="events">
+                            Events
+                        </button>
+
+                    </div>
+
+
+                    <!-- Discussion List -->
+
+                    <div class="discussion-list" id="discussionList">
+
+
+                        <!-- Discussion 1 -->
+
+                        <article class="discussion-card tilt-card reveal" data-category="questions">
+
+                            <button class="vote-button" data-votes="128">
+
+                                <i class="fa-solid fa-chevron-up"></i>
+
+                                <span>128</span>
+
+                            </button>
+
+
+                            <div class="discussion-main">
+
+                                <div class="avatar-stack">
+
+                                    <img src="assets/rahul.svg" alt="">
+                                    <img src="assets/priya.svg" alt="">
+                                    <img src="assets/aman.svg" alt="">
+
+                                </div>
+
+
+                                <div class="discussion-info">
+
+                                    <h3>
+                                        How to build a portfolio
+                                        that stands out?
+                                    </h3>
+
+                                    <div class="tags">
+
+                                        <span class="tag purple-tag">
+                                            Career
+                                        </span>
+
+                                        <span class="tag green-tag">
+                                            Beginner
+                                        </span>
+
+                                    </div>
+
+                                    <p>
+                                        I'm a beginner developer.
+                                        What are the best tips to
+                                        create a strong portfolio?
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="discussion-meta">
+
+                                <strong>24</strong>
+                                <span>Replies</span>
+
+                                <small>
+                                    2h ago
+                                </small>
+
+                            </div>
+
+                        </article>
+
+
+                        <!-- Discussion 2 -->
+
+                        <article class="discussion-card tilt-card reveal" data-category="questions">
+
+                            <button class="vote-button" data-votes="96">
+
+                                <i class="fa-solid fa-chevron-up"></i>
+
+                                <span>96</span>
+
+                            </button>
+
+
+                            <div class="discussion-main">
+
+                                <div class="avatar-stack">
+
+                                    <img src="assets/rahul.svg" alt="">
+                                    <img src="assets/aman.svg" alt="">
+                                    <img src="assets/rohit.svg" alt="">
+
+                                </div>
+
+
+                                <div class="discussion-info">
+
+                                    <h3>
+                                        Best resources to learn
+                                        React in depth?
+                                    </h3>
+
+                                    <div class="tags">
+
+                                        <span class="tag blue-tag">
+                                            React.js
+                                        </span>
+
+                                        <span class="tag purple-tag">
+                                            Web Development
+                                        </span>
+
+                                    </div>
+
+                                    <p>
+                                        I've completed the basics,
+                                        now I want to go deeper.
+                                        Any roadmap suggestions?
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="discussion-meta">
+
+                                <strong>18</strong>
+                                <span>Replies</span>
+
+                                <small>
+                                    5h ago
+                                </small>
+
+                            </div>
+
+                        </article>
+
+
+                        <!-- Discussion 3 -->
+
+                        <article class="discussion-card tilt-card reveal" data-category="general">
+
+                            <button class="vote-button" data-votes="75">
+
+                                <i class="fa-solid fa-chevron-up"></i>
+
+                                <span>75</span>
+
+                            </button>
+
+
+                            <div class="discussion-main">
+
+                                <div class="avatar-stack">
+
+                                    <img src="assets/aman.svg" alt="">
+                                    <img src="assets/priya.svg" alt="">
+                                    <img src="assets/rahul.svg" alt="">
+
+                                </div>
+
+
+                                <div class="discussion-info">
+
+                                    <h3>
+                                        Freelancing as a student —
+                                        is it worth it?
+                                    </h3>
+
+                                    <div class="tags">
+
+                                        <span class="tag blue-tag">
+                                            Freelancing
+                                        </span>
+
+                                        <span class="tag green-tag">
+                                            Career
+                                        </span>
+
+                                    </div>
+
+                                    <p>
+                                        I want to start freelancing
+                                        but I'm not sure how to
+                                        get clients as a student.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="discussion-meta">
+
+                                <strong>32</strong>
+                                <span>Replies</span>
+
+                                <small>
+                                    1d ago
+                                </small>
+
+                            </div>
+
+                        </article>
+
+
+                        <!-- Discussion 4 -->
+
+                        <article class="discussion-card tilt-card reveal" data-category="showcase">
+
+                            <button class="vote-button" data-votes="63">
+
+                                <i class="fa-solid fa-chevron-up"></i>
+
+                                <span>63</span>
+
+                            </button>
+
+
+                            <div class="discussion-main">
+
+                                <div class="avatar-stack">
+
+                                    <img src="assets/priya.svg" alt="">
+                                    <img src="assets/neha.svg" alt="">
+                                    <img src="assets/rahul.svg" alt="">
+
+                                </div>
+
+
+                                <div class="discussion-info">
+
+                                    <h3>
+                                        Share your UI/UX designs
+                                        for feedback
+                                    </h3>
+
+                                    <div class="tags">
+
+                                        <span class="tag purple-tag">
+                                            UI/UX
+                                        </span>
+
+                                        <span class="tag green-tag">
+                                            Design
+                                        </span>
+
+                                    </div>
+
+                                    <p>
+                                        Let's grow together by
+                                        sharing our work and giving
+                                        honest feedback.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="discussion-meta">
+
+                                <strong>14</strong>
+                                <span>Replies</span>
+
+                                <small>
+                                    2d ago
+                                </small>
+
+                            </div>
+
+                        </article>
+
+                    </div>
+
+
+                    <!-- =========================
+                         CREATE DISCUSSION CTA
+                    ========================== -->
+
+                    <div class="discussion-cta reveal">
+
+                        <div class="cta-icon">
+
+                            <i class="fa-solid fa-comments"></i>
+
+                        </div>
+
+
+                        <div class="cta-text">
+
+                            <h3>
+                                Have a question or an idea to share?
+                            </h3>
+
+                            <p>
+                                Start a discussion and get helpful
+                                responses from the community.
+                            </p>
+
+                        </div>
+
+
+                        <button class="primary-btn magnetic-btn" id="startDiscussion">
+
+                            <i class="fa-solid fa-bolt"></i>
+
+                            Start a Discussion
+
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================
+                     RIGHT SIDEBAR
+                ========================== -->
+
+                <aside class="right-sidebar">
+
+
+                    <!-- Top Contributors -->
+
+                    <section class="side-card reveal">
+
+                        <div class="side-heading">
+
+                            <h3>
+                                Top Contributors
+                            </h3>
+
+                            <button class="text-button">
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <div class="contributors">
+
+
+                            <div class="contributor">
+
+                                <span class="rank rank-one">
+                                    1
+                                </span>
+
+                                <img src="assets/rahul.svg" alt="">
+
+                                <div>
+                                    <strong>
+                                        Rahul Sharma
+                                    </strong>
+
+                                    <span>
+                                        12.4K pts
+                                    </span>
+                                </div>
+
+                                <i class="fa-solid fa-medal"></i>
+
+                            </div>
+
+
+                            <div class="contributor">
+
+                                <span class="rank">
+                                    2
+                                </span>
+
+                                <img src="assets/priya.svg" alt="">
+
+                                <div>
+                                    <strong>
+                                        Priya Singh
+                                    </strong>
+
+                                    <span>
+                                        8.7K pts
+                                    </span>
+                                </div>
+
+                                <i class="fa-solid fa-medal"></i>
+
+                            </div>
+
+
+                            <div class="contributor">
+
+                                <span class="rank">
+                                    3
+                                </span>
+
+                                <img src="assets/aman.svg" alt="">
+
+                                <div>
+                                    <strong>
+                                        Aman Verma
+                                    </strong>
+
+                                    <span>
+                                        6.3K pts
+                                    </span>
+                                </div>
+
+                                <i class="fa-solid fa-medal"></i>
+
+                            </div>
+
+
+                            <div class="contributor">
+
+                                <span class="rank">
+                                    4
+                                </span>
+
+                                <img src="assets/neha.svg" alt="">
+
+                                <div>
+                                    <strong>
+                                        Neha Patel
+                                    </strong>
+
+                                    <span>
+                                        5.1K pts
+                                    </span>
+                                </div>
+
+                            </div>
+
+
+                            <div class="contributor">
+
+                                <span class="rank">
+                                    5
+                                </span>
+
+                                <img src="assets/rohit.svg" alt="">
+
+                                <div>
+                                    <strong>
+                                        Rohit Kumar
+                                    </strong>
+
+                                    <span>
+                                        4.3K pts
+                                    </span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- =========================
+                         EVENTS
+                    ========================== -->
+
+                    <section class="side-card reveal">
+
+                        <div class="side-heading">
+
+                            <h3>
+                                Upcoming Events
+                            </h3>
+
+                            <button class="text-button">
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <div class="events-list">
+
+
+                            <div class="event-card">
+
+                                <div class="event-icon purple">
+                                    <i class="fa-regular fa-calendar"></i>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        UI/UX Design Workshop
+                                    </strong>
+
+                                    <span>
+                                        with Atharv
+                                    </span>
+
+                                    <small>
+                                        25 May, 2026 • 4:00 PM IST
+                                    </small>
+                                </div>
+
+                            </div>
+
+
+                            <div class="event-card">
+
+                                <div class="event-icon green">
+                                    <i class="fa-solid fa-code"></i>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        Web Dev Live Session
+                                    </strong>
+
+                                    <span>
+                                        with Harshal
+                                    </span>
+
+                                    <small>
+                                        28 May, 2026 • 6:00 PM IST
+                                    </small>
+                                </div>
+
+                            </div>
+
+
+                            <div class="event-card">
+
+                                <div class="event-icon orange">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        Career Guidance AMA
+                                    </strong>
+
+                                    <span>
+                                        with Aniket & Team
+                                    </span>
+
+                                    <small>
+                                        30 May, 2026 • 7:00 PM IST
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- =========================
+                         GUIDELINES
+                    ========================== -->
+
+                    <section class="side-card guidelines reveal">
+
+                        <div class="side-heading">
+
+                            <h3>
+                                Community Guidelines
+                            </h3>
+
+                        </div>
+
+
+                        <ul>
+
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                Be respectful and kind to everyone.
+                            </li>
+
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                No spam or self-promotion.
+                            </li>
+
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                Help others and share knowledge.
+                            </li>
+
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                Keep discussions relevant.
+                            </li>
+
+                        </ul>
+
+
+                        <div class="guideline-footer">
+
+                            Let's keep this community amazing!
+
+                            <span>💜</span>
+
+                        </div>
+
+                    </section>
+
+                </aside>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================
+         CREATE POST MODAL
+    ========================== -->
+
+    <div class="modal-overlay" id="postModal">
+
+        <div class="modal">
+
+            <button class="modal-close" id="modalClose">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="modal-icon">
+                <i class="fa-solid fa-pen"></i>
+            </div>
+
+            <h2>
+                Start a Discussion
+            </h2>
+
+            <p>
+                Share your question, idea or knowledge
+                with the SkillShare community.
+            </p>
+
+
+            <form id="postForm">
+
+                <input type="text" id="postTitle" placeholder="Discussion title" required>
+
+                <select id="postCategory">
+
+                    <option value="questions">
+                        Questions
+                    </option>
+
+                    <option value="help">
+                        Help Others
+                    </option>
+
+                    <option value="showcase">
+                        Showcase
+                    </option>
+
+                    <option value="general">
+                        General
+                    </option>
+
+                </select>
+
+
+                <textarea id="postContent" rows="5" placeholder="What's on your mind?" required></textarea>
+
+
+                <button type="submit" class="primary-btn full-btn">
+                    Publish Discussion
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         TOAST
+    ========================== -->
+
+    <div class="toast" id="toast">
+
+        <div class="toast-icon">
+            <i class="fa-solid fa-check"></i>
+        </div>
+
+        <div>
+
+            <strong>
+                Success
+            </strong>
+
+            <span id="toastMessage">
+                Action completed successfully.
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================== -->
+
+    <script src="community.js"></script>
+    <script src="profile-quick.js" defer></script>
+
+</body>
+
+</html>

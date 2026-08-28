@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillShare - Create Account</title>
+
+    <link rel="stylesheet" href="signup.css">
+
+    <!-- Signup JavaScript -->
+    <script src="signup.js" defer></script>
+
+</head>
+
+
+<body>
+
+    <div class="shell">
+
+
+        <!-- =================================================
+             LEFT FORM
+        ================================================== -->
+
+        <section class="form-panel">
+
+            <!-- TOP BAR -->
+
+            <div class="topbar">
+
+                <a href="index.html" class="brand">
+
+                    <b>◇</b>
+
+                    SkillShare
+
+                </a>
+
+
+                <span>
+
+                    Already have an account?
+
+                    <a href="login.html">
+                        Sign in
+                    </a>
+
+                </span>
+
+            </div>
+
+
+            <!-- FORM CONTENT -->
+
+            <div class="form-wrap">
+
+                <span class="eyebrow">
+                    JOIN THE COMMUNITY
+                </span>
+
+
+                <h1>
+
+                    Start your
+
+                    <em>
+                        learning journey.
+                    </em>
+
+                </h1>
+
+
+                <p>
+                    Learn from others, share your skills,
+                    and grow together.
+                </p>
+
+
+                <!-- SOCIAL BUTTONS -->
+
+                <div class="socials">
+
+                    <button type="button">
+                        G
+                        <span>Google</span>
+                    </button>
+
+                    <button type="button">
+                        f
+                        <span>Facebook</span>
+                    </button>
+
+                    <button type="button">
+                        in
+                        <span>LinkedIn</span>
+                    </button>
+
+                </div>
+
+
+                <!-- DIVIDER -->
+
+                <div class="divider">
+
+                    <span>
+                        OR CONTINUE WITH EMAIL
+                    </span>
+
+                </div>
+
+
+                <!-- =================================================
+                     SIGNUP FORM
+
+                     IMPORTANT:
+                     id="signupForm"
+                ================================================== -->
+
+                <form id="signupForm" novalidate>
+
+
+                    <!-- NAME -->
+
+                    <label>
+
+                        <div class="field">
+
+                            <span>♙</span>
+
+                            <input id="name" name="name" type="text" placeholder="Your name" autocomplete="name"
+                                required>
+
+                        </div>
+
+                        <small class="error" id="nameError">
+                        </small>
+
+                    </label>
+
+
+                    <!-- EMAIL -->
+
+                    <label>
+
+                        <div class="field">
+
+                            <span>✉</span>
+
+                            <input id="email" name="email" type="email" placeholder="Email address" autocomplete="email"
+                                required>
+
+                        </div>
+
+                        <small class="error" id="emailError">
+                        </small>
+
+                    </label>
+
+
+                    <!-- PASSWORD -->
+
+                    <label>
+
+                        <div class="field">
+
+                            <span>▣</span>
+
+                            <input id="password" name="password" type="password" placeholder="Create password"
+                                autocomplete="new-password" required>
+
+                            <!-- PASSWORD TOGGLE -->
+
+                            <button id="toggle" type="button" aria-label="Show password">
+                                ◌
+                            </button>
+
+                        </div>
+
+
+                        <small class="error" id="passwordError">
+                        </small>
+
+
+                        <!-- PASSWORD STRENGTH -->
+
+                        <div class="strength">
+
+                            <span>
+
+                                Password strength:
+
+                                <b id="strengthText">
+                                    Weak
+                                </b>
+
+                            </span>
+
+
+                            <span id="strengthScore">
+                                0%
+                            </span>
+
+
+                            <i>
+
+                                <u id="strengthBar"></u>
+
+                            </i>
+
+                        </div>
+
+                    </label>
+
+
+                    <!-- TERMS -->
+
+                    <label class="terms">
+
+                        <input id="terms" name="terms" type="checkbox">
+
+                        <span>✓</span>
+
+                        <p>
+
+                            I agree to the
+
+                            <a href="#">
+                                Terms
+                            </a>
+
+                            and
+
+                            <a href="#">
+                                Privacy Policy
+                            </a>.
+
+                        </p>
+
+                    </label>
+
+
+                    <small class="error" id="termsError">
+                    </small>
+
+
+                    <!-- =================================================
+                         CREATE ACCOUNT BUTTON
+
+                         IMPORTANT:
+                         type="submit"
+                    ================================================== -->
+
+                    <button id="create" class="create" type="submit">
+
+                        <span>
+                            Create Account
+                        </span>
+
+                        <b>
+                            →
+                        </b>
+
+                        <i></i>
+
+                    </button>
+
+
+                    <!-- SECURITY -->
+
+                    <div class="safe">
+
+                        🔒 Your information is secure
+
+                    </div>
+
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             RIGHT VISUAL
+        ================================================== -->
+
+        <section class="visual">
+
+            <div class="dots"></div>
+
+
+            <!-- PROGRESS CARD -->
+
+            <div class="card progress">
+
+                <div class="mini">
+
+                    <b>A</b>
+
+                    <div>
+
+                        <strong>
+                            Your Learning
+                        </strong>
+
+                        <small>
+                            Keep going! 🚀
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="chart">
+
+                    <strong>
+
+                        Weekly Progress
+
+                        <b>
+                            +24%
+                        </b>
+
+                    </strong>
+
+
+                    <div>
+
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+
+                    </div>
+
+
+                    <small>
+
+                        ↑ You're learning faster
+                        than last week
+
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACHIEVEMENT -->
+
+            <div class="card achievement">
+
+                <span>
+                    ★
+                </span>
+
+                <div>
+
+                    <strong>
+                        New Achievement!
+                    </strong>
+
+                    <small>
+                        First skill completed
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <!-- HERO -->
+
+            <div class="hero">
+
+                <h2>
+
+                    Learn.
+
+                    <b>
+                        Share.
+                    </b>
+
+                    <br>
+
+                    <em>
+                        Grow.
+                    </em>
+
+                </h2>
+
+
+                <p>
+
+                    Join thousands of learners and
+                    teachers building a better future
+                    through skill sharing.
+
+                </p>
+
+
+                <!-- BENEFIT 1 -->
+
+                <article>
+
+                    <b>
+                        ◇
+                    </b>
+
+                    <div>
+
+                        <strong>
+                            Learn from experts
+                        </strong>
+
+                        <small>
+
+                            Connect with skilled people
+                            and learn directly from them.
+
+                        </small>
+
+                    </div>
+
+                </article>
+
+
+                <!-- BENEFIT 2 -->
+
+                <article>
+
+                    <b>
+                        ↗
+                    </b>
+
+                    <div>
+
+                        <strong>
+                            Share your expertise
+                        </strong>
+
+                        <small>
+
+                            Teach what you know and
+                            help someone grow.
+
+                        </small>
+
+                    </div>
+
+                </article>
+
+
+                <!-- BENEFIT 3 -->
+
+                <article>
+
+                    <b>
+                        ♧
+                    </b>
+
+                    <div>
+
+                        <strong>
+                            Grow together
+                        </strong>
+
+                        <small>
+
+                            Build meaningful connections
+                            with a learning community.
+
+                        </small>
+
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         TOAST
+    ===================================================== -->
+
+    <div id="toast"></div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,1 @@
+const bookmarksSetup=()=>{const cards=document.querySelectorAll(".saved-grid .skill");if(!cards.length)return;cards.forEach(card=>card.setAttribute("aria-label",`${card.querySelector("h2").textContent} saved skill`));};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",bookmarksSetup):bookmarksSetup();

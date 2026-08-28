@@ -1,0 +1,2658 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- =====================================================
+         BASIC META
+         ===================================================== -->
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="SkillShare account settings and profile management">
+
+    <meta name="theme-color" content="#050817">
+
+    <title>SkillShare — Settings</title>
+
+
+    <!-- =====================================================
+         GOOGLE FONT
+         ===================================================== -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+
+    <!-- =====================================================
+         ICONS
+         ===================================================== -->
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+
+    <!-- =====================================================
+         SETTINGS CSS
+         ===================================================== -->
+
+    <link rel="stylesheet" href="setting.css">
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================================================
+     APP SHELL
+     ========================================================= -->
+
+    <div class="app-shell">
+
+
+        <!-- =====================================================
+         TOP NAVIGATION
+         ===================================================== -->
+
+        <header class="topbar">
+
+
+            <!-- BRAND -->
+
+            <a href="dashboard.html" class="brand">
+
+                <span class="brand-mark">
+
+                    <span></span>
+                    <span></span>
+                    <span></span>
+
+                </span>
+
+                <span class="brand-copy">
+
+                    <strong>SkillShare</strong>
+
+                    <small>
+                        Learn. Share. Grow.
+                    </small>
+
+                </span>
+
+            </a>
+
+
+            <!-- MAIN NAV -->
+
+            <nav class="top-nav">
+
+                <a href="explore.html">
+                    Explore
+                </a>
+
+                <a href="community.html">
+                    Community
+                </a>
+
+                <a href="messages.html" class="messages-link">
+
+                    Messages
+
+                    <b>
+                        3
+                    </b>
+
+                </a>
+
+            </nav>
+
+
+            <!-- TOP ACTIONS -->
+
+            <div class="top-actions">
+
+
+                <!-- SEARCH -->
+
+                <button class="icon-btn" id="searchButton" type="button" title="Search">
+
+                    <i class="fa-solid fa-magnifying-glass"></i>
+
+                </button>
+
+
+                <!-- NOTIFICATIONS -->
+
+                <button class="icon-btn" id="notificationButton" type="button" title="Notifications">
+
+                    <i class="fa-regular fa-bell"></i>
+
+                </button>
+
+
+                <!-- USER MENU -->
+
+                <button class="user-menu-trigger" id="userMenuButton" type="button" aria-expanded="false">
+
+                    <span class="mini-avatar">
+                        P
+                    </span>
+
+                    <span>
+                        Aniket
+                    </span>
+
+                    <span class="chevron">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </span>
+
+                </button>
+
+
+            </div>
+
+
+        </header>
+
+
+
+        <!-- =====================================================
+         USER DROPDOWN
+         ===================================================== -->
+
+        <div class="user-dropdown" id="userDropdown">
+
+            <div class="dropdown-profile">
+
+                <span class="mini-avatar">
+                    AC
+                </span>
+
+                <div>
+
+                    <strong>
+                        Aniket
+                    </strong>
+
+                    <small>
+                        aniket@example.com
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <button type="button" data-go="profile">
+
+                <i class="fa-regular fa-user"></i>
+                &nbsp;
+                My Profile
+
+            </button>
+
+
+            <button type="button" data-go="settings">
+
+                <i class="fa-solid fa-gear"></i>
+                &nbsp;
+                Settings
+
+            </button>
+
+
+            <div class="dropdown-divider"></div>
+
+            <button type="button" class="danger-text" id="dropdownLogout">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                &nbsp;
+                <a href="login.html">Log-Out</a>
+            </button>
+        </div>
+
+
+
+        <!-- =====================================================
+         MAIN LAYOUT
+         ===================================================== -->
+
+        <div class="layout">
+
+
+            <!-- =================================================
+             SIDEBAR
+             ================================================= -->
+
+            <aside class="sidebar">
+
+
+                <nav class="main-sidebar-nav">
+
+
+                    <a href="dashboard.html" class="side-link">
+
+                        <span>
+                            <i class="fa-solid fa-house"></i>
+                        </span>
+
+                        Dashboard
+
+                    </a>
+
+
+                    <a href="explore.html" class="side-link">
+
+                        <span>
+                            <i class="fa-solid fa-compass"></i>
+                        </span>
+
+                        Explore
+
+                    </a>
+
+
+                    <a href="profile.html" class="side-link">
+
+                        <span>
+                            <i class="fa-solid fa-bolt"></i>
+                        </span>
+
+                        My Skills
+
+                    </a>
+
+
+                    <a href="my-learning.html" class="side-link">
+
+                        <span>
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </span>
+
+                        Learning
+
+                    </a>
+
+
+                    <a href="messages.html" class="side-link">
+
+                        <span>
+                            <i class="fa-regular fa-message"></i>
+                        </span>
+
+                        Messages
+
+                        <b>
+                            3
+                        </b>
+
+                    </a>
+
+
+                    <a href="community.html" class="side-link">
+
+                        <span>
+                            <i class="fa-solid fa-users"></i>
+                        </span>
+
+                        Community
+
+                    </a>
+
+
+                    <a href="bookmarks.html" class="side-link">
+
+                        <span>
+                            <i class="fa-regular fa-bookmark"></i>
+                        </span>
+
+                        Saved
+
+                    </a>
+
+
+                    <a href="setting.html" class="side-link active">
+
+                        <span>
+                            <i class="fa-solid fa-gear"></i>
+                        </span>
+
+                        Settings
+
+                    </a>
+
+
+                    <a href="login.html" class="side-link logout-tab">
+
+                        <span>
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </span>
+
+                        Log Out
+
+                    </a>
+
+
+                </nav>
+
+
+
+                <!-- =============================================
+                 TEACH CARD
+                 ============================================= -->
+
+                <div>
+                </div>
+
+
+            </aside>
+
+
+
+            <!-- =================================================
+             MAIN CONTENT
+             ================================================= -->
+
+            <main class="main-content">
+
+
+                <!-- =============================================
+                 PAGE HEADING
+                 ============================================= -->
+
+                <div class="page-heading">
+
+                    <div>
+
+                        <h1>
+                            Settings
+                        </h1>
+
+                        <p>
+                            Manage your profile, account,
+                            privacy and SkillShare preferences.
+                        </p>
+
+                    </div>
+
+
+                    <div class="heading-actions">
+
+                        <button class="ghost-btn" id="resetSettings" type="button">
+
+                            <i class="fa-solid fa-rotate-left"></i>
+
+                            Reset
+
+                        </button>
+
+
+                        <button class="primary-btn" id="saveAllSettings" type="button">
+
+                            <i class="fa-solid fa-check"></i>
+
+                            Save Changes
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =============================================
+                 SETTINGS LAYOUT
+                 ============================================= -->
+
+                <div class="settings-layout">
+
+
+                    <!-- =========================================
+                     SETTINGS NAVIGATION
+                     ========================================= -->
+
+                    <aside class="settings-nav">
+
+
+                        <button class="settings-tab active" type="button" data-target="profileSettings">
+
+                            <span>
+                                <i class="fa-regular fa-user"></i>
+                            </span>
+
+                            Profile
+
+                        </button>
+
+
+                        <button class="settings-tab" type="button" data-target="accountSettings">
+
+                            <span>
+                                <i class="fa-solid fa-user-shield"></i>
+                            </span>
+
+                            Account
+
+                        </button>
+
+
+                        <button class="settings-tab" type="button" data-target="privacySettings">
+
+                            <span>
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
+
+                            Privacy
+
+                        </button>
+
+
+                        <button class="settings-tab" type="button" data-target="notificationSettings">
+
+                            <span>
+                                <i class="fa-regular fa-bell"></i>
+                            </span>
+
+                            Notifications
+
+                        </button>
+
+
+                        <button class="settings-tab" type="button" data-target="appearanceSettings">
+
+                            <span>
+                                <i class="fa-solid fa-palette"></i>
+                            </span>
+
+                            Appearance
+
+                        </button>
+
+
+                        <button class="settings-tab" type="button" data-target="paymentSettings">
+
+                            <span>
+                                <i class="fa-regular fa-credit-card"></i>
+                            </span>
+
+                            Payments
+
+                        </button>
+
+
+                        <button class="settings-tab" type="button" data-target="blockedSettings">
+
+                            <span>
+                                <i class="fa-solid fa-user-slash"></i>
+                            </span>
+
+                            Blocked Users
+
+                        </button>
+
+
+                        <button class="settings-tab" type="button" data-target="supportSettings">
+
+                            <span>
+                                <i class="fa-solid fa-life-ring"></i>
+                            </span>
+
+                            Help & Support
+
+                        </button>
+
+
+                        <button class="settings-tab logout-tab" type="button" id="settingsLogout">
+
+                            <span>
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </span>
+
+                            Log Out
+
+                        </button>
+
+
+                    </aside>
+
+
+
+                    <!-- =========================================
+                     SETTINGS CONTENT
+                     ========================================= -->
+
+                    <section class="settings-content">
+
+
+                        <!-- PROFILE SETTINGS -->
+
+                        <div class="settings-panel active" id="profileSettings">
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Profile Information
+                                        </h2>
+
+                                        <p>
+                                            Update the information
+                                            other SkillShare members
+                                            can see.
+                                        </p>
+
+                                    </div>
+
+
+                                    <button class="outline-btn" id="previewProfile" type="button">
+
+                                        <i class="fa-regular fa-eye"></i>
+
+                                        Preview
+
+                                    </button>
+
+                                </div>
+
+
+
+                                <div class="profile-editor">
+
+
+                                    <div class="avatar-editor">
+
+                                        <div class="big-avatar-wrap">
+
+                                            <img id="profileAvatar" src="https://i.pravatar.cc/300?img=12"
+                                                alt="Profile picture">
+
+                                            <span class="online-dot"></span>
+
+
+                                            <button class="camera-btn" id="changeAvatar" type="button"
+                                                title="Change profile photo">
+
+                                                <i class="fa-solid fa-camera"></i>
+
+                                            </button>
+
+                                        </div>
+
+
+                                        <button class="text-btn" id="removeAvatar" type="button">
+
+                                            Remove photo
+
+                                        </button>
+
+
+                                        <small>
+                                            JPG, PNG or WEBP.<br>
+                                            Maximum 5 MB.
+                                        </small>
+
+
+                                        <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp"
+                                            hidden>
+
+                                    </div>
+
+
+
+                                    <div class="profile-fields">
+
+
+                                        <div class="field-grid">
+
+
+                                            <label class="field">
+
+                                                <span>
+                                                    First Name
+                                                </span>
+
+                                                <input type="text" id="firstName" value="Aniket"
+                                                    placeholder="First name">
+
+                                            </label>
+
+
+                                            <label class="field">
+
+                                                <span>
+                                                    Last Name
+                                                </span>
+
+                                                <input type="text" id="lastName" value="Sharma" placeholder="Last name">
+
+                                            </label>
+
+
+                                        </div>
+
+
+
+                                        <div class="field">
+
+                                            <span>
+                                                Username
+                                            </span>
+
+
+                                            <div class="input-prefix">
+
+                                                <b>@</b>
+
+                                                <input type="text" id="username" value="aniket" placeholder="username">
+
+                                            </div>
+
+                                        </div>
+
+
+
+                                        <div class="field">
+
+                                            <span>
+                                                Bio
+
+                                                <em>
+                                                    160 characters
+                                                </em>
+
+                                            </span>
+
+                                            <textarea id="profileBio" maxlength="160"
+                                                placeholder="Tell the community about yourself...">Learning, teaching and building something new every day.</textarea>
+
+                                        </div>
+
+
+
+                                        <div class="field-grid">
+
+
+                                            <label class="field">
+
+                                                <span>
+                                                    Location
+                                                </span>
+
+                                                <input type="text" id="location" value="India"
+                                                    placeholder="Your location">
+
+                                            </label>
+
+
+                                            <label class="field">
+
+                                                <span>
+                                                    Website
+                                                </span>
+
+                                                <input type="url" id="website" value=""
+                                                    placeholder="https://example.com">
+
+                                            </label>
+
+
+                                        </div>
+
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Skills & Interests
+                                        </h2>
+
+                                        <p>
+                                            Add skills you can teach
+                                            or want to learn.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="skill-editor" id="skillEditor">
+
+                                    <span class="skill-tag">
+
+                                        HTML
+
+                                        <button class="skill-remove" type="button">
+                                            ×
+                                        </button>
+
+                                    </span>
+
+
+                                    <span class="skill-tag">
+
+                                        CSS
+
+                                        <button class="skill-remove" type="button">
+                                            ×
+                                        </button>
+
+                                    </span>
+
+
+                                    <span class="skill-tag">
+
+                                        JavaScript
+
+                                        <button class="skill-remove" type="button">
+                                            ×
+                                        </button>
+
+                                    </span>
+
+
+                                    <span class="skill-tag">
+
+                                        UI/UX
+
+                                        <button class="skill-remove" type="button">
+                                            ×
+                                        </button>
+
+                                    </span>
+
+                                </div>
+
+
+                                <div class="skill-add-row" id="skillAddRow" hidden>
+
+                                    <input type="text" id="newSkill" placeholder="Enter a skill...">
+
+                                    <button class="primary-btn" id="addSkill" type="button">
+
+                                        Add
+
+                                    </button>
+
+                                </div>
+
+
+                                <button class="outline-btn" id="showSkillInput" type="button" style="margin-top: 15px;">
+
+                                    <i class="fa-solid fa-plus"></i>
+
+                                    Add Skill
+
+                                </button>
+
+                            </div>
+
+
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Profile Visibility
+                                        </h2>
+
+                                        <p>
+                                            Choose how other users
+                                            discover you.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Public profile
+                                        </strong>
+
+                                        <small>
+                                            Allow anyone to view
+                                            your profile.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="publicProfile" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Show online status
+                                        </strong>
+
+                                        <small>
+                                            Let others know when
+                                            you're online.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="onlineStatus" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Show learning progress
+                                        </strong>
+
+                                        <small>
+                                            Display your achievements
+                                            on your profile.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="learningProgress" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- ACCOUNT SETTINGS -->
+
+                        <div class="settings-panel" id="accountSettings">
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Account Information
+                                        </h2>
+
+                                        <p>
+                                            Manage your login and
+                                            account information.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="account-item">
+
+                                    <div>
+
+                                        <strong>
+                                            Email Address
+                                        </strong>
+
+                                        <small>
+                                            aniket@example.com
+                                        </small>
+
+                                    </div>
+
+
+                                    <div class="account-actions">
+
+                                        <span class="verified">
+                                            VERIFIED
+                                        </span>
+
+                                        <button class="outline-btn" id="changeEmail" type="button">
+
+                                            Change
+
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="account-item">
+
+                                    <div>
+
+                                        <strong>
+                                            Password
+                                        </strong>
+
+                                        <small>
+                                            Last changed recently
+                                        </small>
+
+                                    </div>
+
+
+                                    <button class="outline-btn" id="changePassword" type="button">
+
+                                        Change Password
+
+                                    </button>
+
+                                </div>
+
+
+                                <div class="account-item">
+
+                                    <div>
+
+                                        <strong>
+                                            Two-Factor Authentication
+                                        </strong>
+
+                                        <small>
+                                            Add an extra layer of
+                                            security to your account.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="twoFactor">
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Active Sessions
+                                        </h2>
+
+                                        <p>
+                                            Devices currently signed
+                                            into your account.
+                                        </p>
+
+                                    </div>
+
+
+                                    <button class="danger-btn" id="logoutOtherDevices" type="button">
+
+                                        Log Out Other Devices
+
+                                    </button>
+
+                                </div>
+
+
+                                <div class="sessions-list">
+
+
+                                    <div class="session-item">
+
+                                        <div class="session-device">
+
+                                            <i class="fa-solid fa-mobile-screen"></i>
+
+                                        </div>
+
+
+                                        <div class="session-info">
+
+                                            <strong>
+                                                Android Device
+                                            </strong>
+
+                                            <small>
+                                                India · Active now
+                                            </small>
+
+                                        </div>
+
+
+                                        <span class="current-session">
+                                            CURRENT
+                                        </span>
+
+                                    </div>
+
+
+
+                                    <div class="session-item">
+
+                                        <div class="session-device">
+
+                                            <i class="fa-solid fa-laptop"></i>
+
+                                        </div>
+
+
+                                        <div class="session-info">
+
+                                            <strong>
+                                                Windows PC
+                                            </strong>
+
+                                            <small>
+                                                Chrome · 2 hours ago
+                                            </small>
+
+                                        </div>
+
+
+                                        <button class="danger-btn" type="button" data-session="windows">
+
+                                            Revoke
+
+                                        </button>
+
+                                    </div>
+
+
+
+                                    <div class="session-item">
+
+                                        <div class="session-device">
+
+                                            <i class="fa-brands fa-apple"></i>
+
+                                        </div>
+
+
+                                        <div class="session-info">
+
+                                            <strong>
+                                                iPhone
+                                            </strong>
+
+                                            <small>
+                                                Safari · Yesterday
+                                            </small>
+
+                                        </div>
+
+
+                                        <button class="danger-btn" type="button" data-session="iphone">
+
+                                            Revoke
+
+                                        </button>
+
+                                    </div>
+
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div class="card danger-zone">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Danger Zone
+                                        </h2>
+
+                                        <p>
+                                            These actions can permanently
+                                            affect your account.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="danger-action">
+
+                                    <div>
+
+                                        <strong>
+                                            Delete Account
+                                        </strong>
+
+                                        <small>
+                                            Permanently delete your
+                                            SkillShare account and data.
+                                        </small>
+
+                                    </div>
+
+
+                                    <button class="danger-btn" id="deleteAccount" type="button">
+
+                                        Delete Account
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- PRIVACY SETTINGS -->
+
+                        <div class="settings-panel" id="privacySettings">
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Privacy
+                                        </h2>
+
+                                        <p>
+                                            Control who can interact
+                                            with you.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Allow messages from everyone
+                                        </strong>
+
+                                        <small>
+                                            Anyone can send you a
+                                            direct message.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="allowMessages" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Show profile in search
+                                        </strong>
+
+                                        <small>
+                                            Your profile can appear
+                                            in SkillShare search.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="searchVisibility" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Show learning interests
+                                        </strong>
+
+                                        <small>
+                                            Let people see what
+                                            you're interested in learning.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="showInterests" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Personalized recommendations
+                                        </strong>
+
+                                        <small>
+                                            Use your activity to improve
+                                            recommendations.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="personalizedRecommendations" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Activity Privacy
+                                        </h2>
+
+                                        <p>
+                                            Choose what other people
+                                            can see about your activity.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Show liked content
+                                        </strong>
+
+                                        <small>
+                                            Display your liked posts
+                                            and resources.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="showLikes">
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Show saved resources
+                                        </strong>
+
+                                        <small>
+                                            Allow others to see
+                                            your saved resources.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="showSaved">
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- NOTIFICATIONS -->
+
+                        <div class="settings-panel" id="notificationSettings">
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Notification Preferences
+                                        </h2>
+
+                                        <p>
+                                            Choose which notifications
+                                            you receive.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+
+                                <div class="notification-setting">
+
+                                    <div class="notification-icon blue">
+
+                                        <i class="fa-regular fa-message"></i>
+
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            Messages
+                                        </strong>
+
+                                        <small>
+                                            New direct messages.
+                                        </small>
+
+                                    </div>
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="notifyMessages" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+
+                                <div class="notification-setting">
+
+                                    <div class="notification-icon purple">
+
+                                        <i class="fa-solid fa-users"></i>
+
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            Community activity
+                                        </strong>
+
+                                        <small>
+                                            Replies, mentions and
+                                            community interactions.
+                                        </small>
+
+                                    </div>
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="notifyCommunity" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+
+                                <div class="notification-setting">
+
+                                    <div class="notification-icon green">
+
+                                        <i class="fa-solid fa-user-plus"></i>
+
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            New connections
+                                        </strong>
+
+                                        <small>
+                                            New followers and connection
+                                            requests.
+                                        </small>
+
+                                    </div>
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="notifyConnections" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+
+                                <div class="notification-setting">
+
+                                    <div class="notification-icon orange">
+
+                                        <i class="fa-solid fa-bolt"></i>
+
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            Learning reminders
+                                        </strong>
+
+                                        <small>
+                                            Reminders about your learning
+                                            goals.
+                                        </small>
+
+                                    </div>
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="notifyLearning" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+
+                                <div class="notification-setting">
+
+                                    <div class="notification-icon pink">
+
+                                        <i class="fa-solid fa-bullhorn"></i>
+
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            SkillShare updates
+                                        </strong>
+
+                                        <small>
+                                            Product announcements and
+                                            important updates.
+                                        </small>
+
+                                    </div>
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="notifyUpdates">
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                            </div>
+
+
+                            <div class="card">
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Email notifications
+                                        </strong>
+
+                                        <small>
+                                            Receive important notifications
+                                            by email.
+                                        </small>
+
+                                    </div>
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="emailNotifications" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Push notifications
+                                        </strong>
+
+                                        <small>
+                                            Receive notifications on
+                                            supported devices.
+                                        </small>
+
+                                    </div>
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="pushNotifications" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- APPEARANCE -->
+
+                        <div class="settings-panel" id="appearanceSettings">
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Appearance
+                                        </h2>
+
+                                        <p>
+                                            Customize how SkillShare
+                                            looks for you.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Dark Mode
+                                        </strong>
+
+                                        <small>
+                                            Use the dark SkillShare
+                                            interface.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="darkMode" checked>
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Compact mode
+                                        </strong>
+
+                                        <small>
+                                            Reduce spacing throughout
+                                            the settings interface.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="compactMode">
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+
+                                <div class="setting-row">
+
+                                    <div>
+
+                                        <strong>
+                                            Reduce animations
+                                        </strong>
+
+                                        <small>
+                                            Minimize interface animations
+                                            and transitions.
+                                        </small>
+
+                                    </div>
+
+
+                                    <label class="switch">
+
+                                        <input type="checkbox" id="reduceAnimations">
+
+                                        <span></span>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Interface Preview
+                                        </h2>
+
+                                        <p>
+                                            Your appearance settings are
+                                            saved locally.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="support-grid">
+
+                                    <button class="support-card" id="previewDark" type="button">
+
+                                        <span>
+                                            <i class="fa-solid fa-moon"></i>
+                                        </span>
+
+                                        <strong>
+                                            Dark
+                                        </strong>
+
+                                        <small>
+                                            Dark interface for a
+                                            focused experience.
+                                        </small>
+
+                                    </button>
+
+
+                                    <button class="support-card" id="previewLight" type="button">
+
+                                        <span>
+                                            <i class="fa-solid fa-sun"></i>
+                                        </span>
+
+                                        <strong>
+                                            Light
+                                        </strong>
+
+                                        <small>
+                                            Bright interface for
+                                            daytime use.
+                                        </small>
+
+                                    </button>
+
+
+                                    <button class="support-card" id="previewSystem" type="button">
+
+                                        <span>
+                                            <i class="fa-solid fa-desktop"></i>
+                                        </span>
+
+                                        <strong>
+                                            System
+                                        </strong>
+
+                                        <small>
+                                            Follow your device's
+                                            appearance preference.
+                                        </small>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- PAYMENTS -->
+
+                        <div class="settings-panel" id="paymentSettings">
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Payment Methods
+                                        </h2>
+
+                                        <p>
+                                            Manage payment methods
+                                            associated with your account.
+                                        </p>
+
+                                    </div>
+
+
+                                    <button class="primary-btn" id="addPayment" type="button">
+
+                                        <i class="fa-solid fa-plus"></i>
+
+                                        Add Payment
+
+                                    </button>
+
+                                </div>
+
+
+                                <div class="payment-card">
+
+                                    <div class="payment-brand">
+                                        VISA
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            •••• •••• •••• 4242
+                                        </strong>
+
+                                        <small>
+                                            Expires 08/29
+                                        </small>
+
+                                    </div>
+
+                                    <span class="verified">
+                                        DEFAULT
+                                    </span>
+
+                                    <button class="more-btn" type="button" title="Payment options">
+
+                                        ⋮
+
+                                    </button>
+
+                                </div>
+
+
+                                <div class="payment-card">
+
+                                    <div class="payment-brand mastercard">
+                                        MC
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            •••• •••• •••• 8214
+                                        </strong>
+
+                                        <small>
+                                            Expires 02/28
+                                        </small>
+
+                                    </div>
+
+                                    <button class="more-btn" type="button" title="Payment options">
+
+                                        ⋮
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="card info-card">
+
+                                <span class="info-icon">
+
+                                    <i class="fa-solid fa-lock"></i>
+
+                                </span>
+
+                                <div>
+
+                                    <strong>
+                                        Your payment information is secure.
+                                    </strong>
+
+                                    <p>
+                                        SkillShare uses secure payment
+                                        processing to protect your information.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- BLOCKED USERS -->
+
+                        <div class="settings-panel" id="blockedSettings">
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Blocked Users
+                                        </h2>
+
+                                        <p>
+                                            Manage people you've blocked.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="blocked-list" id="blockedList">
+
+
+                                    <div class="blocked-user">
+
+                                        <img class="blocked-user-avatar" src="https://i.pravatar.cc/100?img=32" alt="">
+
+                                        <div class="blocked-user-info">
+
+                                            <strong>
+                                                Alex Morgan
+                                            </strong>
+
+                                            <small>
+                                                @alexm
+                                            </small>
+
+                                        </div>
+
+                                        <button class="outline-btn unblock-user" type="button">
+
+                                            Unblock
+
+                                        </button>
+
+                                    </div>
+
+
+
+                                    <div class="blocked-user">
+
+                                        <img class="blocked-user-avatar" src="https://i.pravatar.cc/100?img=45" alt="">
+
+                                        <div class="blocked-user-info">
+
+                                            <strong>
+                                                Sarah Wilson
+                                            </strong>
+
+                                            <small>
+                                                @sarahw
+                                            </small>
+
+                                        </div>
+
+                                        <button class="outline-btn unblock-user" type="button">
+
+                                            Unblock
+
+                                        </button>
+
+                                    </div>
+
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- HELP & SUPPORT -->
+
+                        <div class="settings-panel" id="supportSettings">
+
+                            <div class="card support-hero">
+
+                                <div class="support-icon">
+
+                                    <i class="fa-solid fa-headset"></i>
+
+                                </div>
+
+
+                                <div>
+
+                                    <h2>
+                                        How can we help?
+                                    </h2>
+
+                                    <p>
+                                        Find answers or contact
+                                        the SkillShare team.
+                                    </p>
+
+                                </div>
+
+
+                                <button class="primary-btn" id="contactSupport" type="button">
+
+                                    Contact Support
+
+                                </button>
+
+                            </div>
+
+
+
+                            <div class="support-grid">
+
+
+                                <button class="support-card" id="openHelpCenter" type="button">
+
+                                    <span>
+
+                                        <i class="fa-solid fa-book-open"></i>
+
+                                    </span>
+
+                                    <strong>
+                                        Help Center
+                                    </strong>
+
+                                    <small>
+                                        Browse guides and answers
+                                        to common questions.
+                                    </small>
+
+                                </button>
+
+
+
+                                <button class="support-card" id="reportProblem" type="button">
+
+                                    <span>
+
+                                        <i class="fa-solid fa-bug"></i>
+
+                                    </span>
+
+                                    <strong>
+                                        Report a Problem
+                                    </strong>
+
+                                    <small>
+                                        Tell us about something
+                                        that isn't working.
+                                    </small>
+
+                                </button>
+
+
+
+                                <button class="support-card" id="communityGuidelines" type="button">
+
+                                    <span>
+
+                                        <i class="fa-solid fa-shield-halved"></i>
+
+                                    </span>
+
+                                    <strong>
+                                        Community Guidelines
+                                    </strong>
+
+                                    <small>
+                                        Learn how to keep SkillShare
+                                        welcoming for everyone.
+                                    </small>
+
+                                </button>
+
+
+                            </div>
+
+
+                        </div>
+
+
+                    </section>
+
+
+                </div>
+
+
+            </main>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- CHANGE PASSWORD MODAL -->
+
+    <div class="modal-backdrop" id="passwordModal">
+
+        <div class="modal" role="dialog" aria-modal="true">
+
+
+            <button class="modal-close" data-close-modal="passwordModal" type="button">
+
+                ×
+
+            </button>
+
+
+            <div class="modal-icon purple">
+
+                <i class="fa-solid fa-key"></i>
+
+            </div>
+
+
+            <h2>
+                Change Password
+            </h2>
+
+
+            <p>
+                Create a strong new password for
+                your SkillShare account.
+            </p>
+
+
+            <label class="field">
+
+                <span>
+                    Current Password
+                </span>
+
+                <input type="password" id="currentPassword" placeholder="Enter current password">
+
+            </label>
+
+
+            <label class="field">
+
+                <span>
+                    New Password
+                </span>
+
+                <input type="password" id="newPassword" placeholder="Enter new password">
+
+            </label>
+
+
+            <div class="password-strength">
+
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+
+            </div>
+
+
+            <label class="field">
+
+                <span>
+                    Confirm Password
+                </span>
+
+                <input type="password" id="confirmPassword" placeholder="Confirm new password">
+
+            </label>
+
+
+            <div class="modal-actions">
+
+                <button class="ghost-btn" data-close-modal="passwordModal" type="button">
+
+                    Cancel
+
+                </button>
+
+
+                <button class="primary-btn" id="savePassword" type="button">
+
+                    Update Password
+
+                </button>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- CHANGE EMAIL MODAL -->
+
+    <div class="modal-backdrop" id="emailModal">
+
+        <div class="modal">
+
+            <button class="modal-close" data-close-modal="emailModal" type="button">
+                ×
+            </button>
+
+
+            <div class="modal-icon blue">
+
+                <i class="fa-regular fa-envelope"></i>
+
+            </div>
+
+
+            <h2>
+                Change Email
+            </h2>
+
+
+            <p>
+                Enter your new email address.
+            </p>
+
+
+            <label class="field">
+
+                <span>
+                    New Email Address
+                </span>
+
+                <input type="email" id="newEmail" placeholder="you@example.com">
+
+            </label>
+
+
+            <div class="modal-actions">
+
+                <button class="ghost-btn" data-close-modal="emailModal" type="button">
+
+                    Cancel
+
+                </button>
+
+
+                <button class="primary-btn" id="saveEmail" type="button">
+
+                    Change Email
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- DELETE ACCOUNT MODAL -->
+
+    <div class="modal-backdrop" id="deleteModal">
+
+        <div class="modal compact-modal">
+
+            <button class="modal-close" data-close-modal="deleteModal" type="button">
+                ×
+            </button>
+
+
+            <div class="modal-icon orange">
+
+                <i class="fa-solid fa-triangle-exclamation"></i>
+
+            </div>
+
+
+            <h2>
+                Delete Account?
+            </h2>
+
+
+            <p>
+                This action cannot be undone.
+                Your profile, messages, saved content
+                and account data will be permanently removed.
+            </p>
+
+
+            <label class="field">
+
+                <span>
+                    Type DELETE to confirm
+                </span>
+
+                <input type="text" id="deleteConfirmation" placeholder="DELETE" autocomplete="off">
+
+            </label>
+
+
+            <div class="modal-actions">
+
+                <button class="ghost-btn" data-close-modal="deleteModal" type="button">
+
+                    Keep Account
+
+                </button>
+
+
+                <button class="danger-btn" id="confirmDeleteAccount" type="button" disabled>
+
+                    Permanently Delete
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- LOGOUT MODAL -->
+
+    <div class="modal-backdrop" id="logoutModal">
+
+        <div class="modal compact-modal">
+
+            <button class="modal-close" data-close-modal="logoutModal" type="button">
+                ×
+            </button>
+
+
+            <div class="modal-icon purple">
+
+                <i class="fa-solid fa-right-from-bracket"></i>
+
+            </div>
+
+
+            <h2>
+                Log out of SkillShare?
+            </h2>
+
+
+            <p>
+                You can sign back in anytime using
+                your SkillShare account.
+            </p>
+
+
+            <div class="modal-actions">
+
+                <button class="ghost-btn" data-close-modal="logoutModal" type="button">
+
+                    Stay Logged In
+
+                </button>
+
+
+                <button class="primary-btn" id="confirmLogout" type="button">
+
+                    Log Out
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- SUPPORT MODAL -->
+
+    <div class="modal-backdrop" id="supportModal">
+
+        <div class="modal">
+
+            <button class="modal-close" data-close-modal="supportModal" type="button">
+                ×
+            </button>
+
+
+            <div class="modal-icon green">
+
+                <i class="fa-solid fa-headset"></i>
+
+            </div>
+
+
+            <h2>
+                Contact Support
+            </h2>
+
+
+            <p>
+                Tell us what you need help with
+                and we'll get back to you.
+            </p>
+
+
+            <label class="field">
+
+                <span>
+                    Subject
+                </span>
+
+                <input type="text" id="supportSubject" placeholder="What do you need help with?">
+
+            </label>
+
+
+            <label class="field">
+
+                <span>
+                    Message
+                </span>
+
+                <textarea id="supportMessage" placeholder="Describe your problem..."></textarea>
+
+            </label>
+
+
+            <div class="modal-actions">
+
+                <button class="ghost-btn" data-close-modal="supportModal" type="button">
+
+                    Cancel
+
+                </button>
+
+
+                <button class="primary-btn" id="sendSupport" type="button">
+
+                    Send Request
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ADD PAYMENT MODAL -->
+
+    <div class="modal-backdrop" id="paymentModal">
+
+        <div class="modal">
+
+            <button class="modal-close" data-close-modal="paymentModal" type="button">
+                ×
+            </button>
+
+
+            <div class="modal-icon blue">
+
+                <i class="fa-regular fa-credit-card"></i>
+
+            </div>
+
+
+            <h2>
+                Add Payment Method
+            </h2>
+
+
+            <p>
+                Add a payment method to your SkillShare account.
+            </p>
+
+
+            <label class="field">
+
+                <span>
+                    Card Number
+                </span>
+
+                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+
+            </label>
+
+
+            <div class="field-grid">
+
+                <label class="field">
+
+                    <span>
+                        Expiry
+                    </span>
+
+                    <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5">
+
+                </label>
+
+
+                <label class="field">
+
+                    <span>
+                        CVV
+                    </span>
+
+                    <input type="password" id="cardCvv" placeholder="•••" maxlength="4">
+
+                </label>
+
+            </div>
+
+
+            <label class="field">
+
+                <span>
+                    Name on Card
+                </span>
+
+                <input type="text" id="cardName" placeholder="Full name">
+
+            </label>
+
+
+            <div class="modal-actions">
+
+                <button class="ghost-btn" data-close-modal="paymentModal" type="button">
+
+                    Cancel
+
+                </button>
+
+
+                <button class="primary-btn" id="savePayment" type="button">
+
+                    Add Card
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- TOAST CONTAINER -->
+
+    <div class="toast-container" id="toastContainer"></div>
+
+
+
+    <!-- SETTINGS JAVASCRIPT -->
+
+    <script src="setting.js"></script>
+
+
+</body>
+
+</html>
