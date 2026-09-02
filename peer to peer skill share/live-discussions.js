@@ -569,10 +569,12 @@ function joinRoom(id) {
     );
 
 
-    /* Open next page */
+    /* Open the matching experience first — it preserves the
+       selected room (skillconnect_current_room) and then
+       transitions into discussion-room.html. */
 
     window.location.href =
-        "discussion-room.html";
+        "discussion-waiting.html";
 
 }
 

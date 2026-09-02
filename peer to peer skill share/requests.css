@@ -1,6 +1,6 @@
 /* =========================================================
-   SKILLSHARE — SESSION REQUESTS
-   Advanced Request Management Interface
+   SKILLSHARE — CONNECTIONS
+   Advanced Connection Management Interface
    ========================================================= */
 
 :root {
@@ -435,4 +435,708 @@ body {
 
 .tab-panel {
     display: none;
+}
+/* =========================================================
+   REQUEST CARD GRID
+   ========================================================= */
+
+.cards {
+    display: grid;
+    gap: 14px;
+
+    animation: pageIn .55s .1s ease both;
+}
+
+.card {
+    background: rgba(255, 255, 255, .88);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.card.request {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+
+    padding: 18px;
+
+    transition: box-shadow var(--transition), transform var(--transition);
+}
+
+.card.request:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.card.request .req-avatar {
+    width: 54px;
+    height: 54px;
+    flex: 0 0 auto;
+
+    object-fit: cover;
+
+    border-radius: 16px;
+
+    background: linear-gradient(135deg, var(--primary), #8b5cf6);
+
+    box-shadow:
+        0 10px 25px rgba(99, 91, 255, .22);
+}
+
+.card.request .req-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.card.request .req-info h2 {
+    margin-bottom: 6px;
+
+    color: var(--text);
+
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.2px;
+}
+
+.req-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin: 8px 0;
+}
+
+.req-chip {
+    padding: 4px 10px;
+
+    color: var(--primary);
+
+    background: rgba(99, 91, 255, .09);
+
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.req-chip.req-rating {
+    color: #b45309;
+    background: var(--orange-soft);
+}
+
+.req-quote {
+    margin: 4px 0;
+
+    color: #4c5668;
+
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+
+.card.request .meta {
+    margin-top: 8px;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+.request-actions {
+    flex: 0 0 auto;
+
+    display: flex;
+    gap: 8px;
+
+    margin-top: 4px;
+}
+
+.request-actions .small {
+    min-height: 36px;
+
+    padding: 0 15px;
+
+    border-radius: 10px;
+
+    font-size: 12.5px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: .25s ease;
+}
+
+.request-actions .small.primary {
+    color: white;
+
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+
+    border: 0;
+
+    box-shadow:
+        0 8px 18px rgba(99, 91, 255, .25);
+}
+
+.request-actions .small.primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.request-actions .small.outline {
+    color: #64708a;
+
+    background: transparent;
+
+    border: 1px solid var(--border);
+}
+
+.request-actions .small.outline:hover:not(:disabled) {
+    color: var(--primary);
+
+    border-color: var(--primary);
+
+    background: rgba(99, 91, 255, .05);
+}
+
+.request-actions .small:disabled {
+    opacity: .6;
+
+    cursor: default;
+
+    transform: none;
+}
+
+.card.request .status {
+    flex: 0 0 auto;
+
+    padding: 5px 12px;
+
+    color: #b45309;
+
+    background: var(--orange-soft);
+
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* Empty state card */
+.empty.card {
+    display: grid;
+    place-items: center;
+
+    gap: 10px;
+
+    padding: 46px 22px;
+
+    text-align: center;
+}
+
+.empty.card .empty-icon {
+    width: 48px;
+    height: 48px;
+
+    display: grid;
+    place-items: center;
+
+    color: var(--green);
+
+    background: var(--green-soft);
+
+    border-radius: 50%;
+
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.empty.card h2 {
+    color: var(--text);
+
+    font-size: 17px;
+}
+
+.empty.card p {
+    max-width: 400px;
+
+    color: var(--muted);
+
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Loading hint */
+.req-loading {
+    padding: 40px 20px;
+
+    color: var(--muted);
+
+    text-align: center;
+
+    font-size: 14px;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    z-index: 2000;
+
+    max-width: min(92vw, 460px);
+
+    padding: 13px 22px;
+
+    color: white;
+
+    background: #1f2937;
+
+    border: 1px solid rgba(255, 255, 255, .08);
+
+    border-radius: 13px;
+
+    box-shadow: var(--shadow-lg);
+
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: center;
+
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(.96);
+    pointer-events: none;
+
+    transition: opacity .25s ease, transform .25s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+}
+
+/* User ID shown on request / connection / person cards */
+.req-user-id {
+    margin-top: 4px;
+
+    color: var(--muted);
+
+    font-size: 11.5px;
+    font-weight: 600;
+
+    letter-spacing: .3px;
+}
+
+/* Find People search bar */
+.people-search {
+    display: flex;
+
+    align-items: center;
+    gap: 12px;
+
+    padding: 14px 18px;
+
+    margin-bottom: 8px;
+}
+
+.people-search-wrap {
+    position: relative;
+
+    margin-bottom: 8px;
+}
+
+.people-search-wrap .people-search {
+    margin-bottom: 0;
+}
+
+.search-clear {
+    display: none;
+
+    flex: 0 0 auto;
+
+    width: 24px;
+    height: 24px;
+
+    align-items: center;
+    justify-content: center;
+
+    color: var(--muted);
+
+    border-radius: 50%;
+
+    background: rgba(0, 0, 0, .05);
+
+    font-size: 16px;
+    font-weight: 700;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition: var(--transition);
+}
+
+.search-clear:hover {
+    color: var(--text);
+
+    background: rgba(0, 0, 0, .1);
+}
+
+/* Live suggestions dropdown */
+.people-suggestions {
+    position: absolute;
+
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+
+    z-index: 50;
+
+    display: none;
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    box-shadow: var(--shadow-lg);
+
+    overflow: hidden;
+}
+
+.people-suggestions.show {
+    display: block;
+
+    animation: suggestion-in .18s ease;
+}
+
+@keyframes suggestion-in {
+    from {
+        opacity: 0;
+
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    display: flex;
+
+    align-items: center;
+    gap: 12px;
+
+    width: 100%;
+
+    padding: 10px 14px;
+
+    border: 0;
+
+    background: transparent;
+
+    text-align: left;
+
+    font-family: inherit;
+
+    cursor: pointer;
+
+    transition: background .15s ease;
+}
+
+.suggestion-item + .suggestion-item {
+    border-top: 1px solid rgba(226, 231, 240, .7);
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background: rgba(99, 91, 255, .06);
+}
+
+.suggestion-avatar {
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+}
+
+.suggestion-info {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+.suggestion-info strong {
+    color: var(--text);
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.suggestion-info small {
+    color: var(--muted);
+
+    font-size: 11px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+.suggestion-action {
+    flex: 0 0 auto;
+}
+
+.suggestion-action.pill {
+    padding: 5px 11px;
+
+    border-radius: 999px;
+
+    font-size: 10.5px;
+    font-weight: 800;
+}
+
+.suggestion-action.pill.connected {
+    color: #15803d;
+
+    background: var(--green-soft);
+}
+
+.suggestion-action.pill.pending {
+    color: #b45309;
+
+    background: var(--orange-soft);
+}
+
+.suggestion-action.pill.received {
+    color: #6d28d9;
+
+    background: rgba(99, 91, 255, .1);
+}
+
+.suggestion-send {
+    padding: 7px 13px;
+
+    color: white;
+
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+
+    border: 0;
+
+    border-radius: 9px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+}
+
+.suggestion-send:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.suggestion-send:disabled {
+    opacity: .6;
+
+    cursor: default;
+}
+
+.suggestion-send.sent {
+    color: #15803d;
+
+    background: var(--green-soft);
+
+    border: 1px solid rgba(22, 163, 74, .25);
+}
+
+.people-search .search-icon {
+    color: var(--muted);
+
+    font-size: 20px;
+}
+
+.people-search input {
+    flex: 1;
+
+    border: 0;
+    outline: 0;
+
+    background: transparent;
+
+    color: var(--text);
+
+    font-family: inherit;
+    font-size: 14.5px;
+}
+
+.people-search input::placeholder {
+    color: var(--muted);
+}
+
+/* Send Request / Cancel button feedback states */
+.request-actions .small.sent {
+    color: var(--green);
+
+    background: var(--green-soft);
+
+    border: 1px solid rgba(22, 163, 74, .25);
+}
+
+/* Heading quick actions */
+.heading-actions {
+    display: flex;
+
+    align-items: center;
+    gap: 10px;
+
+    flex: 0 0 auto;
+}
+
+.heading-actions .primary,
+.heading-actions .outline {
+    display: inline-flex;
+
+    align-items: center;
+    gap: 6px;
+
+    padding: 11px 18px;
+
+    border-radius: 12px;
+
+    font-size: 13.5px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: var(--transition);
+}
+
+.heading-actions .primary {
+    color: white;
+
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+
+    border: 0;
+
+    box-shadow: 0 8px 18px rgba(99, 91, 255, .25);
+}
+
+.heading-actions .primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.heading-actions .outline {
+    color: #64708a;
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+}
+
+.heading-actions .outline:hover:not(:disabled) {
+    color: var(--primary);
+
+    border-color: var(--primary);
+
+    background: rgba(99, 91, 255, .05);
+}
+
+.heading-actions button:disabled {
+    opacity: .6;
+
+    cursor: default;
+}
+
+/* Name + relationship status pill (Find People cards) */
+.req-name-row {
+    display: flex;
+
+    align-items: center;
+    gap: 10px;
+
+    flex-wrap: wrap;
+}
+
+.req-pill {
+    padding: 4px 10px;
+
+    border-radius: 999px;
+
+    font-size: 10.5px;
+    font-weight: 800;
+
+    letter-spacing: .2px;
+}
+
+.req-pill.connected {
+    color: #15803d;
+
+    background: var(--green-soft);
+
+    border: 1px solid rgba(22, 163, 74, .25);
+}
+
+.req-pill.pending {
+    color: #b45309;
+
+    background: var(--orange-soft);
+
+    border: 1px solid rgba(245, 158, 11, .3);
+}
+
+/* Empty state call-to-action */
+.empty-action {
+    margin-top: 6px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 620px) {
+    .card.request {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .heading-actions {
+        width: 100%;
+    }
+
+    .heading-actions .primary,
+    .heading-actions .outline {
+        flex: 1;
+
+        justify-content: center;
+    }
+
+    .request-actions {
+        width: 100%;
+    }
+
+    .request-actions .small {
+        flex: 1;
+    }
+
+    .app-head {
+        padding: 0 16px;
+    }
+
+    .app-nav {
+        display: none;
+    }
 }

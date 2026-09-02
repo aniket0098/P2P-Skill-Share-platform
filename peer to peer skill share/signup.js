@@ -586,23 +586,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /* -------------------------------
-               DEMO PROCESSING DELAY
-            -------------------------------- */
-
-            await new Promise(
-                resolve => {
-
-                    setTimeout(
-                        resolve,
-                        700
-                    );
-
-                }
-            );
-
-
-            /* -------------------------------
-               SAVE USER
+               CREATE ACCOUNT VIA FASTAPI
             -------------------------------- */
 
             const name =
@@ -615,10 +599,74 @@ document.addEventListener("DOMContentLoaded", () => {
                     .toLowerCase();
 
 
-            saveUser(
-                name,
-                email
-            );
+            try {
+
+                await window.SkillShareAPI.signup(
+                    name,
+                    email,
+                    passwordInput.value
+                );
+
+
+                /* -------------------------------
+                   AUTO LOGIN AFTER SIGNUP
+                   (signup endpoint does not issue
+                    a token, so we log in again)
+                -------------------------------- */
+
+                const session =
+                    await window.SkillShareAPI.login(
+                        email,
+                        passwordInput.value
+                    );
+
+
+                window.SkillShareAPI.setSession(
+                    session.access_token,
+                    session.user
+                );
+
+
+                localStorage.setItem(
+                    "skillshareLoggedIn",
+                    "true"
+                );
+
+
+            } catch (error) {
+
+
+                if (submitButton) {
+
+                    submitButton.disabled =
+                        false;
+
+
+                    submitButton.classList.remove(
+                        "loading"
+                    );
+
+
+                    submitButton.textContent =
+                        submitButton.dataset.originalText ||
+                        "Create Account";
+
+                }
+
+
+                showToast(
+                    (error && error.detail) ||
+                    (
+                        error && error.status === 0
+                            ? "Server unavailable. Please check that the backend is running."
+                            : "Unable to create your account. Please try again."
+                    ),
+                    "error"
+                );
+
+                return;
+
+            }
 
 
             /* -------------------------------

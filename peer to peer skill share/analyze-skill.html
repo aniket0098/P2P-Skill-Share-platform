@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Skill Analyzer | SkillConnect</title>
+
+    <link rel="stylesheet" href="analyze-skill.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-logo">✦</div>
+
+            <div>
+                <h2>SkillConnect</h2>
+                <span>Learn. Share. Get Hired.</span>
+            </div>
+
+        </div>
+
+
+        <nav class="navigation">
+
+            <a href="dashboard.html" class="nav-item">
+                <span>⌂</span>
+                Dashboard
+            </a>
+
+            <a href="explore.html" class="nav-item">
+                <span>⌕</span>
+                Explore Skills
+            </a>
+
+            <a href="live-learning.html" class="nav-item">
+                <span>◉</span>
+                Live Learn
+            </a>
+
+            <a href="my-learning.html" class="nav-item">
+                <span>▣</span>
+                My Learning
+            </a>
+
+            <a href="my-projects.html" class="nav-item">
+                <span>◈</span>
+                My Projects
+            </a>
+
+            <a href="analyze-skill.html" class="nav-item active">
+                <span>✥</span>
+                Skill Analyzer
+                <small class="new-badge">New</small>
+            </a>
+
+            <a href="#" class="nav-item">
+                <span>♕</span>
+                Opportunities
+            </a>
+
+            <a href="messages.html" class="nav-item">
+                <span>▢</span>
+                Messages
+                <b class="message-count">3</b>
+            </a>
+
+            <a href="community.html" class="nav-item">
+                <span>♧</span>
+                Community
+            </a>
+
+            <a href="setting.html" class="nav-item">
+                <span>⚙</span>
+                Settings
+            </a>
+
+        </nav>
+
+
+        <!-- Sidebar promotion -->
+
+        <div class="sidebar-card">
+
+            <h2>
+                Analyze. Improve.
+                <br>
+                Get Hired.
+            </h2>
+
+            <p>
+                Track your skills, compare with industry
+                standards and unlock better opportunities.
+            </p>
+
+            <button id="startAnalysisBtn">
+                Start Your Analysis →
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="main">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <div>
+
+                <h1>
+                    <span class="title-icon">✥</span>
+                    Skill Analyzer
+                </h1>
+
+                <p>
+                    Analyze your skills, compare with industry standards
+                    and discover your career potential.
+                </p>
+
+            </div>
+
+
+            <div class="header-actions">
+
+                <button
+                    id="reanalyzeBtn"
+                    class="reanalyze-btn"
+                >
+                    <span id="refreshIcon">↻</span>
+                    Re-analyze Skills
+                </button>
+
+
+                <!-- Notification -->
+
+                <button
+                    class="notification-btn"
+                    id="notificationBtn"
+                >
+                    ♧
+
+                    <b>5</b>
+
+                </button>
+
+
+                <!-- Profile -->
+
+                <div class="profile-wrapper">
+
+                    <button
+                        class="profile-button"
+                        id="profileButton"
+                    >
+
+                        <div class="profile-avatar">
+                            AD
+                        </div>
+
+                        <div class="profile-info">
+
+                            <strong>
+                                Aniket Deshmukh
+                            </strong>
+
+                            <span>
+                                Learner
+                            </span>
+
+                        </div>
+
+                        <span class="profile-arrow">
+                           ⌄
+                        </span>
+
+                    </button>
+
+
+                    <!-- Profile dropdown -->
+
+                    <div
+                        class="profile-dropdown"
+                        id="profileDropdown"
+                    >
+
+                        <div class="dropdown-user">
+
+                            <div class="profile-avatar">
+                                AD
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Aniket Deshmukh
+                                </strong>
+
+                                <span>
+                                    Learner • Creator
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <hr>
+
+                        <button data-profile="profile">
+                            👤 View Profile
+                        </button>
+
+                        <button data-profile="skills">
+                            ✦ My Skills
+                        </button>
+
+                        <button data-profile="settings">
+                            ⚙ Settings
+                        </button>
+
+                        <button data-profile="logout">
+                            ↪ Logout
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- ================= TOP ANALYSIS ================= -->
+
+        <section class="top-grid">
+
+
+            <!-- Overall score -->
+
+            <div class="panel overall-panel">
+
+                <h2>
+                    Overall Skill Score
+                </h2>
+
+                <div class="overall-content">
+
+
+                    <div
+                        class="score-circle"
+                        id="scoreCircle"
+                    >
+
+                        <div>
+
+                            <strong id="overallScore">
+                                72%
+                            </strong>
+
+                            <span id="scoreStatus">
+                                Good
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="score-message">
+
+                        <h2>
+                            You are
+                            <span id="scoreMessage">
+                                72%
+                            </span>
+                            ready for your dream job!
+                        </h2>
+
+                        <p>
+                            Keep learning and improve your
+                            in-demand skills to boost your
+                            employment chances.
+                        </p>
+
+                        <button
+                            id="fullReportBtn"
+                            class="primary-btn"
+                        >
+                            View Full Report
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Radar chart -->
+
+            <div class="panel radar-panel">
+
+                <div class="panel-heading">
+
+                    <h2>
+                        Skill Category Overview
+                    </h2>
+
+                    <div class="legend">
+
+                        <span>
+                            <i class="legend-purple"></i>
+                            Your Score
+                        </span>
+
+                        <span>
+                            <i class="legend-gray"></i>
+                            Industry Avg.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="radar-container">
+
+                    <svg
+                        id="radarChart"
+                        viewBox="0 0 400 300"
+                    >
+
+                        <!-- grid -->
+
+                        <polygon
+                            points="200,35 335,132 283,280 117,280 65,132"
+                            class="radar-grid"
+                        />
+
+                        <polygon
+                            points="200,65 300,137 260,245 140,245 100,137"
+                            class="radar-grid"
+                        />
+
+                        <polygon
+                            points="200,95 265,143 237,210 163,210 135,143"
+                            class="radar-grid"
+                        />
+
+                        <polygon
+                            points="200,125 230,148 218,175 182,175 170,148"
+                            class="radar-grid"
+                        />
+
+
+                        <!-- industry -->
+
+                        <polygon
+                            id="industryPolygon"
+                            class="industry-polygon"
+                        />
+
+
+                        <!-- user -->
+
+                        <polygon
+                            id="userPolygon"
+                            class="user-polygon"
+                        />
+
+
+                        <!-- points -->
+
+                        <g id="radarPoints"></g>
+
+
+                        <!-- labels -->
+
+                        <text
+                            x="200"
+                            y="20"
+                            class="radar-label"
+                            text-anchor="middle"
+                        >
+                            Technical
+                            Skills
+                        </text>
+
+                        <text
+                            x="350"
+                            y="125"
+                            class="radar-label"
+                        >
+                            Problem
+                            Solving
+                        </text>
+
+                        <text
+                            x="300"
+                            y="292"
+                            class="radar-label"
+                        >
+                            Tools &
+                            Technologies
+                        </text>
+
+                        <text
+                            x="100"
+                            y="292"
+                            class="radar-label"
+                            text-anchor="middle"
+                        >
+                            Communication
+                        </text>
+
+                        <text
+                            x="50"
+                            y="125"
+                            class="radar-label"
+                            text-anchor="end"
+                        >
+                            Industry
+                            Knowledge
+                        </text>
+
+                    </svg>
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= RIGHT JOB MATCH ================= -->
+
+        <section class="job-match panel">
+
+            <div class="job-match-top">
+
+                <div>
+
+                    <h2>
+                        Job Match Score
+                        <span class="info">ⓘ</span>
+                    </h2>
+
+                    <div
+                        class="gauge"
+                        id="jobGauge"
+                    >
+
+                        <div class="gauge-inner">
+
+                            <strong id="jobMatchScore">
+                                68%
+                            </strong>
+
+                            <span>
+                                Match
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <p id="jobMatchText">
+                        You match with many Frontend Developer
+                        roles. Improve the recommended skills
+                        to increase your chances.
+                    </p>
+
+                    <button
+                        class="job-btn"
+                        id="exploreJobsBtn"
+                    >
+                        Explore Jobs →
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ================= SKILLS + INDUSTRY ================= -->
+
+        <section class="middle-grid">
+
+
+            <!-- YOUR SKILLS -->
+
+            <div class="panel">
+
+                <div class="panel-heading">
+
+                    <h2>
+                        ✥ Your Top Skills
+                    </h2>
+
+                    <button
+                        class="text-btn"
+                        id="viewAllSkillsBtn"
+                    >
+                        View All Skills →
+                    </button>
+
+                </div>
+
+
+                <div id="skillsList"></div>
+
+            </div>
+
+
+
+            <!-- INDUSTRY COMPARISON -->
+
+            <div class="panel">
+
+                <div class="panel-heading">
+
+                    <h2>
+                        Industry Demand Comparison
+                    </h2>
+
+                    <button
+                        class="text-btn"
+                        id="viewIndustryBtn"
+                    >
+                        View Industry Skills →
+                    </button>
+
+                </div>
+
+
+                <div id="industryComparison"></div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= BOTTOM ================= -->
+
+        <section class="bottom-grid">
+
+
+            <!-- GAP ANALYSIS -->
+
+            <div class="panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                        <h2>
+                            Skill Gap Analysis
+                        </h2>
+
+                        <p>
+                            Skills you have vs. skills required
+                            for your dream job role.
+                        </p>
+
+                    </div>
+
+                    <div class="gap-legend">
+
+                        <span>
+                            <i class="your"></i>
+                            You Have
+                        </span>
+
+                        <span>
+                            <i class="required"></i>
+                            Required
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div id="gapList"></div>
+
+
+                <button
+                    id="fullGapReportBtn"
+                    class="text-btn bottom-btn"
+                >
+                    View Full Gap Report →
+                </button>
+
+            </div>
+
+
+
+            <!-- CAREER ROLES -->
+
+            <div class="panel">
+
+                <div class="panel-heading">
+
+                    <h2>
+                        Career Role Fitment
+                    </h2>
+
+                </div>
+
+
+                <div id="rolesList"></div>
+
+
+                <button
+                    id="allRolesBtn"
+                    class="text-btn bottom-btn"
+                >
+                    Explore All Roles →
+                </button>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= RECOMMENDATIONS ================= -->
+
+        <section class="recommendations panel">
+
+            <div class="panel-heading">
+
+                <h2>
+                    Recommended Skills to Learn
+                </h2>
+
+                <button
+                    id="learningPathBtn"
+                    class="text-btn"
+                >
+                    View Learning Path →
+                </button>
+
+            </div>
+
+
+            <div id="recommendedSkills"></div>
+
+        </section>
+
+
+
+        <!-- ================= STREAK ================= -->
+
+        <section class="streak panel">
+
+            <h2>
+                🔥 12 Days
+            </h2>
+
+            <p>
+                Great going! Consistency is the key.
+            </p>
+
+            <div class="days">
+
+                <span>Mon<br>✓</span>
+                <span>Tue<br>✓</span>
+                <span>Wed<br>✓</span>
+                <span>Thu<br>✓</span>
+                <span>Fri<br>✓</span>
+                <span>Sat<br>✓</span>
+                <span>Sun<br>○</span>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+</div>
+
+
+
+<!-- ================= MODAL ================= -->
+
+<div
+    class="modal-overlay"
+    id="modalOverlay"
+>
+
+    <div class="modal">
+
+        <button
+            class="modal-close"
+            id="modalClose"
+        >
+            ×
+        </button>
+
+        <div id="modalContent"></div>
+
+    </div>
+
+</div>
+
+
+
+<!-- TOAST -->
+
+<div
+    class="toast"
+    id="toast"
+></div>
+
+
+<script src="analyze-skill.js"></script>
+
+</body>
+</html>

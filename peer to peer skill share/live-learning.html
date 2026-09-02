@@ -1,930 +1,1329 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SkillShare - My Teaching</title>
+  <meta
+    name="description"
+    content="SkillConnect 1-on-1 Live Learning"
+  >
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>SkillConnect — Live Learning</title>
 
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link rel="stylesheet" href="live-learning.css">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="live-learning.css">
 </head>
 
 <body>
 
-    <div class="app">
-
-        <!-- ================= TOP NAVBAR ================= -->
-        <header class="topbar">
-
-            <div class="brand">
-                <div class="brand-logo">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-
-                <div class="brand-text">
-                    <h2>SkillShare</h2>
-                    <p>Share Skills. Grow Together.</p>
-                </div>
-            </div>
-
-            <nav class="top-nav">
-                <a href="index.html">Home</a>
-                <a href="explore.html">Explore Skills</a>
-                <a href="how-it-works.html">How It Works</a>
-
-                <a href="community.html" class="community-link">
-                    Community
-                    <span class="nav-badge">3</span>
-                </a>
-
-                <a href="messages.html" class="messages-link">
-                    Messages
-                    <span class="nav-badge">3</span>
-                </a>
-            </nav>
-
-            <div class="top-actions">
-
-                <button class="icon-btn search-btn" title="Search">
-                    <i data-lucide="search"></i>
-                </button>
-
-                <button class="icon-btn theme-btn" title="Toggle theme">
-                    <i data-lucide="moon"></i>
-                </button>
-
-                <button class="icon-btn notification-btn">
-                    <i data-lucide="bell"></i>
-                    <span>6</span>
-                </button>
-
-                <div class="profile">
-
-                    <div class="avatar">
-                        <span>AD</span>
-                        <div class="online-dot"></div>
-                    </div>
+  <div class="app-shell">
 
-                    <div class="profile-info">
-                        <a href="profile.html">
-                            <strong>Aniket</strong>
-                            <small>Instructor</small>
-                        </a>
-                    </div>
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
 
-                    <i data-lucide="chevron-down" class="profile-arrow"></i>
+    <aside class="sidebar">
 
-                </div>
+      <div class="brand">
 
-            </div>
-        </header>
+        <div class="brand-logo">
+          ✦
+        </div>
 
+        <div>
+          <div class="brand-name">
+            SkillConnect
+          </div>
 
-        <!-- ================= SIDEBAR ================= -->
-        <aside class="sidebar">
+          <div class="brand-tagline">
+            Share Skills. Grow Together.
+          </div>
+        </div>
 
-            <div class="sidebar-menu">
+      </div>
 
-                <a href="dashboard.html" class="side-link">
-                    <i data-lucide="layout-dashboard"></i>
-                    <span>Dashboard</span>
-                </a>
-
-                <a href="explore.html" class="side-link">
-                    <i data-lucide="map-pin"></i>
-                    <span>Explore Skills</span>
-                </a>
 
-                <a href="my-learning.html" class="side-link">
-                    <i data-lucide="book-open"></i>
-                    <span>My Learning</span>
-                </a>
+      <!-- SIDEBAR NAVIGATION -->
 
-                <a href="my-teaching.html" class="side-link active">
-                    <i data-lucide="graduation-cap"></i>
-                    <span>My Teaching</span>
-                </a>
+      <nav class="side-nav">
 
-                <a href="reviews.html" class="side-link">
-                    <i data-lucide="star"></i>
-                    <span>Reviews</span>
-                    <b>24</b>
-                </a>
+        <a href="dashboard.html" class="nav-item">
+          <span>⌂</span>
+          Dashboard
+        </a>
 
-                <a href="requests.html" class="side-link">
-                    <i data-lucide="send"></i>
-                    <span>Requests</span>
-                    <b>5</b>
-                </a>
+        <a href="explore.html" class="nav-item">
+          <span>⌕</span>
+          Explore Skills
+        </a>
 
-                <a href="messages.html" class="side-link">
-                    <i data-lucide="message-square"></i>
-                    <span>Messages</span>
-                    <b>3</b>
-                </a>
+        <a href="live-learning.html" class="nav-item active">
+          <span>◉</span>
+          Live Learn
+        </a>
 
-                <a href="calendar.html" class="side-link">
-                    <i data-lucide="calendar-days"></i>
-                    <span>Calendar</span>
-                </a>
+        <a href="my-learning.html" class="nav-item">
+          <span>▣</span>
+          My Learning
+        </a>
 
-                <a href="setting.html" class="side-link">
-                    <i data-lucide="settings"></i>
-                    <span>Settings</span>
-                </a>
+        <a href="requests.html" class="nav-item">
+          <span>▤</span>
+          Requests
+        </a>
 
-            </div>
+        <a href="messages.html" class="nav-item">
+          <span>▱</span>
+          Messages
 
+          <b class="nav-badge">
+            3
+          </b>
+        </a>
 
-            <!-- SIDEBAR CTA -->
-            <div class="teacher-card">
+        <a href="#" class="nav-item">
+          <span>⚙</span>
+          Settings
+        </a>
 
-                <div class="teacher-content">
-                    <h3>Teach. Inspire. Earn.</h3>
+      </nav>
 
-                    <p>
-                        Share your knowledge and build a global learning community.
-                    </p>
 
-                    <button class="small-create-btn">
-                        Create New Class
-                        <i data-lucide="arrow-right"></i>
-                    </button>
-                </div>
+      <!-- SIDEBAR PROMO -->
 
-                <div class="teacher-illustration">
-                    <div class="person-head"></div>
-                    <div class="person-body"></div>
-                    <div class="laptop"></div>
-                </div>
+      <div class="sidebar-promo">
 
-            </div>
+        <h3>
+          Learn Live.<br>
+          Grow Together.
+        </h3>
 
-        </aside>
+        <p>
+          Connect 1-on-1 with experts
+          and master new skills.
+        </p>
 
+        <div class="promo-art">
+          <span>👩🏻‍💻</span>
+          <span>🧑🏽‍💻</span>
+        </div>
 
-        <!-- ================= MAIN CONTENT ================= -->
-        <main class="main">
+        <button
+          class="secondary-btn how-btn"
+          type="button"
+        >
+          How It Works
+          <span>→</span>
+        </button>
 
-            <!-- MOBILE MENU -->
-            <button class="mobile-menu">
-                <i data-lucide="menu"></i>
-            </button>
+      </div>
 
+    </aside>
 
-            <!-- PAGE HEADER -->
-            <section class="page-header reveal">
 
-                <div>
-                    <h1>
-                        My <span>Teaching</span>
-                    </h1>
+    <!-- =====================================================
+         MAIN CONTENT
+    ====================================================== -->
 
-                    <p>
-                        Manage your classes, track performance, and engage with your students.
-                    </p>
-                </div>
+    <main class="main-content">
 
-                <button class="create-btn" id="createClassBtn">
-                    <i data-lucide="plus"></i>
-                    Create New Class
-                    <i data-lucide="chevron-down"></i>
-                </button>
 
-            </section>
+      <!-- =================================================
+           TOP HEADER
+      ================================================== -->
 
+      <header class="top-header">
 
-            <!-- ================= STATS ================= -->
-            <section class="stats-grid">
+        <div class="page-heading">
 
-                <!-- CARD -->
-                <div class="stat-card purple reveal">
+          <div class="heading-icon">
+            ◉
+          </div>
 
-                    <div class="stat-top">
-                        <div class="stat-icon">
-                            <i data-lucide="users"></i>
-                        </div>
+          <div>
 
-                        <div>
-                            <p>Total Students</p>
-                            <h2 class="counter" data-target="128">0</h2>
-                        </div>
-                    </div>
+            <h1>
+              Live Learning
+            </h1>
 
-                    <div class="growth purple-text">
-                        +18 this month
-                    </div>
+            <p>
+              Connect 1-on-1 and learn from experts in real-time.
+            </p>
 
-                    <div class="mini-chart">
-                        <svg viewBox="0 0 260 70">
-                            <polyline
-                                points="0,52 25,37 48,51 70,41 95,46 120,29 143,40 166,28 190,43 215,34 240,42 260,24"
-                                fill="none" stroke="currentColor" stroke-width="2" />
-                        </svg>
-                    </div>
-
-                </div>
-
-
-                <div class="stat-card blue reveal">
-
-                    <div class="stat-top">
-                        <div class="stat-icon">
-                            <i data-lucide="book-open"></i>
-                        </div>
-
-                        <div>
-                            <p>Total Classes</p>
-                            <h2 class="counter" data-target="8">0</h2>
-                        </div>
-                    </div>
-
-                    <div class="growth">
-                        +1 this month
-                    </div>
-
-                    <div class="mini-chart">
-                        <svg viewBox="0 0 260 70">
-                            <polyline
-                                points="0,52 25,43 48,48 70,23 95,41 120,31 143,52 166,37 190,27 215,17 240,28 260,19"
-                                fill="none" stroke="currentColor" stroke-width="2" />
-                        </svg>
-                    </div>
-
-                </div>
-
-
-                <div class="stat-card green reveal">
-
-                    <div class="stat-top">
-                        <div class="stat-icon">
-                            <i data-lucide="dollar-sign"></i>
-                        </div>
-
-                        <div>
-                            <p>Total Earnings</p>
-                            <h2>$<span class="counter" data-target="2540">0</span></h2>
-                        </div>
-                    </div>
-
-                    <div class="growth green-text">
-                        +12% this month
-                    </div>
-
-                    <div class="mini-chart">
-                        <svg viewBox="0 0 260 70">
-                            <polyline
-                                points="0,50 25,30 48,45 70,35 95,21 120,37 143,38 166,27 190,39 215,31 240,43 260,22"
-                                fill="none" stroke="currentColor" stroke-width="2" />
-                        </svg>
-                    </div>
-
-                </div>
-
-
-                <div class="stat-card orange reveal">
-
-                    <div class="stat-top">
-                        <div class="stat-icon">
-                            <i data-lucide="star"></i>
-                        </div>
-
-                        <div>
-                            <p>Total Reviews</p>
-                            <h2 class="counter" data-target="24">0</h2>
-                        </div>
-                    </div>
-
-                    <div class="growth orange-text">
-                        +6 this month
-                    </div>
-
-                    <div class="mini-chart">
-                        <svg viewBox="0 0 260 70">
-                            <polyline
-                                points="0,48 25,39 48,43 70,19 95,36 120,30 143,40 166,35 190,48 215,32 240,24 260,14"
-                                fill="none" stroke="currentColor" stroke-width="2" />
-                        </svg>
-                    </div>
-
-                </div>
-
-
-                <!-- RATING -->
-                <div class="rating-card reveal">
-
-                    <p>Average Rating</p>
-
-                    <div class="rating-content">
-
-                        <div class="rating-circle">
-                            <i data-lucide="star"></i>
-                        </div>
-
-                        <div>
-                            <h2>4.8</h2>
-                            <span>Excellent</span>
-                        </div>
-
-                    </div>
-
-                    <div class="stars">
-                        ★ ★ ★ ★ ★
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- ================= CONTENT GRID ================= -->
-            <div class="dashboard-grid">
-
-
-                <!-- ================= LEFT ================= -->
-                <div class="left-column">
-
-                    <!-- CLASSES -->
-                    <section class="panel classes-panel reveal">
-
-                        <div class="panel-header">
-
-                            <div>
-                                <h2>Your Classes</h2>
-                            </div>
-
-                            <button class="ghost-btn">
-                                View All Classes
-                                <i data-lucide="arrow-right"></i>
-                            </button>
-
-                        </div>
-
-
-                        <div class="class-list">
-
-
-                            <!-- CLASS -->
-                            <div class="class-item">
-
-                                <div class="course-icon python">
-                                    <span>🐍</span>
-                                </div>
-
-                                <div class="course-info">
-                                    <h3>
-                                        Python Programming for Beginners
-                                        <em>Published</em>
-                                    </h3>
-
-                                    <p>
-                                        Beginner
-                                        <span>•</span>
-                                        12 Lessons
-                                    </p>
-                                </div>
-
-                                <div class="course-students">
-                                    <strong>42</strong>
-                                    <span>Students</span>
-                                </div>
-
-                                <div class="course-rating">
-                                    <strong>★</strong>
-                                    <span>4.9</span>
-                                    <small>Rating</small>
-                                </div>
-
-                                <button class="more-btn">
-                                    <i data-lucide="more-vertical"></i>
-                                </button>
-
-                            </div>
-
-
-                            <!-- CLASS -->
-                            <div class="class-item">
-
-                                <div class="course-icon uiux">
-                                    <i data-lucide="layout"></i>
-                                </div>
-
-                                <div class="course-info">
-                                    <h3>
-                                        UI/UX Design Fundamentals
-                                        <em>Published</em>
-                                    </h3>
-
-                                    <p>
-                                        Beginner
-                                        <span>•</span>
-                                        10 Lessons
-                                    </p>
-                                </div>
-
-                                <div class="course-students">
-                                    <strong>35</strong>
-                                    <span>Students</span>
-                                </div>
-
-                                <div class="course-rating">
-                                    <strong>★</strong>
-                                    <span>4.7</span>
-                                    <small>Rating</small>
-                                </div>
-
-                                <button class="more-btn">
-                                    <i data-lucide="more-vertical"></i>
-                                </button>
-
-                            </div>
-
-
-                            <!-- CLASS -->
-                            <div class="class-item">
-
-                                <div class="course-icon premiere">
-                                    <strong>Pr</strong>
-                                </div>
-
-                                <div class="course-info">
-                                    <h3>
-                                        Video Editing with Premiere Pro
-                                        <em>Published</em>
-                                    </h3>
-
-                                    <p>
-                                        Intermediate
-                                        <span>•</span>
-                                        15 Lessons
-                                    </p>
-                                </div>
-
-                                <div class="course-students">
-                                    <strong>28</strong>
-                                    <span>Students</span>
-                                </div>
-
-                                <div class="course-rating">
-                                    <strong>★</strong>
-                                    <span>4.8</span>
-                                    <small>Rating</small>
-                                </div>
-
-                                <button class="more-btn">
-                                    <i data-lucide="more-vertical"></i>
-                                </button>
-
-                            </div>
-
-
-                            <!-- CLASS -->
-                            <div class="class-item">
-
-                                <div class="course-icon marketing">
-                                    <i data-lucide="megaphone"></i>
-                                </div>
-
-                                <div class="course-info">
-                                    <h3>
-                                        Digital Marketing Masterclass
-                                        <em>Published</em>
-                                    </h3>
-
-                                    <p>
-                                        Advanced
-                                        <span>•</span>
-                                        18 Lessons
-                                    </p>
-                                </div>
-
-                                <div class="course-students">
-                                    <strong>23</strong>
-                                    <span>Students</span>
-                                </div>
-
-                                <div class="course-rating">
-                                    <strong>★</strong>
-                                    <span>4.6</span>
-                                    <small>Rating</small>
-                                </div>
-
-                                <button class="more-btn">
-                                    <i data-lucide="more-vertical"></i>
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </section>
-
-
-                    <!-- ENGAGEMENT -->
-                    <section class="panel engagement-panel reveal">
-
-                        <div class="panel-header">
-
-                            <h2>Student Engagement</h2>
-
-                            <select id="periodSelect">
-                                <option>This Month</option>
-                                <option>Last Month</option>
-                                <option>Last 3 Months</option>
-                            </select>
-
-                        </div>
-
-
-                        <div class="engagement-content">
-
-                            <div class="watch-time">
-
-                                <p>Total Watch Time</p>
-
-                                <div class="watch-number">
-                                    <div>
-                                        <i data-lucide="clock-3"></i>
-                                    </div>
-
-                                    <strong>1,245 <small>hrs</small></strong>
-                                </div>
-
-                                <span class="positive">
-                                    +15% this month
-                                </span>
-
-                            </div>
-
-
-                            <div class="large-chart">
-
-                                <svg viewBox="0 0 700 280" preserveAspectRatio="none">
-
-                                    <defs>
-                                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stop-color="#7c3aed" stop-opacity=".35" />
-                                            <stop offset="100%" stop-color="#7c3aed" stop-opacity="0" />
-                                        </linearGradient>
-                                    </defs>
-
-                                    <line x1="0" y1="50" x2="700" y2="50" class="grid-line" />
-                                    <line x1="0" y1="110" x2="700" y2="110" class="grid-line" />
-                                    <line x1="0" y1="170" x2="700" y2="170" class="grid-line" />
-                                    <line x1="0" y1="230" x2="700" y2="230" class="grid-line" />
-
-                                    <path class="chart-area" d="M0 205
-                                    L30 205
-                                    L55 170
-                                    L80 210
-                                    L105 185
-                                    L130 195
-                                    L155 175
-                                    L180 190
-                                    L205 125
-                                    L230 165
-                                    L255 178
-                                    L280 145
-                                    L305 160
-                                    L330 110
-                                    L355 130
-                                    L380 160
-                                    L405 140
-                                    L430 115
-                                    L455 90
-                                    L480 120
-                                    L505 140
-                                    L530 105
-                                    L555 130
-                                    L580 75
-                                    L605 105
-                                    L630 95
-                                    L655 65
-                                    L680 75
-                                    L700 55
-                                    L700 280
-                                    L0 280 Z" />
-
-                                    <path class="chart-line" d="M0 205
-                                    L30 205
-                                    L55 170
-                                    L80 210
-                                    L105 185
-                                    L130 195
-                                    L155 175
-                                    L180 190
-                                    L205 125
-                                    L230 165
-                                    L255 178
-                                    L280 145
-                                    L305 160
-                                    L330 110
-                                    L355 130
-                                    L380 160
-                                    L405 140
-                                    L430 115
-                                    L455 90
-                                    L480 120
-                                    L505 140
-                                    L530 105
-                                    L555 130
-                                    L580 75
-                                    L605 105
-                                    L630 95
-                                    L655 65
-                                    L680 75
-                                    L700 55" />
-
-                                </svg>
-
-                                <div class="chart-labels">
-                                    <span>May 01</span>
-                                    <span>May 05</span>
-                                    <span>May 10</span>
-                                    <span>May 15</span>
-                                    <span>May 20</span>
-                                    <span>May 25</span>
-                                    <span>May 30</span>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </section>
-
-                </div>
-
-
-                <!-- ================= RIGHT ================= -->
-                <aside class="right-column">
-
-
-                    <!-- REVIEWS -->
-                    <section class="panel reviews-panel reveal">
-
-                        <div class="panel-header">
-                            <h2>Recent Reviews</h2>
-                            <a href="#">View All</a>
-                        </div>
-
-
-                        <div class="review">
-
-                            <div class="review-avatar avatar-one">
-                                RM
-                            </div>
-
-                            <div class="review-body">
-
-                                <div class="review-title">
-                                    <strong>Rohan Mehta</strong>
-
-                                    <span class="review-stars">
-                                        ★★★★★
-                                    </span>
-
-                                    <small>2 days ago</small>
-                                </div>
-
-                                <p>
-                                    Great explanation and practical examples!
-                                </p>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="review">
-
-                            <div class="review-avatar avatar-two">
-                                SK
-                            </div>
-
-                            <div class="review-body">
-
-                                <div class="review-title">
-                                    <strong>Sneha Kapoor</strong>
-
-                                    <span class="review-stars">
-                                        ★★★★★
-                                    </span>
-
-                                    <small>1 week ago</small>
-                                </div>
-
-                                <p>
-                                    Very engaging and easy to understand.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="review">
-
-                            <div class="review-avatar avatar-three">
-                                AV
-                            </div>
-
-                            <div class="review-body">
-
-                                <div class="review-title">
-                                    <strong>Arjun Verma</strong>
-
-                                    <span class="review-stars">
-                                        ★★★★★
-                                    </span>
-
-                                    <small>2 weeks ago</small>
-                                </div>
-
-                                <p>
-                                    This class helped me a lot. Thank you!
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                    </section>
-
-
-                    <!-- UPCOMING -->
-                    <section class="panel sessions-panel reveal">
-
-                        <div class="panel-header">
-                            <h2>Upcoming Sessions</h2>
-                            <a href="#">View Calendar</a>
-                        </div>
-
-
-                        <div class="session">
-
-                            <div class="date-box blue-date">
-                                <strong>24</strong>
-                                <span>May</span>
-                            </div>
-
-                            <div class="session-info">
-                                <strong>Live Q&A: Python Basics</strong>
-                                <span>Today, 7:00 PM</span>
-                            </div>
-
-                            <button class="join-btn">
-                                Join
-                            </button>
-
-                        </div>
-
-
-                        <div class="session">
-
-                            <div class="date-box purple-date">
-                                <strong>26</strong>
-                                <span>May</span>
-                            </div>
-
-                            <div class="session-info">
-                                <strong>UI/UX Design Live Workshop</strong>
-                                <span>Tomorrow, 6:00 PM</span>
-                            </div>
-
-                            <button class="join-btn">
-                                Join
-                            </button>
-
-                        </div>
-
-
-                        <div class="session">
-
-                            <div class="date-box green-date">
-                                <strong>29</strong>
-                                <span>May</span>
-                            </div>
-
-                            <div class="session-info">
-                                <strong>Video Editing Tips & Tricks</strong>
-                                <span>Wed, 7:30 PM</span>
-                            </div>
-
-                            <button class="join-btn">
-                                Join
-                            </button>
-
-                        </div>
-
-                    </section>
-
-
-                    <!-- RESOURCES -->
-                    <section class="panel resources-panel reveal">
-
-                        <div class="panel-header">
-                            <h2>Teaching Resources</h2>
-                            <a href="#">View All</a>
-                        </div>
-
-
-                        <div class="resource">
-
-                            <div class="resource-icon blue-resource">
-                                <i data-lucide="book-open"></i>
-                            </div>
-
-                            <div>
-                                <strong>Instructor Guide</strong>
-                                <span>Professional teaching resources</span>
-                            </div>
-
-                            <i data-lucide="chevron-right"></i>
-
-                        </div>
-
-
-                        <div class="resource">
-
-                            <div class="resource-icon green-resource">
-                                <i data-lucide="wallet"></i>
-                            </div>
-
-                            <div>
-                                <strong>Earning Guide</strong>
-                                <span>How you can earn more</span>
-                            </div>
-
-                            <i data-lucide="chevron-right"></i>
-
-                        </div>
-
-
-                        <div class="resource">
-
-                            <div class="resource-icon purple-resource">
-                                <i data-lucide="users"></i>
-                            </div>
-
-                            <div>
-                                <strong>Community</strong>
-                                <span>Connect with other teachers</span>
-                            </div>
-
-                            <i data-lucide="chevron-right"></i>
-
-                        </div>
-
-                    </section>
-
-                </aside>
-
-            </div>
-
-        </main>
-
-    </div>
-
-
-    <!-- SEARCH OVERLAY -->
-    <div class="search-overlay" id="searchOverlay">
-
-        <div class="search-box">
-
-            <button class="close-search" id="closeSearch">
-                <i data-lucide="x"></i>
-            </button>
-
-            <i data-lucide="search"></i>
-
-            <input type="text" id="searchInput" placeholder="Search classes, students, resources...">
+          </div>
 
         </div>
 
-    </div>
+
+        <div class="header-actions">
 
 
-    <!-- TOAST -->
-    <div class="toast" id="toast">
-        <i data-lucide="check-circle"></i>
-        <span>Action completed successfully!</span>
-    </div>
+          <!-- CREDIT BALANCE -->
+
+          <div class="credits-pill">
+
+            <span class="coin">
+              S
+            </span>
+
+            <div>
+
+              <strong id="creditBalance">
+                1,250
+              </strong>
+
+              <small>
+                Credits
+              </small>
+
+            </div>
+
+          </div>
 
 
-    <script src="live-learning.js"></script>
-    <script src="profile-quick.js" defer></script>
+          <!-- =================================================
+               NOTIFICATION
+          ================================================== -->
+
+          <div class="dropdown-wrap">
+
+            <button
+              class="icon-btn notification-btn"
+              id="notificationBtn"
+              aria-label="Notifications"
+              type="button"
+            >
+              ♧
+
+              <span
+                class="notification-count"
+                id="notificationCount"
+              >
+                4
+              </span>
+
+            </button>
+
+
+            <!-- NOTIFICATION DROPDOWN -->
+
+            <div
+              class="dropdown notification-menu"
+              id="notificationMenu"
+            >
+
+              <div class="dropdown-title">
+
+                Notifications
+
+                <button
+                  id="markReadBtn"
+                  type="button"
+                >
+                  Mark all read
+                </button>
+
+              </div>
+
+
+              <div class="notification unread">
+
+                <span>
+                  🎯
+                </span>
+
+                <div>
+
+                  <b>
+                    New match available
+                  </b>
+
+                  <small>
+                    Someone is available to learn English.
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <div class="notification unread">
+
+                <span>
+                  💬
+                </span>
+
+                <div>
+
+                  <b>
+                    New message
+                  </b>
+
+                  <small>
+                    Rahul sent you a message.
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <div class="notification">
+
+                <span>
+                  ⭐
+                </span>
+
+                <div>
+
+                  <b>
+                    Session completed
+                  </b>
+
+                  <small>
+                    You earned 25 skill points.
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <div class="notification">
+
+                <span>
+                  🔔
+                </span>
+
+                <div>
+
+                  <b>
+                    Live session reminder
+                  </b>
+
+                  <small>
+                    Your saved session starts soon.
+                  </small>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               PROFILE
+          ================================================== -->
+
+          <div class="profile-wrap">
+
+            <button
+              class="profile-btn"
+              id="profileBtn"
+              type="button"
+            >
+
+              <div class="avatar avatar-main">
+                AD
+              </div>
+
+              <div class="profile-text">
+
+                <strong>
+                  Aniket Deshmukh
+                </strong>
+
+                <small>
+                  Learner
+                </small>
+
+              </div>
+
+              <span class="chevron">
+                ⌄
+              </span>
+
+            </button>
+
+
+            <!-- PROFILE DROPDOWN -->
+
+            <div
+              class="dropdown profile-menu"
+              id="profileMenu"
+            >
+
+              <div class="profile-menu-head">
+
+                <div class="avatar">
+                  AD
+                </div>
+
+                <div>
+
+                  <b>
+                    Aniket Deshmukh
+                  </b>
+
+                  <small>
+                    1,250 Credits
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <button type="button">
+                👤 My Profile
+              </button>
+
+              <button type="button">
+                📚 My Learning
+              </button>
+
+              <button type="button">
+                ⚙ Account Settings
+              </button>
+
+              <button
+                type="button"
+                class="logout"
+              >
+                ↪ Log Out
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </header>
+
+
+      <!-- =====================================================
+           LEARNING SCREEN
+      ====================================================== -->
+
+      <section id="learningScreen">
+
+
+        <!-- SEARCH -->
+
+        <div class="search-row">
+
+          <div class="search-box">
+
+            <span>
+              ⌕
+            </span>
+
+            <input
+              id="skillSearch"
+              type="search"
+              placeholder="What do you want to learn today?"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             THREE STEPS
+        ================================================== -->
+
+        <div class="steps-card">
+
+          <div class="step active">
+
+            <span>
+              1
+            </span>
+
+            <div>
+
+              <b>
+                Choose a Skill
+              </b>
+
+              <small>
+                Select the skill you want to learn
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <i>
+            ›
+          </i>
+
+
+          <div class="step">
+
+            <span>
+              2
+            </span>
+
+            <div>
+              <b>
+                Find Your Match
+              </b>
+            
+
+              <small>
+                We'll match you with the best expert
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <i>
+            ›
+          </i>
+
+
+          <div class="step">
+
+            <span>
+              3
+            </span>
+
+            <div>
+
+              <b>
+                Connect & Learn
+              </b>
+
+              <small>
+                Start your 1-on-1 live session
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             PERFECT MATCH BUILDER
+        ================================================== -->
+
+        <section class="match-builder">
+
+          <div class="builder-title">
+
+            <div>
+
+              <h2>
+                ✦ Let's find your perfect match
+              </h2>
+
+              <p>
+                Tell us what you want to learn
+                and we'll connect you with the right expert.
+              </p>
+
+            </div>
+
+            <span class="online-pill">
+              ● Matching available
+            </span>
+
+          </div>
+
+
+          <div class="builder-fields">
+
+
+            <!-- I WANT TO LEARN -->
+
+            <label>
+
+              <span>
+                I want to learn
+              </span>
+
+              <select id="learnSkill">
+
+                <option value="English Speaking">
+                  English Speaking
+                </option>
+
+                <option value="Python Programming">
+                  Python Programming
+                </option>
+
+                <option value="Web Development">
+                  Web Development
+                </option>
+
+                <option value="UI/UX Design">
+                  UI/UX Design
+                </option>
+
+                <option value="Digital Marketing">
+                  Digital Marketing
+                </option>
+
+                <option value="Public Speaking">
+                  Public Speaking
+                </option>
+
+              </select>
+
+            </label>
+
+
+            <!-- I AM LOOKING FOR -->
+
+            <label>
+
+              <span>
+                I am looking for
+              </span>
+
+              <select id="learningGoal">
+                <!-- JavaScript dynamically adds options -->
+              </select>
+
+            </label>
+
+
+            <!-- FIND MATCH -->
+            <a href="match-waiting.html">
+            <button
+              class="primary-btn match-trigger"
+              id="findMatchBtn"
+              type="button"
+            >
+
+              <span>
+                ✦
+              </span>
+
+              Find My Match
+
+            </button>
+            </a>
+
+          </div>
+
+
+          <div
+            class="helper-text"
+            id="goalHint"
+          >
+            Your second option changes automatically
+            based on the skill you choose.
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             TOP MATCHES
+        ================================================== -->
+
+        <section class="matches-section">
+
+
+          <div class="section-head">
+
+            <div>
+
+              <h2>
+                Top Matches for You
+              </h2>
+
+              <span class="online-pill">
+                ✦ Online Now
+              </span>
+
+            </div>
+
+            <button
+              class="text-btn"
+              id="refreshMatches"
+              type="button"
+            >
+              ↻ Refresh
+            </button>
+
+          </div>
+
+
+          <!-- JavaScript inserts match cards -->
+
+          <div
+            class="match-grid"
+            id="matchGrid"
+          ></div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             TRUST BAR
+        ================================================== -->
+
+        <div class="trust-bar">
+
+
+          <div>
+
+            <span>
+              ♙
+            </span>
+
+            <div>
+
+              <b>
+                1-on-1 Live Session
+              </b>
+
+              <small>
+                Personal attention, faster learning
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              ✓
+            </span>
+
+            <div>
+
+              <b>
+                Verified Experts
+              </b>
+
+              <small>
+                Skilled & trusted by learners
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              ▣
+            </span>
+
+            <div>
+
+              <b>
+                Secure & Private
+              </b>
+
+              <small>
+                Your learning, your space
+              </small>
+
+            </div>
+
+          </div>
+
+
+        </div>
+
+      </section>
+
+
+      <!-- =====================================================
+           WAITING / MATCHING SCREEN
+      ====================================================== -->
+
+      <section
+        id="waitingScreen"
+        class="hidden screen-panel"
+      >
+
+        <div class="waiting-card">
+
+
+          <div class="pulse-ring">
+
+            <div class="search-orb">
+              ✦
+            </div>
+
+          </div>
+
+
+          <div class="waiting-label">
+            MATCHING IN PROGRESS
+          </div>
+
+
+          <h2>
+            Finding the right person for you…
+          </h2>
+
+
+          <p id="waitingDescription">
+            We're checking available learners
+            and experts based on your skill and preference.
+          </p>
+
+
+          <!-- MATCHING DETAILS -->
+
+          <div class="matching-details">
+
+            <div>
+
+              <small>
+                Learning
+              </small>
+
+              <b id="waitingSkill">
+                English Speaking
+              </b>
+
+            </div>
+
+
+            <div>
+
+              <small>
+                Looking for
+              </small>
+
+              <b id="waitingGoal">
+                Conversation Practice
+              </b>
+
+            </div>
+
+
+            <div>
+
+              <small>
+                Session
+              </small>
+
+              <b>
+                1-on-1 • 30 min
+              </b>
+
+            </div>
+
+          </div>
+
+
+          <!-- PROGRESS -->
+
+          <div class="progress-track">
+
+            <div
+              class="progress-bar"
+              id="progressBar"
+            ></div>
+
+          </div>
+
+
+          <div class="waiting-status">
+
+            <span id="waitingStatus">
+              Searching available people...
+            </span>
+
+            <strong id="waitingTimer">
+              04s
+            </strong>
+
+          </div>
+
+
+          <!-- ONLINE PEOPLE -->
+
+          <div class="waiting-people">
+
+            <span class="mini-avatar">
+              PS
+            </span>
+
+            <span class="mini-avatar">
+              RV
+            </span>
+
+            <span class="mini-avatar">
+              NP
+            </span>
+
+            <span class="mini-avatar more">
+              +12
+            </span>
+
+            <span>
+              People are currently online
+            </span>
+
+          </div>
+
+
+          <button
+            class="cancel-btn"
+            id="cancelMatch"
+            type="button"
+          >
+            Cancel Matching
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =====================================================
+           FOUND MATCH SCREEN
+      ====================================================== -->
+
+      <section
+        id="foundScreen"
+        class="hidden screen-panel"
+      >
+
+        <div class="found-card">
+
+
+          <div class="success-icon">
+            ✓
+          </div>
+
+
+          <span class="found-label">
+            PERFECT MATCH FOUND
+          </span>
+
+
+          <h2>
+            You're matched with
+            <span id="foundName">
+              Priya Sharma
+            </span>
+          </h2>
+
+
+          <p>
+            This person matches your learning preference
+            and is ready for a 1-on-1 session.
+          </p>
+
+
+          <!-- MATCHED PERSON -->
+
+          <div class="found-profile">
+
+
+            <div
+              class="found-avatar"
+              id="foundAvatar"
+            >
+              PS
+            </div>
+
+
+            <div class="found-info">
+
+              <div class="online-now">
+                ● Online now
+              </div>
+
+              <h3 id="foundRole">
+                English Coach
+              </h3>
+
+              <div class="rating">
+
+                ★
+
+                <span id="foundRating">
+                  4.9
+                </span>
+
+                <small id="foundSessions">
+                  (128 sessions)
+                </small>
+
+              </div>
+
+
+              <div
+                class="chips"
+                id="foundTags"
+              ></div>
+
+            </div>
+
+
+            <div class="session-price">
+
+              <b id="foundCost">
+                20
+              </b>
+
+              <span>
+                Credits
+              </span>
+
+              <small>
+                30 min session
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- ACTION BUTTONS -->
+
+          <div class="found-actions">
+
+            <button
+              class="secondary-btn"
+              id="messageMatch"
+              type="button"
+            >
+              💬 Message
+            </button>
+
+
+            <button
+              class="primary-btn"
+              id="connectNowBtn"
+              type="button"
+            >
+              Connect & Start Learning →
+            </button>
+
+          </div>
+
+
+          <button
+            class="back-btn"
+            id="backToLearning"
+            type="button"
+          >
+            ← Find another match
+          </button>
+
+        </div>
+
+      </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         RIGHT SIDEBAR
+    ====================================================== -->
+
+    <aside class="right-panel">
+
+
+      <!-- BALANCE -->
+
+      <section class="side-card balance-card">
+
+        <div class="side-card-title">
+          My Balance
+        </div>
+
+
+        <div class="balance-box">
+
+          <div>
+
+            <strong id="sideBalance">
+              1,250
+            </strong>
+
+            <span>
+              Credits
+            </span>
+
+          </div>
+
+
+          <div class="big-coin">
+            S
+          </div>
+
+        </div>
+
+
+        <button
+          class="primary-btn buy-btn"
+          type="button"
+        >
+          Buy More Credits →
+        </button>
+
+      </section>
+
+
+      <!-- =================================================
+           HOW MATCHING WORKS
+      ================================================== -->
+
+      <section class="side-card">
+
+        <div class="side-card-title">
+          How Matching Works
+        </div>
+
+
+        <div class="timeline">
+
+
+          <div>
+
+            <span>
+              1
+            </span>
+
+            <div>
+
+              <b>
+                Select Skill & Preference
+              </b>
+
+              <small>
+                Tell us what you want to learn
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              2
+            </span>
+
+            <div>
+
+              <b>
+                We Find Best Match
+              </b>
+
+              <small>
+                We match you with available experts
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              3
+            </span>
+
+            <div>
+
+              <b>
+                Connect & Start Learning
+              </b>
+
+              <small>
+                Start your private 1-on-1 session instantly
+              </small>
+
+            </div>
+
+          </div>
+
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           RECENT SESSIONS
+      ================================================== -->
+
+      <section class="side-card">
+
+        <div class="side-card-title">
+
+          Your Recent Sessions
+
+          <button
+            class="view-btn"
+            type="button"
+          >
+            View All
+          </button>
+
+        </div>
+
+
+        <div class="recent-list">
+
+
+          <div class="recent">
+
+            <span class="avatar">
+              RV
+            </span>
+
+            <div>
+
+              <b>
+                Rahul Verma
+              </b>
+
+              <small>
+                English Speaking<br>
+                Yesterday, 07:30 PM
+              </small>
+
+            </div>
+
+            <em>
+              Completed
+            </em>
+
+          </div>
+
+
+          <div class="recent">
+
+            <span class="avatar">
+              PS
+            </span>
+
+            <div>
+
+              <b>
+                Priya Sharma
+              </b>
+
+              <small>
+                Conversation Practice<br>
+                2 days ago
+              </small>
+
+            </div>
+
+            <em>
+              Completed
+            </em>
+
+          </div>
+
+
+          <div class="recent">
+
+            <span class="avatar">
+              NP
+            </span>
+
+            <div>
+
+              <b>
+                Neha Patel
+              </b>
+
+              <small>
+                Public Speaking<br>
+                5 days ago
+              </small>
+
+            </div>
+
+            <em>
+              Completed
+            </em>
+
+          </div>
+
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           HELP
+      ================================================== -->
+
+      <section class="side-card help-card">
+
+        <div class="side-card-title">
+          Need Help?
+        </div>
+
+
+        <p>
+          We're here to help you find
+          the perfect learning experience.
+        </p>
+
+
+        <button
+          class="secondary-btn"
+          id="supportBtn"
+          type="button"
+        >
+          ♧ Contact Support
+        </button>
+
+      </section>
+
+    </aside>
+
+  </div>
+
+
+  <!-- TOAST -->
+
+  <div
+    class="toast"
+    id="toast"
+  ></div>
+
+
+  <!-- JAVASCRIPT -->
+
+  <script src="live-learning.js"></script>
 
 </body>
-
 </html>

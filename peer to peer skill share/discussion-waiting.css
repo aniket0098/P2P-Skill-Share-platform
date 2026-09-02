@@ -1,0 +1,1192 @@
+/* =========================================================
+   SKILLSHARE — DISCUSSION WAITING
+   Premium, calm matching experience for Live Discussion
+   Design language: SkillConnect (dark navy + purple)
+========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+
+/* =========================================================
+   1. TOKENS
+========================================================= */
+
+:root {
+
+    /* Live Discussion palette (kept in sync with live-discussions.css) */
+
+    --bg: #020817;
+    --panel: #071124;
+    --panel-2: #0a1328;
+
+    --line: #182544;
+
+    --text: #f7f8ff;
+    --muted: #9ba6be;
+    --muted-2: #7f8aa3;
+
+    --purple: #5a18f5;
+    --purple-light: #762cff;
+    --cyan: #4e9cff;
+    --green: #00d99b;
+
+    --shadow: rgba(0, 0, 0, 0.55);
+
+    /* Waiting-page specific */
+
+    --radius-card: 24px;
+    --radius-soft: 14px;
+
+    --ease-calm: cubic-bezier(0.33, 1, 0.5, 1);
+
+}
+
+
+/* =========================================================
+   2. GLOBAL
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+
+    font-family: "Inter", Arial, Helvetica, sans-serif;
+
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at 48% 0%,
+            #11113d 0%,
+            #030817 35%,
+            #010510 100%
+        );
+
+    color: var(--text);
+
+    overflow-x: hidden;
+
+}
+
+button {
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+    background: none;
+    color: inherit;
+}
+
+/* The hidden attribute must always win over display rules. */
+
+[hidden] {
+    display: none !important;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+
+/* =========================================================
+   3. CALM BACKGROUND
+========================================================= */
+
+.bg {
+
+    position: fixed;
+    inset: 0;
+
+    z-index: 0;
+
+    overflow: hidden;
+
+    pointer-events: none;
+
+}
+
+.orb {
+
+    position: absolute;
+
+    border-radius: 50%;
+
+    filter: blur(90px);
+
+    opacity: 0.35;
+
+}
+
+.orb-a {
+
+    width: 480px;
+    height: 480px;
+
+    top: -160px;
+    left: 50%;
+
+    transform: translateX(-58%);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(90, 24, 245, 0.32),
+            transparent 70%
+        );
+
+}
+
+.orb-b {
+
+    width: 360px;
+    height: 360px;
+
+    bottom: -140px;
+    left: -120px;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(78, 156, 255, 0.16),
+            transparent 70%
+        );
+
+}
+
+.orb-c {
+
+    width: 320px;
+    height: 320px;
+
+    bottom: -120px;
+    right: -100px;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0, 217, 155, 0.12),
+            transparent 70%
+        );
+
+}
+
+
+/* =========================================================
+   4. STAGE + CARD
+========================================================= */
+
+.stage {
+
+    position: relative;
+
+    z-index: 1;
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 32px 20px;
+
+}
+
+.match-card {
+
+    width: min(460px, 100%);
+
+    padding: 38px 40px 28px;
+
+    border-radius: var(--radius-card);
+
+    border: 1px solid var(--line);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(10, 19, 40, 0.96),
+            rgba(5, 11, 26, 0.98)
+        );
+
+    box-shadow:
+        0 30px 80px var(--shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    text-align: center;
+
+    transition:
+        opacity 0.55s var(--ease-calm),
+        transform 0.55s var(--ease-calm);
+
+}
+
+/* Page exit transition (applied by JS before redirect) */
+
+.match-card.leaving {
+
+    opacity: 0;
+
+    transform: translateY(-14px) scale(0.985);
+
+}
+
+
+/* =========================================================
+   5. CARD HEADER + TOPIC CHIP
+========================================================= */
+
+.eyebrow {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 6px 14px;
+
+    border-radius: 999px;
+
+    border: 1px solid rgba(118, 44, 255, 0.35);
+
+    background: rgba(118, 44, 255, 0.10);
+
+    color: #c9b4ff;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+
+}
+
+.eyebrow-dot {
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    box-shadow: 0 0 8px rgba(0, 217, 155, 0.8);
+
+}
+
+.card-head h1 {
+
+    margin-top: 18px;
+
+    font-size: clamp(22px, 4.5vw, 27px);
+
+    font-weight: 700;
+
+    letter-spacing: -0.02em;
+
+    line-height: 1.25;
+
+}
+
+.card-head .lede {
+
+    margin: 10px auto 0;
+
+    max-width: 340px;
+
+    color: var(--muted);
+
+    font-size: 13.5px;
+
+    line-height: 1.65;
+
+}
+
+.topic-chip {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 16px;
+
+    padding: 7px 14px;
+
+    border-radius: 999px;
+
+    border: 1px solid rgba(78, 156, 255, 0.3);
+
+    background: rgba(78, 156, 255, 0.08);
+
+    font-size: 12px;
+
+    color: var(--text);
+
+    max-width: 100%;
+
+}
+
+.topic-label {
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+
+    color: var(--cyan);
+
+}
+
+.topic-chip span:last-child {
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+}
+
+
+/* =========================================================
+   6. MATCHING VISUALIZATION (YOU ⇄ PARTNER)
+========================================================= */
+
+.match-map {
+
+    position: relative;
+
+    margin: 26px auto 6px;
+
+    width: min(300px, 100%);
+
+    aspect-ratio: 320 / 240;
+
+}
+
+.map-lines {
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: visible;
+
+}
+
+.map-lines .link {
+
+    stroke: url(#linkGrad);
+
+    stroke-width: 1.5;
+
+    stroke-linecap: round;
+
+    stroke-dasharray: 6 9;
+
+    opacity: 0.55;
+
+    animation: linkFlow 3.2s linear infinite;
+
+}
+
+@keyframes linkFlow {
+
+    to {
+        stroke-dashoffset: -30;
+    }
+
+}
+
+
+/* Nodes */
+
+.node {
+
+    position: absolute;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 8px;
+
+    transform: translate(-50%, -50%);
+
+}
+
+.node-you     { left: 50%; top: 14%; }
+.node-partner { left: 50%; top: 86%; }
+
+.node-avatar {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 52px;
+    height: 52px;
+
+    border-radius: 50%;
+
+    border: 1px solid rgba(118, 44, 255, 0.45);
+
+    background:
+        linear-gradient(
+            160deg,
+            rgba(118, 44, 255, 0.22),
+            rgba(78, 156, 255, 0.10)
+        );
+
+    font-size: 13px;
+    font-weight: 700;
+
+    color: #e4dcff;
+
+    box-shadow:
+        0 10px 26px rgba(0, 0, 0, 0.4),
+        0 0 0 6px rgba(118, 44, 255, 0.05);
+
+}
+
+.node-avatar-soft {
+
+    border-color: rgba(78, 156, 255, 0.4);
+
+    background:
+        linear-gradient(
+            160deg,
+            rgba(78, 156, 255, 0.16),
+            rgba(0, 217, 155, 0.08)
+        );
+
+    color: var(--muted);
+
+    animation: partnerBreathe 3s ease-in-out infinite;
+
+}
+
+@keyframes partnerBreathe {
+
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.85;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+
+}
+
+.node-label {
+
+    font-size: 11px;
+
+    font-weight: 500;
+
+    color: var(--muted);
+
+    white-space: nowrap;
+
+}
+
+
+/* Side sparkles */
+
+.node-side {
+
+    transform: translate(-50%, -50%);
+
+}
+
+.node-spark-left  { left: 17.5%; top: 50%; }
+.node-spark-right { left: 82.5%; top: 50%; }
+
+.node-spark {
+
+    font-size: 15px;
+
+    color: #c9b4ff;
+
+    animation: sparklePulse 2.6s ease-in-out infinite;
+
+}
+
+.node-spark-right .node-spark {
+
+    animation-delay: 1.3s;
+
+}
+
+@keyframes sparklePulse {
+
+    0%, 100% {
+        opacity: 0.45;
+        transform: scale(0.9);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.12);
+    }
+
+}
+
+
+/* Central connection indicator */
+
+.match-core {
+
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+}
+
+.core-icon {
+
+    position: relative;
+
+    z-index: 2;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 46px;
+    height: 46px;
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(
+            140deg,
+            #762cff,
+            #5a18f5 55%,
+            #4e9cff
+        );
+
+    color: #ffffff;
+
+    font-size: 17px;
+
+    box-shadow:
+        0 12px 34px rgba(90, 24, 245, 0.45);
+
+    animation: coreBreathe 2.8s ease-in-out infinite;
+
+}
+
+@keyframes coreBreathe {
+
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 12px 34px rgba(90, 24, 245, 0.45);
+    }
+
+    50% {
+        transform: scale(1.07);
+        box-shadow: 0 14px 44px rgba(90, 24, 245, 0.6);
+    }
+
+}
+
+.core-ring {
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 72px;
+    height: 72px;
+
+    border-radius: 50%;
+
+    border: 1px solid rgba(118, 44, 255, 0.45);
+
+    transform: translate(-50%, -50%);
+
+    animation: ringPulse 2.8s var(--ease-calm) infinite;
+
+}
+
+.core-ring-2 {
+
+    animation-delay: 1.4s;
+
+}
+
+@keyframes ringPulse {
+
+    0% {
+        transform: translate(-50%, -50%) scale(0.72);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0;
+    }
+
+}
+
+
+/* =========================================================
+   7. STATUS + PROGRESS
+========================================================= */
+
+.status-zone {
+
+    margin-top: 16px;
+
+    transition:
+        opacity 0.4s var(--ease-calm),
+        transform 0.4s var(--ease-calm);
+
+}
+
+.status-zone.leaving {
+
+    opacity: 0;
+
+    transform: translateY(-8px);
+
+    pointer-events: none;
+
+}
+
+.status-text {
+
+    font-size: 14.5px;
+
+    font-weight: 600;
+
+    color: var(--text);
+
+}
+
+.progress-track {
+
+    position: relative;
+
+    margin: 18px auto 8px;
+
+    width: min(260px, 80%);
+
+    height: 6px;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.06);
+
+    overflow: visible;
+
+}
+
+.progress-fill {
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    height: 100%;
+
+    width: 8%;
+
+    border-radius: 999px;
+
+    background: linear-gradient(
+        90deg,
+        var(--purple),
+        var(--purple-light),
+        var(--cyan)
+    );
+
+    transition: width 0.9s var(--ease-calm);
+
+}
+
+.progress-dot {
+
+    position: absolute;
+
+    top: 50%;
+
+    left: 8%;
+
+    width: 14px;
+    height: 14px;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    border: 3px solid var(--purple-light);
+
+    box-shadow: 0 0 12px rgba(118, 44, 255, 0.7);
+
+    transform: translate(-50%, -50%);
+
+    transition: left 0.9s var(--ease-calm);
+
+}
+
+.step-count {
+
+    font-size: 11.5px;
+
+    font-weight: 500;
+
+    letter-spacing: 0.04em;
+
+    color: var(--muted-2);
+
+}
+
+
+/* =========================================================
+   8. REASSURING NOTE
+========================================================= */
+
+.comfort {
+
+    margin: 20px auto 0;
+
+    max-width: 340px;
+
+    padding: 14px 18px;
+
+    border-radius: var(--radius-soft);
+
+    border: 1px solid rgba(0, 217, 155, 0.22);
+
+    background: rgba(0, 217, 155, 0.06);
+
+    transition:
+        opacity 0.4s var(--ease-calm),
+        transform 0.4s var(--ease-calm);
+
+}
+
+.comfort.leaving {
+
+    opacity: 0;
+
+    transform: translateY(6px);
+
+}
+
+.comfort b {
+
+    display: block;
+
+    font-size: 12.5px;
+
+    font-weight: 700;
+
+    color: #7defc8;
+
+}
+
+.comfort p {
+
+    margin-top: 4px;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+    color: var(--muted);
+
+}
+
+
+/* =========================================================
+   9. SUCCESS STATE + MATCH PREVIEW
+========================================================= */
+
+.success-zone {
+
+    margin-top: 20px;
+
+}
+
+.success-title {
+
+    font-size: 19px;
+
+    font-weight: 700;
+
+    color: var(--text);
+
+    animation: riseIn 0.55s var(--ease-calm) both;
+
+}
+
+.match-preview {
+
+    margin: 18px auto 0;
+
+    max-width: 330px;
+
+    padding: 26px 24px;
+
+    border-radius: 18px;
+
+    border: 1px solid rgba(0, 217, 155, 0.28);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(0, 217, 155, 0.07),
+            rgba(10, 19, 40, 0.6)
+        );
+
+    box-shadow:
+        0 18px 44px rgba(0, 0, 0, 0.35),
+        0 0 0 4px rgba(0, 217, 155, 0.04);
+
+    animation: previewIn 0.65s var(--ease-calm) 0.1s both;
+
+}
+
+@keyframes previewIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.94);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+@keyframes riseIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.preview-avatar {
+
+    margin: 0 auto;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 64px;
+    height: 64px;
+
+    border-radius: 50%;
+
+    background: linear-gradient(
+        140deg,
+        #762cff,
+        #5a18f5 55%,
+        #4e9cff
+    );
+
+    font-size: 18px;
+    font-weight: 800;
+
+    color: #ffffff;
+
+    box-shadow: 0 12px 30px rgba(90, 24, 245, 0.4);
+
+}
+
+.match-preview h3 {
+
+    margin-top: 12px;
+
+    font-size: 17px;
+
+    font-weight: 700;
+
+}
+
+.preview-topic {
+
+    margin-top: 3px;
+
+    font-size: 12.5px;
+
+    color: var(--muted);
+
+}
+
+.preview-match {
+
+    margin-top: 10px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    color: var(--muted);
+
+}
+
+.match-score {
+
+    padding: 3px 10px;
+
+    margin-right: 4px;
+
+    border-radius: 999px;
+
+    background: rgba(0, 217, 155, 0.14);
+
+    border: 1px solid rgba(0, 217, 155, 0.35);
+
+    color: var(--green);
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+}
+
+.preview-interests {
+
+    margin-top: 16px;
+
+    padding-top: 14px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+
+}
+
+.interests-label {
+
+    display: block;
+
+    font-size: 10.5px;
+
+    font-weight: 600;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+
+    color: var(--muted-2);
+
+}
+
+.preview-interests ul {
+
+    margin-top: 8px;
+
+    list-style: none;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    gap: 6px;
+
+}
+
+.preview-interests li {
+
+    padding: 4px 10px;
+
+    border-radius: 999px;
+
+    border: 1px solid var(--line);
+
+    background: rgba(255, 255, 255, 0.03);
+
+    font-size: 11px;
+
+    color: var(--muted);
+
+}
+
+
+/* Final ready note */
+
+.ready-note {
+
+    margin-top: 16px;
+
+    animation: riseIn 0.5s var(--ease-calm) both;
+
+}
+
+.ready-note b {
+
+    font-size: 13.5px;
+
+    color: var(--green);
+
+}
+
+.ready-note p {
+
+    margin-top: 2px;
+
+    font-size: 12px;
+
+    color: var(--muted);
+
+}
+
+
+/* =========================================================
+   10. CANCEL LINK
+========================================================= */
+
+.cancel-link {
+
+    margin-top: 22px;
+
+    font-size: 11.5px;
+
+    font-weight: 500;
+
+    color: var(--muted-2);
+
+    text-decoration: underline;
+
+    text-underline-offset: 3px;
+
+    transition: color 0.25s ease;
+
+}
+
+.cancel-link:hover {
+
+    color: var(--muted);
+
+}
+
+
+/* =========================================================
+   11. RESPONSIVE
+========================================================= */
+
+@media (max-width: 480px) {
+
+    .stage {
+        padding: 24px 14px;
+    }
+
+    .match-card {
+        padding: 28px 20px 20px;
+        border-radius: 20px;
+    }
+
+    .match-map {
+        width: min(260px, 100%);
+        margin-top: 20px;
+    }
+
+    .node-avatar {
+        width: 46px;
+        height: 46px;
+        font-size: 12px;
+    }
+
+    .core-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 15px;
+    }
+
+    .orb {
+        filter: blur(70px);
+        opacity: 0.25;
+    }
+
+    .comfort {
+        max-width: 100%;
+    }
+
+}
+
+
+/* =========================================================
+   12. ACCESSIBILITY — REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    .map-lines .link,
+    .node-avatar-soft,
+    .node-spark,
+    .core-icon,
+    .core-ring,
+    .success-title,
+    .match-preview,
+    .ready-note {
+
+        animation: none !important;
+
+    }
+
+    .core-ring {
+        opacity: 0.25;
+    }
+
+    .progress-fill,
+    .progress-dot,
+    .match-card,
+    .status-zone,
+    .comfort {
+
+        /* Keep the process functional with simple transitions only */
+
+        transition-duration: 0.2s !important;
+
+    }
+
+}

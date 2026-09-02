@@ -21,12 +21,25 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
 
+    # Public, human-friendly unique identifier shown on profiles
+    # (e.g. "SC-8F42K7"). Generated automatically at signup and kept
+    # unique with a UNIQUE database constraint. It is independent of
+    # the internal integer primary key.
+    public_id = Column(String, unique=True, index=True, nullable=True)
+
     # Matches the existing PostgreSQL column "password_hash"
     # (stores the bcrypt hash produced by auth.hash_password)
     password_hash = Column(String, nullable=False)
 
     # Matches the existing PostgreSQL column "created_at"
     created_at = Column(DateTime, nullable=True)
+
+    # Public profile fields (safe to expose, never include secrets).
+    # Added for the Request/Message people-discovery experience.
+    bio = Column(String, nullable=True)
+    skills = Column(String, nullable=True)      # comma-separated: what they can teach
+    interests = Column(String, nullable=True)   # comma-separated: what they want to learn
+    avatar_url = Column(String, nullable=True)
 
 
 class ConnectionRequest(Base):

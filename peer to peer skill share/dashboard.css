@@ -139,6 +139,14 @@ a {
 
     display: flex;
     flex-direction: column;
+
+    overflow-y: auto;
+
+    scrollbar-width: none;
+}
+
+.sidebar::-webkit-scrollbar {
+    display: none;
 }
 
 
@@ -270,6 +278,24 @@ a {
     justify-content: center;
 
     font-size: 17px;
+}
+
+/* Sidebar nav section labels */
+
+.sidebar-nav-label {
+    margin-top: 14px;
+    padding: 0 13px;
+
+    color: var(--text-muted);
+
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+}
+
+.sidebar-nav-label:first-child {
+    margin-top: 0;
 }
 
 

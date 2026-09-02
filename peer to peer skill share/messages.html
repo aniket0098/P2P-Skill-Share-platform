@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -20,7 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Main CSS -->
-    <link rel="stylesheet" href="messages.css">
+    <link rel="stylesheet" href="messages.css?v=4">
 </head>
 
 
@@ -71,7 +71,7 @@
 
                     Messages
 
-                    <em>3</em>
+                    <em id="navUnreadBadge">0</em>
 
                 </a>
 
@@ -390,13 +390,13 @@
                     <!-- Current Chat User -->
                     <button class="chat-user" id="chatUserBtn">
 
-                        <img id="chatAvatar" src="assets/rahul.svg" alt="Rahul Sharma">
+                        <img id="chatAvatar" src="assets/avatar1.svg" alt="User">
 
 
                         <span>
 
                             <strong id="chatName">
-                                Rahul Sharma
+                                Select a conversation
                             </strong>
 
 
@@ -595,6 +595,12 @@
                             Online
                         </span>
 
+                    </div>
+
+
+                    <!-- User ID -->
+                    <div class="profile-user-id" id="profileUserId">
+                        User ID: —
                     </div>
 
 
@@ -811,7 +817,8 @@
      JAVASCRIPT
 ========================================================== -->
 
-    <script src="messages.js"></script>
+    <script src="api-client.js"></script>
+    <script src="messages.js?v=4"></script>
 
 </body>
 

@@ -1,258 +1,665 @@
-/* =====================================================
-   SKILLSHARE - MY TEACHING
-   FULL MODIFIED JAVASCRIPT
-===================================================== */
+/* ============================================================
+   SKILLCONNECT — LIVE LEARNING
+   1-on-1 Skill Matching System
+   Frontend Interactive JavaScript
+============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    /* =================================================
-       INITIALIZE LUCIDE ICONS
-    ================================================= */
+    "use strict";
 
-    if (typeof lucide !== "undefined") {
-        lucide.createIcons();
+
+    /* =========================================================
+       GLOBAL STATE
+    ========================================================= */
+
+    const state = {
+
+        credits: 1250,
+
+        selectedSkill: "English Speaking",
+
+        selectedGoal: "Conversation Practice",
+
+        matching: false,
+
+        matchFound: false,
+
+        selectedPerson: null,
+
+        searchTimer: null,
+
+        currentProgress: 0,
+
+        notificationCount: 4
+
+    };
+
+
+    /* =========================================================
+       HELPER FUNCTIONS
+    ========================================================= */
+
+    const $ = (selector, parent = document) =>
+        parent.querySelector(selector);
+
+    const $$ = (selector, parent = document) =>
+        [...parent.querySelectorAll(selector)];
+
+
+    const escapeHTML = (value) => {
+
+        const div = document.createElement("div");
+
+        div.textContent = value;
+
+        return div.innerHTML;
+
+    };
+
+
+    /* =========================================================
+       ELEMENT REFERENCES
+    ========================================================= */
+
+    const profileButton =
+        $("#profileButton") ||
+        $(".profile-btn");
+
+    const profileDropdown =
+        $("#profileDropdown") ||
+        $(".profile-menu");
+
+    const notificationButton =
+        $("#notificationButton") ||
+        $("#notificationBtn") ||
+        $(".notification-btn");
+
+    const notificationDropdown =
+        $("#notificationDropdown") ||
+        $(".notification-dropdown");
+
+    const notificationCount =
+        $("#notificationCount") ||
+        $(".notification-count");
+
+    const skillSelect =
+        $("#skillSelect") ||
+        $("#learnSkill") ||
+        $('select[name="skill"]');
+
+    const goalSelect =
+        $("#goalSelect") ||
+        $("#learningGoal") ||
+        $('select[name="goal"]');
+
+    const findMatchButton =
+        $("#findMatchBtn") ||
+        $("#findMyMatch") ||
+        $(".find-match-btn");
+
+    const searchInput =
+        $("#searchInput") ||
+        $("#search") ||
+        $('input[type="search"]');
+
+    const matchesContainer =
+        $("#matchesContainer") ||
+        $(".match-grid");
+
+    const mainPage =
+        $("#liveLearningPage") ||
+        $(".main-content");
+
+    const waitingPage =
+        $("#waitingPage") ||
+        $(".waiting-screen");
+
+    const foundPage =
+        $("#matchFoundPage") ||
+        $(".found-screen");
+
+    const progressBar =
+        $("#matchingProgress") ||
+        $(".progress-bar");
+
+    const waitingStatus =
+        $("#waitingStatus") ||
+        $(".waiting-status strong");
+
+    const cancelMatchButton =
+        $("#cancelMatch") ||
+        $(".cancel-btn");
+
+    const connectButton =
+        $("#connectButton") ||
+        $(".connect-found-btn");
+
+    const backToMatching =
+        $("#backToMatching") ||
+        $(".back-btn");
+
+    const creditElements =
+        $$(".credit-value, #creditBalance, #credits");
+
+
+    /* =========================================================
+       SKILL DATABASE
+    ========================================================= */
+
+    const skillDatabase = {
+
+        "English Speaking": [
+
+            "Conversation Practice",
+
+            "Fluency",
+
+            "Pronunciation",
+
+            "Grammar",
+
+            "Interview English",
+
+            "Public Speaking",
+
+            "IELTS Speaking"
+
+        ],
+
+        "Python Programming": [
+
+            "Python Basics",
+
+            "DSA with Python",
+
+            "Web Development",
+
+            "Automation",
+
+            "Data Analysis",
+
+            "Problem Solving",
+
+            "Projects"
+
+        ],
+
+        "Web Development": [
+
+            "HTML & CSS",
+
+            "JavaScript",
+
+            "React",
+
+            "Frontend Development",
+
+            "Backend Development",
+
+            "Full Stack",
+
+            "UI Development"
+
+        ],
+
+        "Java Programming": [
+
+            "Java Basics",
+
+            "OOP",
+
+            "DSA",
+
+            "Spring Boot",
+
+            "Backend Development",
+
+            "Projects"
+
+        ],
+
+        "Data Science": [
+
+            "Python for Data Science",
+
+            "Pandas",
+
+            "NumPy",
+
+            "Data Visualization",
+
+            "Machine Learning",
+
+            "Statistics"
+
+        ],
+
+        "Digital Marketing": [
+
+            "SEO",
+
+            "Social Media Marketing",
+
+            "Content Marketing",
+
+            "Google Ads",
+
+            "Analytics",
+
+            "Brand Marketing"
+
+        ],
+
+        "Public Speaking": [
+
+            "Confidence",
+
+            "Presentation Skills",
+
+            "Communication",
+
+            "Storytelling",
+
+            "Interview Skills",
+
+            "Stage Speaking"
+
+        ]
+
+    };
+
+
+    /* =========================================================
+       PEOPLE DATABASE
+    ========================================================= */
+
+    const people = [
+
+        {
+            id: 1,
+
+            name: "Priya Sharma",
+
+            role: "English Coach",
+
+            skills: [
+                "English Speaking",
+                "Conversation Practice",
+                "Fluency",
+                "Grammar"
+            ],
+
+            rating: 4.9,
+
+            sessions: 128,
+
+            credits: 20,
+
+            avatar: "PS",
+
+            online: true
+
+        },
+
+        {
+            id: 2,
+
+            name: "Rahul Verma",
+
+            role: "Spoken English Trainer",
+
+            skills: [
+                "English Speaking",
+                "Speaking",
+                "Pronunciation",
+                "IELTS Speaking"
+            ],
+
+            rating: 4.8,
+
+            sessions: 96,
+
+            credits: 18,
+
+            avatar: "RV",
+
+            online: true
+
+        },
+
+        {
+            id: 3,
+
+            name: "Neha Patel",
+
+            role: "Communication Coach",
+
+            skills: [
+                "English Speaking",
+                "Public Speaking",
+                "Confidence",
+                "Communication"
+            ],
+
+            rating: 4.9,
+
+            sessions: 142,
+
+            credits: 22,
+
+            avatar: "NP",
+
+            online: true
+
+        },
+
+        {
+            id: 4,
+
+            name: "Aman Verma",
+
+            role: "Python Developer",
+
+            skills: [
+                "Python Programming",
+                "DSA with Python",
+                "Problem Solving",
+                "Projects"
+            ],
+
+            rating: 4.9,
+
+            sessions: 87,
+
+            credits: 19,
+
+            avatar: "AV",
+
+            online: true
+
+        },
+
+        {
+            id: 5,
+
+            name: "Rohit Sharma",
+
+            role: "Full Stack Developer",
+
+            skills: [
+                "Web Development",
+                "JavaScript",
+                "React",
+                "Full Stack"
+            ],
+
+            rating: 4.8,
+
+            sessions: 115,
+
+            credits: 24,
+
+            avatar: "RS",
+
+            online: true
+
+        },
+
+        {
+            id: 6,
+
+            name: "Sneha Kulkarni",
+
+            role: "Digital Marketing Expert",
+
+            skills: [
+                "Digital Marketing",
+                "SEO",
+                "Social Media Marketing",
+                "Content Marketing"
+            ],
+
+            rating: 4.9,
+
+            sessions: 73,
+
+            credits: 17,
+
+            avatar: "SK",
+
+            online: true
+
+        },
+
+        {
+            id: 7,
+
+            name: "Vikram Joshi",
+
+            role: "Public Speaking Mentor",
+
+            skills: [
+                "Public Speaking",
+                "Confidence",
+                "Presentation Skills",
+                "Storytelling"
+            ],
+
+            rating: 4.8,
+
+            sessions: 64,
+
+            credits: 16,
+
+            avatar: "VJ",
+
+            online: true
+
+        }
+
+    ];
+
+
+    /* =========================================================
+       UPDATE CREDITS
+    ========================================================= */
+
+    function updateCredits() {
+
+        creditElements.forEach(element => {
+
+            element.textContent =
+                state.credits.toLocaleString();
+
+        });
+
     }
 
 
-    /* =================================================
-       ELEMENTS
-    ================================================= */
+    /* =========================================================
+       TOAST SYSTEM
+    ========================================================= */
 
-    const sidebar = document.querySelector(".sidebar");
-    const mobileMenu = document.querySelector(".mobile-menu");
+    function showToast(message, type = "normal") {
 
-    const searchButton = document.querySelector(".search-btn");
-    const searchOverlay = document.getElementById("searchOverlay");
-    const closeSearch = document.getElementById("closeSearch");
-    const searchInput = document.getElementById("searchInput");
+        let toast = $("#toast");
 
-    const toast = document.getElementById("toast");
+        if (!toast) {
 
+            toast = document.createElement("div");
 
+            toast.id = "toast";
 
-    /* =================================================
-       TOAST NOTIFICATION
-    ================================================= */
+            toast.className = "toast";
 
-    function showToast(message) {
+            document.body.appendChild(toast);
 
-        if (!toast) return;
-
-        const toastText = toast.querySelector("span");
-
-        if (toastText) {
-            toastText.textContent = message;
         }
+
+        toast.textContent = message;
 
         toast.classList.add("show");
 
-        clearTimeout(window.toastTimer);
+        if (type === "success") {
 
-        window.toastTimer = setTimeout(() => {
+            toast.style.borderColor = "#08b98b";
+
+        }
+
+        if (type === "error") {
+
+            toast.style.borderColor = "#e44b69";
+
+        }
+
+        clearTimeout(toast.hideTimer);
+
+        toast.hideTimer = setTimeout(() => {
+
             toast.classList.remove("show");
+
         }, 2800);
+
     }
 
 
+    /* =========================================================
+       PROFILE DROPDOWN
+    ========================================================= */
 
-    /* =================================================
-       SCROLL REVEAL
-    ================================================= */
+    function toggleProfileDropdown(event) {
 
-    const revealElements =
-        document.querySelectorAll(".reveal");
+        if (event) {
 
-    const revealObserver =
-        new IntersectionObserver(
-            (entries) => {
+            event.stopPropagation();
 
-                entries.forEach((entry) => {
+        }
 
-                    if (entry.isIntersecting) {
+        if (!profileDropdown) return;
 
-                        entry.target.classList.add("visible");
+        profileDropdown.classList.toggle("show");
 
-                        revealObserver.unobserve(
-                            entry.target
-                        );
+        if (notificationDropdown) {
 
-                    }
+            notificationDropdown.classList.remove("show");
 
-                });
+        }
 
-            },
-            {
-                threshold: 0.08
-            }
+    }
+
+
+    if (profileButton) {
+
+        profileButton.addEventListener(
+            "click",
+            toggleProfileDropdown
         );
 
-
-    revealElements.forEach((element) => {
-        revealObserver.observe(element);
-    });
+    }
 
 
+    /* =========================================================
+       NOTIFICATION DROPDOWN
+    ========================================================= */
 
-    /* =================================================
-       ANIMATED COUNTERS
-    ================================================= */
+    function toggleNotificationDropdown(event) {
 
-    const counters =
-        document.querySelectorAll(".counter");
+        if (event) {
 
-    let countersStarted = false;
+            event.stopPropagation();
 
+        }
 
-    function animateCounters() {
+        if (!notificationDropdown) return;
 
-        if (countersStarted) return;
+        notificationDropdown.classList.toggle("show");
 
-        countersStarted = true;
+        if (profileDropdown) {
 
+            profileDropdown.classList.remove("show");
 
-        counters.forEach(counter => {
-
-            const target =
-                Number(counter.dataset.target);
-
-            let current = 0;
-
-            const duration = 1300;
-
-            const increment =
-                target / (duration / 16);
-
-
-            function updateCounter() {
-
-                current += increment;
-
-
-                if (current >= target) {
-
-                    counter.textContent =
-                        target.toLocaleString();
-
-                    return;
-                }
-
-
-                counter.textContent =
-                    Math.floor(current)
-                        .toLocaleString();
-
-
-                requestAnimationFrame(
-                    updateCounter
-                );
-            }
-
-
-            updateCounter();
-
-        });
+        }
 
     }
 
 
-    const statsSection =
-        document.querySelector(".stats-grid");
+    if (notificationButton) {
 
-
-    if (statsSection) {
-
-        const statsObserver =
-            new IntersectionObserver(
-                entries => {
-
-                    if (
-                        entries[0].isIntersecting
-                    ) {
-
-                        animateCounters();
-
-                        statsObserver.disconnect();
-                    }
-
-                },
-                {
-                    threshold: 0.2
-                }
-            );
-
-
-        statsObserver.observe(statsSection);
+        notificationButton.addEventListener(
+            "click",
+            toggleNotificationDropdown
+        );
 
     }
 
 
+    /* =========================================================
+       CLOSE DROPDOWNS OUTSIDE CLICK
+    ========================================================= */
 
-    /* =================================================
-       SIDEBAR NAVIGATION
-       
-       IMPORTANT:
-       There is NO preventDefault() here.
-       
-       This allows:
-       
-       dashboard.html
-       explore-skills.html
-       my-learning.html
-       my-teaching.html
-       students.html
-       reviews.html
-       earnings.html
-       requests.html
-       messages.html
-       calendar.html
-       resources.html
-       settings.html
-       
-       to open normally.
-    ================================================= */
+    document.addEventListener("click", (event) => {
 
-    const sideLinks =
-        document.querySelectorAll(".side-link");
+        if (
+            profileDropdown &&
+            profileButton &&
+            !profileDropdown.contains(event.target) &&
+            !profileButton.contains(event.target)
+        ) {
 
+            profileDropdown.classList.remove("show");
 
-    sideLinks.forEach(link => {
+        }
 
-        link.addEventListener("click", () => {
+        if (
+            notificationDropdown &&
+            notificationButton &&
+            !notificationDropdown.contains(event.target) &&
+            !notificationButton.contains(event.target)
+        ) {
 
-            /* Close mobile sidebar */
+            notificationDropdown.classList.remove("show");
 
-            if (
-                window.innerWidth <= 800 &&
-                sidebar
-            ) {
-
-                sidebar.classList.remove("open");
-
-            }
-
-            /*
-             IMPORTANT:
-             Don't use event.preventDefault().
-             The browser will follow href normally.
-            */
-
-        });
+        }
 
     });
 
 
+    /* =========================================================
+       MARK NOTIFICATIONS AS READ
+    ========================================================= */
 
-    /* =================================================
-       MOBILE SIDEBAR
-    ================================================= */
+    const markReadButton =
+        $("#markNotificationsRead") ||
+        $(".mark-read");
 
-    if (mobileMenu && sidebar) {
+    if (markReadButton) {
 
-        mobileMenu.addEventListener(
+        markReadButton.addEventListener(
             "click",
             () => {
 
-                sidebar.classList.toggle("open");
+                $$(".notification.unread").forEach(item => {
+
+                    item.classList.remove("unread");
+
+                });
+
+                state.notificationCount = 0;
+
+                if (notificationCount) {
+
+                    notificationCount.textContent = "0";
+
+                    notificationCount.style.display =
+                        "none";
+
+                }
+
+                showToast(
+                    "All notifications marked as read.",
+                    "success"
+                );
 
             }
         );
@@ -260,155 +667,363 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    /* =========================================================
+       DYNAMIC GOAL OPTIONS
+    ========================================================= */
 
-    /* =================================================
-       CLOSE MOBILE SIDEBAR WHEN CLICKING OUTSIDE
-    ================================================= */
+    function updateGoalOptions() {
 
-    document.addEventListener(
-        "click",
-        event => {
+        if (!skillSelect || !goalSelect) return;
+
+        const selectedSkill =
+            skillSelect.value;
+
+        const options =
+            skillDatabase[selectedSkill] ||
+            [
+                "Beginner Learning",
+                "Practice",
+                "Advanced Learning"
+            ];
+
+        goalSelect.innerHTML = "";
+
+        options.forEach((goal, index) => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = goal;
+
+            option.textContent = goal;
 
             if (
-                window.innerWidth <= 800 &&
-                sidebar &&
-                mobileMenu &&
-                sidebar.classList.contains("open")
+                goal === state.selectedGoal ||
+                index === 0
             ) {
 
-                if (
-                    !sidebar.contains(event.target) &&
-                    !mobileMenu.contains(event.target)
-                ) {
+                option.selected = true;
 
-                    sidebar.classList.remove("open");
-
-                }
+                state.selectedGoal = goal;
 
             }
+
+            goalSelect.appendChild(option);
+
+        });
+
+        state.selectedSkill =
+            selectedSkill;
+
+        renderMatches();
+
+    }
+
+
+    if (skillSelect) {
+
+        skillSelect.addEventListener(
+            "change",
+            () => {
+
+                state.selectedSkill =
+                    skillSelect.value;
+
+                updateGoalOptions();
+
+            }
+        );
+
+    }
+
+
+    if (goalSelect) {
+
+        goalSelect.addEventListener(
+            "change",
+            () => {
+
+                state.selectedGoal =
+                    goalSelect.value;
+
+                renderMatches();
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       CALCULATE MATCH PERCENTAGE
+    ========================================================= */
+
+    function calculateMatch(person) {
+
+        let score = 55;
+
+        if (
+            person.skills.includes(
+                state.selectedSkill
+            )
+        ) {
+
+            score += 20;
 
         }
-    );
 
+        if (
+            person.skills.includes(
+                state.selectedGoal
+            )
+        ) {
 
+            score += 17;
 
-    /* =================================================
-       SEARCH
-    ================================================= */
-
-    function openSearch() {
-
-        if (!searchOverlay) return;
-
-        searchOverlay.classList.add("active");
-
-
-        setTimeout(() => {
-
-            if (searchInput) {
-                searchInput.focus();
-            }
-
-        }, 100);
-
-    }
-
-
-    function hideSearch() {
-
-        if (!searchOverlay) return;
-
-        searchOverlay.classList.remove("active");
-
-
-        if (searchInput) {
-            searchInput.value = "";
         }
 
+        if (person.online) {
 
-        /* Show all classes again */
+            score += 5;
 
-        document
-            .querySelectorAll(".class-item")
-            .forEach(item => {
+        }
 
-                item.style.display = "";
-
-            });
-
-    }
-
-
-    if (searchButton) {
-
-        searchButton.addEventListener(
-            "click",
-            openSearch
+        score += Math.floor(
+            Math.random() * 4
         );
 
-    }
-
-
-    if (closeSearch) {
-
-        closeSearch.addEventListener(
-            "click",
-            hideSearch
-        );
+        return Math.min(score, 99);
 
     }
 
 
-    if (searchOverlay) {
+    /* =========================================================
+       GET MATCHES
+    ========================================================= */
 
-        searchOverlay.addEventListener(
-            "click",
-            event => {
+    function getMatches() {
 
-                if (
-                    event.target ===
-                    searchOverlay
-                ) {
-
-                    hideSearch();
-
-                }
-
-            }
-        );
-
-    }
-
-
-
-    /* =================================================
-       ESCAPE KEY
-    ================================================= */
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Escape" &&
-                searchOverlay &&
-                searchOverlay.classList.contains(
-                    "active"
+        let matches =
+            people.filter(person =>
+                person.skills.includes(
+                    state.selectedSkill
                 )
-            ) {
+            );
 
-                hideSearch();
+        if (matches.length === 0) {
 
-            }
+            matches = people.filter(person =>
+                person.skills.some(skill =>
+                    skill.toLowerCase()
+                        .includes(
+                            state.selectedSkill
+                                .toLowerCase()
+                        )
+                )
+            );
 
         }
-    );
+
+        if (matches.length === 0) {
+
+            matches = [...people];
+
+        }
+
+        return matches
+            .sort((a, b) =>
+                calculateMatch(b) -
+                calculateMatch(a)
+            )
+            .slice(0, 3);
+
+    }
 
 
+    /* =========================================================
+       RENDER MATCH CARDS
+    ========================================================= */
 
-    /* =================================================
-       SEARCH FILTER
-    ================================================= */
+    function renderMatches() {
+
+        if (!matchesContainer) return;
+
+        const matches =
+            getMatches();
+
+        matchesContainer.innerHTML = "";
+
+        matches.forEach(person => {
+
+            const percentage =
+                calculateMatch(person);
+
+            const card =
+                document.createElement("article");
+
+            card.className =
+                "match-card";
+
+            card.dataset.personId =
+                person.id;
+
+            const visibleSkills =
+                person.skills
+                    .filter(skill =>
+                        skill !== state.selectedSkill
+                    )
+                    .slice(0, 3);
+
+            card.innerHTML = `
+
+                <div class="match-top">
+
+                    <span class="match-percent">
+                        ${percentage}% Match
+                    </span>
+
+                    <span class="online-status">
+                        ${person.online ? "Online" : "Offline"}
+                    </span>
+
+                </div>
+
+
+                <div class="person-avatar">
+                    ${escapeHTML(person.avatar)}
+                </div>
+
+
+                <h3>
+                    ${escapeHTML(person.name)}
+                </h3>
+
+
+                <p class="match-role">
+                    ${escapeHTML(person.role)}
+                </p>
+
+
+                <div class="rating">
+                    ★ ${person.rating}
+                    <small>
+                        (${person.sessions} sessions)
+                    </small>
+                </div>
+
+
+                <div class="chips">
+
+                    ${visibleSkills.map(skill => `
+                        <span>
+                            ${escapeHTML(skill)}
+                        </span>
+                    `).join("")}
+
+                </div>
+
+
+                <div class="match-bottom">
+
+                    <div class="price">
+
+                        <b>
+                            ${person.credits}
+                        </b>
+
+                        Credits
+
+                        <small>
+                            / 30 min
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="primary-btn connect-btn"
+                    data-connect-id="${person.id}"
+                >
+                    Connect Now
+                </button>
+
+            `;
+
+            matchesContainer.appendChild(card);
+
+        });
+
+        attachConnectButtons();
+
+    }
+
+
+    /* =========================================================
+       CONNECT NOW BUTTONS
+    ========================================================= */
+
+    function attachConnectButtons() {
+
+        $$("[data-connect-id]").forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const personId =
+                        Number(
+                            button.dataset.connectId
+                        );
+
+                    const person =
+                        people.find(
+                            item =>
+                                item.id === personId
+                        );
+
+                    if (!person) return;
+
+                    /* -------------------------------------------------
+                       CONNECT NOW -> dedicated waiting page
+                       Store the selected person + learning context,
+                       then route to match-waiting.html.
+                                                    -------------------------------------------------- */
+
+                    sessionStorage.setItem(
+                        "skillconnectPendingMatch",
+                        JSON.stringify(person)
+                    );
+
+                    sessionStorage.setItem(
+                        "skillconnectPendingSkill",
+                        state.selectedSkill
+                    );
+
+                    sessionStorage.setItem(
+                        "skillconnectPendingGoal",
+                        state.selectedGoal
+                    );
+
+                    showToast(
+                        `Starting your match with ${person.name}…`
+                    );
+
+                    window.location.href =
+                        "match-waiting.html";
+
+                }
+            );
+
+        });
+
+    }
+
+
+    /* =========================================================
+       SEARCH
+    ========================================================= */
 
     if (searchInput) {
 
@@ -418,36 +1033,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const query =
                     searchInput.value
-                        .toLowerCase()
-                        .trim();
+                        .trim()
+                        .toLowerCase();
 
+                if (!matchesContainer) return;
 
-                const classes =
-                    document.querySelectorAll(
-                        ".class-item"
-                    );
-
-
-                classes.forEach(item => {
+                $$(".match-card").forEach(card => {
 
                     const text =
-                        item.textContent
+                        card.textContent
                             .toLowerCase();
 
-
-                    if (
-                        query === "" ||
+                    card.style.display =
                         text.includes(query)
-                    ) {
-
-                        item.style.display = "";
-
-                    } else {
-
-                        item.style.display =
-                            "none";
-
-                    }
+                            ? ""
+                            : "none";
 
                 });
 
@@ -457,614 +1057,859 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    /* =========================================================
+       SHOW MAIN PAGE
+    ========================================================= */
 
-    /* =================================================
-       CREATE NEW CLASS
-    ================================================= */
+    function showMainPage() {
 
-    const createClassBtn =
-        document.getElementById(
-            "createClassBtn"
-        );
+        if (mainPage) {
 
+            mainPage.classList.remove("hidden");
 
-    if (createClassBtn) {
+        }
 
-        createClassBtn.addEventListener(
-            "click",
-            () => {
+        if (waitingPage) {
 
-                showToast(
-                    "Opening class creation..."
-                );
+            waitingPage.classList.add("hidden");
 
-            }
-        );
+        }
 
-    }
+        if (foundPage) {
 
+            foundPage.classList.add("hidden");
 
-
-    /* =================================================
-       SIDEBAR CREATE CLASS
-    ================================================= */
-
-    const smallCreate =
-        document.querySelector(
-            ".small-create-btn"
-        );
-
-
-    if (smallCreate) {
-
-        smallCreate.addEventListener(
-            "click",
-            () => {
-
-                showToast(
-                    "Let's create your new class!"
-                );
-
-            }
-        );
+        }
 
     }
 
 
+    /* =========================================================
+       SHOW WAITING PAGE
+    ========================================================= */
 
-    /* =================================================
-       JOIN SESSION BUTTONS
-    ================================================= */
+    function showWaitingPage() {
 
-    document
-        .querySelectorAll(".join-btn")
-        .forEach(button => {
+        if (mainPage) {
 
-            button.addEventListener(
-                "click",
-                () => {
+            mainPage.classList.add("hidden");
 
-                    const oldText =
-                        button.textContent;
+        }
 
+        if (waitingPage) {
 
-                    button.textContent =
-                        "Joined";
+            waitingPage.classList.remove("hidden");
 
+        }
 
-                    button.style.background =
-                        "rgba(34,197,94,.2)";
+        if (foundPage) {
 
+            foundPage.classList.add("hidden");
 
-                    button.style.color =
-                        "#4ade80";
+        }
+
+    }
 
 
-                    showToast(
-                        "Session joined successfully!"
+    /* =========================================================
+       SHOW MATCH FOUND PAGE
+    ========================================================= */
+
+    function showFoundPage() {
+
+        if (mainPage) {
+
+            mainPage.classList.add("hidden");
+
+        }
+
+        if (waitingPage) {
+
+            waitingPage.classList.add("hidden");
+
+        }
+
+        if (foundPage) {
+
+            foundPage.classList.remove("hidden");
+
+        }
+
+    }
+
+
+    /* =========================================================
+       UPDATE WAITING SCREEN
+    ========================================================= */
+
+    function updateWaitingUI(progress) {
+
+        if (progressBar) {
+
+            progressBar.style.width =
+                `${progress}%`;
+
+        }
+
+        if (waitingStatus) {
+
+            waitingStatus.textContent =
+                `${progress}%`;
+
+        }
+
+        const statusText =
+            $("#matchingMessage") ||
+            $(".matching-message");
+
+        if (statusText) {
+
+            if (progress < 25) {
+
+                statusText.textContent =
+                    "Looking for learners with matching skills...";
+
+            } else if (progress < 50) {
+
+                statusText.textContent =
+                    "Checking available experts...";
+
+            } else if (progress < 75) {
+
+                statusText.textContent =
+                    "Comparing skills and learning goals...";
+
+            } else if (progress < 100) {
+
+                statusText.textContent =
+                    "Finding the best person for you...";
+
+            } else {
+
+                statusText.textContent =
+                    "Perfect match found!";
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================================================
+       FIND BEST PERSON
+    ========================================================= */
+
+    function findBestPerson() {
+
+        let candidates =
+            people.filter(person =>
+                person.online
+            );
+
+        candidates.sort((a, b) => {
+
+            const aSkill =
+                a.skills.includes(
+                    state.selectedSkill
+                )
+                    ? 1
+                    : 0;
+
+            const bSkill =
+                b.skills.includes(
+                    state.selectedSkill
+                )
+                    ? 1
+                    : 0;
+
+            const aGoal =
+                a.skills.includes(
+                    state.selectedGoal
+                )
+                    ? 1
+                    : 0;
+
+            const bGoal =
+                b.skills.includes(
+                    state.selectedGoal
+                )
+                    ? 1
+                    : 0;
+
+            return (
+                (bSkill + bGoal) -
+                (aSkill + aGoal)
+            );
+
+        });
+
+        return candidates[0] || people[0];
+
+    }
+
+
+    /* =========================================================
+       START MATCHING
+    ========================================================= */
+
+    function beginMatching(preSelectedPerson = null) {
+
+        if (state.matching) return;
+
+        if (state.credits <= 0) {
+
+            showToast(
+                "You don't have enough credits.",
+                "error"
+            );
+
+            return;
+
+        }
+
+
+        state.matching = true;
+
+        state.currentProgress = 0;
+
+        state.selectedPerson =
+            preSelectedPerson ||
+            null;
+
+
+        showWaitingPage();
+
+        updateWaitingUI(0);
+
+
+        if (findMatchButton) {
+
+            findMatchButton.disabled = true;
+
+        }
+
+
+        let progress = 0;
+
+
+        state.searchTimer =
+            setInterval(() => {
+
+                progress +=
+                    Math.floor(
+                        Math.random() * 9
+                    ) + 5;
+
+                if (progress > 100) {
+
+                    progress = 100;
+
+                }
+
+                state.currentProgress =
+                    progress;
+
+                updateWaitingUI(progress);
+
+
+                if (progress >= 100) {
+
+                    clearInterval(
+                        state.searchTimer
                     );
 
+                    state.searchTimer =
+                        null;
 
                     setTimeout(() => {
 
-                        button.textContent =
-                            oldText;
-
-                        button.style.background =
-                            "";
-
-                        button.style.color =
-                            "";
-
-                    }, 2200);
-
-                }
-            );
-
-        });
-
-
-
-    /* =================================================
-       CLASS MORE BUTTON
-    ================================================= */
-
-    document
-        .querySelectorAll(".more-btn")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                event => {
-
-                    event.stopPropagation();
-
-                    showToast(
-                        "Class options opened"
-                    );
-
-                }
-            );
-
-        });
-
-
-
-    /* =================================================
-       VIEW ALL CLASSES
-    ================================================= */
-
-    const viewClasses =
-        document.querySelector(
-            ".ghost-btn"
-        );
-
-
-    if (viewClasses) {
-
-        viewClasses.addEventListener(
-            "click",
-            () => {
-
-                showToast(
-                    "Showing all classes..."
-                );
-
-            }
-        );
-
-    }
-
-
-
-    /* =================================================
-       THEME SWITCHER
-    ================================================= */
-
-    const themeButton =
-        document.querySelector(
-            ".theme-btn"
-        );
-
-
-    let lightMode = false;
-
-
-    if (themeButton) {
-
-        themeButton.addEventListener(
-            "click",
-            () => {
-
-                lightMode = !lightMode;
-
-
-                if (lightMode) {
-
-                    document.body.style.setProperty(
-                        "--bg",
-                        "#f4f5fb"
-                    );
-
-                    document.body.style.setProperty(
-                        "--text",
-                        "#161824"
-                    );
-
-                    document.body.style.setProperty(
-                        "--muted",
-                        "#697083"
-                    );
-
-                    document.body.style.setProperty(
-                        "--panel",
-                        "rgba(255,255,255,.85)"
-                    );
-
-
-                    themeButton.innerHTML =
-                        `<i data-lucide="sun"></i>`;
-
-
-                    showToast(
-                        "Light mode enabled"
-                    );
-
-                } else {
-
-                    document.body.style.setProperty(
-                        "--bg",
-                        "#030713"
-                    );
-
-                    document.body.style.setProperty(
-                        "--text",
-                        "#f5f7ff"
-                    );
-
-                    document.body.style.setProperty(
-                        "--muted",
-                        "#8d93a8"
-                    );
-
-                    document.body.style.setProperty(
-                        "--panel",
-                        "rgba(10,17,38,.78)"
-                    );
-
-
-                    themeButton.innerHTML =
-                        `<i data-lucide="moon"></i>`;
-
-
-                    showToast(
-                        "Dark mode enabled"
-                    );
-
-                }
-
-
-                if (typeof lucide !== "undefined") {
-                    lucide.createIcons();
-                }
-
-            }
-        );
-
-    }
-
-
-
-    /* =================================================
-       PERIOD SELECT
-    ================================================= */
-
-    const periodSelect =
-        document.getElementById(
-            "periodSelect"
-        );
-
-
-    if (periodSelect) {
-
-        periodSelect.addEventListener(
-            "change",
-            () => {
-
-                showToast(
-                    `Showing ${periodSelect.value.toLowerCase()} data`
-                );
-
-            }
-        );
-
-    }
-
-
-
-    /* =================================================
-       PROFILE
-    ================================================= */
-
-    const profile =
-        document.querySelector(".profile");
-
-
-    if (profile) {
-
-        profile.addEventListener(
-            "click",
-            () => {
-
-                showToast(
-                    "Profile menu opened"
-                );
-
-            }
-        );
-
-    }
-
-
-
-    /* =================================================
-       RESOURCE ITEMS
-    ================================================= */
-
-    document
-        .querySelectorAll(".resource")
-        .forEach(resource => {
-
-            resource.addEventListener(
-                "click",
-                () => {
-
-                    const titleElement =
-                        resource.querySelector(
-                            "strong"
+                        finishMatching(
+                            preSelectedPerson
                         );
 
-
-                    if (!titleElement) return;
-
-
-                    const title =
-                        titleElement.textContent;
-
-
-                    showToast(
-                        `${title} opened`
-                    );
+                    }, 700);
 
                 }
-            );
 
-        });
+            }, 350);
 
+    }
 
 
-    /* =================================================
-       TOP NAVIGATION
-       
-       IMPORTANT:
-       Only show notification here.
-       Don't prevent normal links.
-    ================================================= */
+    /* =========================================================
+       FINISH MATCHING
+    ========================================================= */
 
-    document
-        .querySelectorAll(".top-nav a")
-        .forEach(link => {
-
-            link.addEventListener(
-                "click",
-                () => {
-
-                    /*
-                    Do NOT use:
-                    event.preventDefault();
-
-                    If href contains a real page,
-                    browser will navigate normally.
-                    */
-
-                }
-            );
-
-        });
-
-
-
-    /* =================================================
-       3D STAT CARD HOVER
-    ================================================= */
-
-    document
-        .querySelectorAll(".stat-card")
-        .forEach(card => {
-
-
-            card.addEventListener(
-                "mousemove",
-                event => {
-
-                    /*
-                    Disable 3D effect on small
-                    touch/mobile screens.
-                    */
-
-                    if (
-                        window.innerWidth <= 800
-                    ) {
-                        return;
-                    }
-
-
-                    const rect =
-                        card.getBoundingClientRect();
-
-
-                    const x =
-                        event.clientX -
-                        rect.left;
-
-
-                    const y =
-                        event.clientY -
-                        rect.top;
-
-
-                    const rotateX =
-                        ((y / rect.height) - 0.5) * -4;
-
-
-                    const rotateY =
-                        ((x / rect.width) - 0.5) * 4;
-
-
-                    card.style.transform =
-                        `
-                        translateY(-5px)
-                        rotateX(${rotateX}deg)
-                        rotateY(${rotateY}deg)
-                        `;
-
-                }
-            );
-
-
-            card.addEventListener(
-                "mouseleave",
-                () => {
-
-                    card.style.transform = "";
-
-                }
-            );
-
-        });
-
-
-
-    /* =================================================
-       RIPPLE EFFECT
-    ================================================= */
-
-    document
-        .querySelectorAll(
-            ".create-btn, .join-btn, .small-create-btn"
-        )
-        .forEach(button => {
-
-
-            button.addEventListener(
-                "click",
-                function (event) {
-
-                    const ripple =
-                        document.createElement(
-                            "span"
-                        );
-
-
-                    const rect =
-                        this.getBoundingClientRect();
-
-
-                    const size =
-                        Math.max(
-                            rect.width,
-                            rect.height
-                        );
-
-
-                    ripple.style.width =
-                        `${size}px`;
-
-                    ripple.style.height =
-                        `${size}px`;
-
-                    ripple.style.position =
-                        "absolute";
-
-                    ripple.style.borderRadius =
-                        "50%";
-
-                    ripple.style.background =
-                        "rgba(255,255,255,.18)";
-
-                    ripple.style.pointerEvents =
-                        "none";
-
-
-                    ripple.style.left =
-                        `
-                        ${event.clientX -
-                        rect.left -
-                        size / 2
-                        }px
-                        `;
-
-
-                    ripple.style.top =
-                        `
-                        ${event.clientY -
-                        rect.top -
-                        size / 2
-                        }px
-                        `;
-
-
-                    ripple.style.transform =
-                        "scale(0)";
-
-
-                    ripple.style.animation =
-                        "ripple .6s ease-out";
-
-
-                    this.style.position =
-                        "relative";
-
-
-                    this.style.overflow =
-                        "hidden";
-
-
-                    this.appendChild(ripple);
-
-
-                    setTimeout(() => {
-
-                        ripple.remove();
-
-                    }, 600);
-
-                }
-            );
-
-        });
-
-
-
-    /* =================================================
-       ADD RIPPLE ANIMATION
-    ================================================= */
-
-    if (
-        !document.getElementById(
-            "ripple-animation"
-        )
+    function finishMatching(
+        preSelectedPerson = null
     ) {
 
-        const rippleStyle =
-            document.createElement("style");
+        state.matching = false;
 
+        const person =
+            preSelectedPerson ||
+            findBestPerson();
 
-        rippleStyle.id =
-            "ripple-animation";
+        state.selectedPerson =
+            person;
 
+        state.matchFound = true;
 
-        rippleStyle.textContent = `
-            @keyframes ripple {
+        updateFoundProfile(person);
 
-                to {
-                    transform: scale(2);
-                    opacity: 0;
-                }
+        showFoundPage();
 
-            }
-        `;
+        if (findMatchButton) {
 
+            findMatchButton.disabled = false;
 
-        document.head.appendChild(
-            rippleStyle
+        }
+
+        showToast(
+            `Great! ${person.name} is a perfect match.`,
+            "success"
         );
 
     }
 
 
+    /* =========================================================
+       UPDATE FOUND PROFILE
+    ========================================================= */
 
-    /* =================================================
-       WINDOW RESIZE
-    ================================================= */
+    function updateFoundProfile(person) {
 
-    window.addEventListener(
-        "resize",
-        () => {
+        if (!person) return;
+
+
+        const avatar =
+            $("#foundAvatar") ||
+            $(".found-avatar");
+
+        const name =
+            $("#foundName") ||
+            $(".found-name");
+
+        const role =
+            $("#foundRole") ||
+            $(".found-role");
+
+        const price =
+            $("#foundPrice") ||
+            $(".session-price b");
+
+        const match =
+            $("#foundMatch") ||
+            $(".found-match");
+
+        const skill =
+            $("#foundSkill") ||
+            $(".found-skill");
+
+        const goal =
+            $("#foundGoal") ||
+            $(".found-goal");
+
+
+        if (avatar) {
+
+            avatar.textContent =
+                person.avatar;
+
+        }
+
+        if (name) {
+
+            name.textContent =
+                person.name;
+
+        }
+
+        if (role) {
+
+            role.textContent =
+                person.role;
+
+        }
+
+        if (price) {
+
+            price.textContent =
+                person.credits;
+
+        }
+
+        if (match) {
+
+            match.textContent =
+                `${calculateMatch(person)}% Match`;
+
+        }
+
+        if (skill) {
+
+            skill.textContent =
+                state.selectedSkill;
+
+        }
+
+        if (goal) {
+
+            goal.textContent =
+                state.selectedGoal;
+
+        }
+
+
+        const foundSkills =
+            $("#foundSkills") ||
+            $(".found-skills");
+
+        if (foundSkills) {
+
+            foundSkills.innerHTML =
+                person.skills
+                    .slice(0, 4)
+                    .map(skill =>
+                        `<span>${escapeHTML(skill)}</span>`
+                    )
+                    .join("");
+
+        }
+
+    }
+
+
+    /* =========================================================
+       FIND MY MATCH BUTTON
+    ========================================================= */
+
+    if (findMatchButton) {
+
+        findMatchButton.addEventListener(
+            "click",
+            () => {
+
+                state.selectedSkill =
+                    skillSelect
+                        ? skillSelect.value
+                        : state.selectedSkill;
+
+                state.selectedGoal =
+                    goalSelect
+                        ? goalSelect.value
+                        : state.selectedGoal;
+
+                /* -------------------------------------------------
+                   FIND MY MATCH -> dedicated waiting page
+                   Save selection, then route to match-waiting.html.
+
+                   Future: replace with POST /api/matches,
+                   then navigate to the waiting page.
+
+                -------------------------------------------------- */
+
+                sessionStorage.setItem(
+                    "skillconnectPendingSkill",
+                    state.selectedSkill
+                );
+
+                sessionStorage.setItem(
+                    "skillconnectPendingGoal",
+                    state.selectedGoal
+                );
+
+                sessionStorage.removeItem(
+                    "skillconnectPendingMatch"
+                );
+
+                showToast(
+                    "Looking for your perfect match…"
+                );
+
+                window.location.href =
+                    "match-waiting.html";
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       CANCEL MATCHING
+    ========================================================= */
+
+    if (cancelMatchButton) {
+
+        cancelMatchButton.addEventListener(
+            "click",
+            () => {
+
+                if (state.searchTimer) {
+
+                    clearInterval(
+                        state.searchTimer
+                    );
+
+                    state.searchTimer =
+                        null;
+
+                }
+
+                state.matching = false;
+
+                state.currentProgress = 0;
+
+                if (findMatchButton) {
+
+                    findMatchButton.disabled =
+                        false;
+
+                }
+
+                showMainPage();
+
+                showToast(
+                    "Matching cancelled."
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       CONNECT & START LEARNING
+    ========================================================= */
+
+    if (connectButton) {
+
+        connectButton.addEventListener(
+            "click",
+            () => {
+
+                const person =
+                    state.selectedPerson;
+
+                if (!person) {
+
+                    showToast(
+                        "No match selected.",
+                        "error"
+                    );
+
+                    return;
+
+                }
+
+
+                if (
+                    state.credits <
+                    person.credits
+                ) {
+
+                    showToast(
+                        "You don't have enough credits.",
+                        "error"
+                    );
+
+                    return;
+
+                }
+
+
+                /*
+                 * Deduct session credits.
+                 *
+                 * Later replace this section
+                 * with your Flask API request.
+                 */
+
+                state.credits -=
+                    person.credits;
+
+                updateCredits();
+
+
+                showToast(
+                    `Connected with ${person.name}! Starting your 1-on-1 session...`,
+                    "success"
+                );
+
+
+                /*
+                 * Temporary frontend behavior.
+                 *
+                 * Later you can redirect to:
+                 *
+                 * /live-session
+                 *
+                 * or:
+                 *
+                 * /session/${person.id}
+                 */
+
+                setTimeout(() => {
+
+                    window.location.href =
+                        `live-session.html?mentor=${person.id}`;
+
+                }, 1200);
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       BACK TO MATCHING
+    ========================================================= */
+
+    if (backToMatching) {
+
+        backToMatching.addEventListener(
+            "click",
+            () => {
+
+                state.matchFound = false;
+
+                state.selectedPerson =
+                    null;
+
+                showMainPage();
+
+                renderMatches();
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       PROFILE MENU ACTIONS
+    ========================================================= */
+
+    const profileSettings =
+        $("#profileSettings");
+
+    if (profileSettings) {
+
+        profileSettings.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "settings.html";
+
+            }
+        );
+
+    }
+
+
+    const profileLearning =
+        $("#profileLearning");
+
+    if (profileLearning) {
+
+        profileLearning.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "my-learning.html";
+
+            }
+        );
+
+    }
+
+
+    const logoutButton =
+        $("#logoutButton") ||
+        $(".logout");
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener(
+            "click",
+            () => {
+
+                localStorage.removeItem(
+                    "skillconnectUser"
+                );
+
+                sessionStorage.clear();
+
+                showToast(
+                    "You have been logged out."
+                );
+
+                setTimeout(() => {
+
+                    window.location.href =
+                        "login.html";
+
+                }, 700);
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       BUY CREDITS
+    ========================================================= */
+
+    const buyCredits =
+        $("#buyCredits") ||
+        $(".buy-btn");
+
+    if (buyCredits) {
+
+        buyCredits.addEventListener(
+            "click",
+            () => {
+
+                showToast(
+                    "Credit store opened."
+                );
+
+                /*
+                 * Later:
+                 *
+                 * window.location.href =
+                 * "credits.html";
+                 */
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       HOW IT WORKS
+    ========================================================= */
+
+    const howItWorks =
+        $("#howItWorks") ||
+        $(".how-btn");
+
+    if (howItWorks) {
+
+        howItWorks.addEventListener(
+            "click",
+            () => {
+
+                const target =
+                    $("#howMatchingWorks") ||
+                    $(".timeline");
+
+                if (target) {
+
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       SIDEBAR NAVIGATION
+    ========================================================= */
+
+    $$(".nav-item").forEach(item => {
+
+        item.addEventListener(
+            "click",
+            function(event) {
+
+                const href =
+                    this.getAttribute("href");
+
+                if (!href || href === "#") {
+
+                    event.preventDefault();
+
+                }
+
+                $$(".nav-item").forEach(nav => {
+
+                    nav.classList.remove("active");
+
+                });
+
+                this.classList.add("active");
+
+            }
+        );
+
+    });
+
+
+    /* =========================================================
+       KEYBOARD SHORTCUT
+    ========================================================= */
+
+    document.addEventListener(
+        "keydown",
+        event => {
 
             /*
-            Automatically close mobile
-            sidebar when returning to desktop.
-            */
+             * Ctrl + K
+             * focuses search
+             */
 
             if (
-                window.innerWidth > 800 &&
-                sidebar
+                event.ctrlKey &&
+                event.key.toLowerCase() === "k"
             ) {
 
-                sidebar.classList.remove(
-                    "open"
-                );
+                event.preventDefault();
+
+                if (searchInput) {
+
+                    searchInput.focus();
+
+                }
+
+            }
+
+
+            /*
+             * Escape closes dropdowns
+             */
+
+            if (event.key === "Escape") {
+
+                if (profileDropdown) {
+
+                    profileDropdown.classList.remove(
+                        "show"
+                    );
+
+                }
+
+                if (notificationDropdown) {
+
+                    notificationDropdown.classList.remove(
+                        "show"
+                    );
+
+                }
 
             }
 
@@ -1072,13 +1917,116 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 
+    /* =========================================================
+       INITIALIZE
+    ========================================================= */
 
-    /* =================================================
-       PAGE LOADED
-    ================================================= */
+    function initialize() {
 
-    console.log(
-        "SkillShare My Teaching dashboard loaded successfully."
-    );
+        updateCredits();
+
+        if (skillSelect) {
+
+            state.selectedSkill =
+                skillSelect.value ||
+                "English Speaking";
+
+        }
+
+        if (goalSelect) {
+
+            state.selectedGoal =
+                goalSelect.value ||
+                "Conversation Practice";
+
+        }
+
+        /*
+         * Build correct goal options
+         * according to selected skill.
+         */
+
+        updateGoalOptions();
+
+        renderMatches();
+
+        /*
+         * Make sure waiting/found pages
+         * start hidden.
+         */
+
+        if (waitingPage) {
+
+            waitingPage.classList.add("hidden");
+
+        }
+
+        if (foundPage) {
+
+            foundPage.classList.add("hidden");
+
+        }
+
+    }
+
+
+    initialize();
+
+
+    /* =========================================================
+       FRONTEND API HOOK
+       ---------------------------------------------------------
+       This function is intentionally separated so later
+       you can connect Flask/FastAPI/PostgreSQL without
+       rewriting the UI.
+    ========================================================= */
+
+    window.SkillConnect = {
+
+        findMatch: beginMatching,
+
+        cancelMatch: () => {
+
+            if (state.searchTimer) {
+
+                clearInterval(
+                    state.searchTimer
+                );
+
+            }
+
+            state.matching = false;
+
+            showMainPage();
+
+        },
+
+        getState: () => {
+
+            return {
+                ...state
+            };
+
+        },
+
+        getSelectedPerson: () => {
+
+            return state.selectedPerson;
+
+        },
+
+        updateCredits: (amount) => {
+
+            state.credits =
+                Number(amount);
+
+            updateCredits();
+
+        },
+
+        renderMatches: renderMatches
+
+    };
+
 
 });
