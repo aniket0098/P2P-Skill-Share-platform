@@ -307,7 +307,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     applyTheme();
 
+    syncRealNotificationCount();
+
 });
+
+
+/* =========================================================
+   REAL-DATA NOTIFICATION BADGE (FastAPI + PostgreSQL)
+   Replaces the local mock count with the actual number of
+   pending received connection requests + unread messages.
+   ========================================================= */
+
+async function syncRealNotificationCount() {
+
+    if (!window.SkillShareAPI || !window.SkillShareAPI.getToken()) return;
+
+    try {
+
+        const [requestsData, conversationsData] = await Promise.all([
+            window.SkillShareAPI.listRequests({ direction: "received", status: "pending" }),
+            window.SkillShareAPI.getConversations(),
+        ]);
+
+        const pendingRequests = ((requestsData && requestsData.requests) || []).length;
+
+        const unreadMessages = ((conversationsData && conversationsData.conversations) || [])
+            .reduce((sum, c) => sum + (c.unread_count || 0), 0);
+
+        const badge = document.getElementById("notificationCount");
+
+        if (badge) {
+            badge.textContent = pendingRequests + unreadMessages;
+            badge.style.display = (pendingRequests + unreadMessages) ? "" : "none";
+        }
+
+    } catch (error) {
+        /* Silent: the badge falls back to the local value if the
+           backend is not reachable. Protected APIs return 401 and
+           SkillShareAPI already handles session expiry globally. */
+    }
+}
 
 
 function initializeDatabase() {
@@ -337,46 +376,101 @@ function renderSidebar() {
             .toLowerCase() || "dashboard.html";
 
 
-    const links = [
+    const sections = [
         {
-            name: "Dashboard",
-            icon: "🏠",
-            url: "dashboard.html"
+            label: null,
+            links: [
+                {
+                    name: "Dashboard",
+                    icon: "🏠",
+                    url: "dashboard.html"
+                }
+            ]
         },
         {
-            name: "Explore Skills",
-            icon: "🔎",
-            url: "explore.html"
-        },
-         {
-            name: "Live Discussion",
-            icon: "💭",
-            url: "live-discussions.html"
-        },
-        {
-            name: "Live Learning",
-            icon: "📡",
-            url: "live-learn.html"
-        },
-        {
-            name: "My Learning",
-            icon: "📖",
-            url: "my-learning.html"
-        },
-        {
-            name: "Messages",
-            icon: "💬",
-            url: "messages.html"
+            label: "Discover",
+            links: [
+                {
+                    name: "Explore Skills",
+                    icon: "🔎",
+                    url: "explore.html"
+                },
+                {
+                    name: "Analyze your skills",
+                    icon: "🌍",
+                    url: "analyze-skill.html"
+                },
+                {
+                    name: "Industry skills",
+                    icon: "🧩",
+                    url: "industry-skills.html"
+                }
+            ]
         },
         {
-            name: "Community",
-            icon: "👥",
-            url: "community.html"
+            label: "Learn",
+            links: [
+                {
+                    name: "My Learning",
+                    icon: "📚",
+                    url: "my-learning.html"
+                },
+                {
+                    name: "Live Learn",
+                    icon: "🔴",
+                    url: "live-learning.html"
+                },
+                {
+                    name: "Live Discussion",
+                    icon: "🤝",
+                    url: "live-discussions.html"
+                }
+            ]
         },
         {
-            name: "Settings",
-            icon: "⚙️",
-            url: "settings.html"
+            label: "Build",
+            links: [
+                {
+                    name: "Projects",
+                    icon: "💻",
+                    url: "projects.html"
+                },
+                {
+                    name: "Teams",
+                    icon: "👥",
+                    url: "teams.html"
+                }
+            ]
+        },
+        {
+            label: "Community",
+            links: [
+                {
+                    name: "Messages",
+                    icon: "💬",
+                    url: "messages.html"
+                },
+                {
+                    name: "Requests",
+                    icon: "👥",
+                    url: "requests.html"
+                },
+                {
+                    name: "community",
+                    icon: "🗣",
+                    url: "community.html"
+                }
+            ]
+        },
+        {
+            label: null,
+            links: [
+                {
+                    name: "Settings",
+                    icon: "⚙️",
+                    url: "setting.html"
+                }
+            ]
         }
     ];
 
@@ -400,19 +494,29 @@ function renderSidebar() {
 
             <nav class="sidebar-nav">
 
-                ${links.map(link => {
+                ${sections.map(section => {
 
-                    const active =
-                        currentPage === link.url
-                            ? "active"
-                            : "";
+                    const labelHtml = section.label
+                        ? `<span class="sidebar-nav-label">${section.label}</span>`
+                        : "";
 
-                    return `
-                        <a href="${link.url}" class="${active}">
-                            <span class="icon">${link.icon}</span>
-                            <span>${link.name}</span>
-                        </a>
-                    `;
+                    const linksHtml = section.links.map(link => {
+
+                        const active =
+                            currentPage === link.url
+                                ? "active"
+                                : "";
+
+                        return `
+                            <a href="${link.url}" class="${active}">
+                                <span class="icon">${link.icon}</span>
+                                <span>${link.name}</span>
+                            </a>
+                        `;
+
+                    }).join("");
+
+                    return labelHtml + linksHtml;
 
                 }).join("")}
 
@@ -612,7 +716,7 @@ function renderTopbar() {
                             🔔 Notifications
                         </a>
 
-                        <a href="settings.html">
+                        <a href="setting.html">
                             ⚙️ Settings
                         </a>
 
@@ -1090,8 +1194,11 @@ function showSearchSuggestions(results) {
                 const id =
                     item.dataset.searchSkill;
 
+                /* No dedicated skill-details page exists yet —
+                   route to the Explore skills page instead. */
+
                 window.location.href =
-                    `skill-details.html?id=${id}`;
+                    "explore.html";
 
             });
 

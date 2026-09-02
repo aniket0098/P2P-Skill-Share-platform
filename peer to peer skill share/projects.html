@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillConnect — Project Gallery</title>
+
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- =====================================================
+             SIDEBAR
+        ====================================================== -->
+        <aside class="sidebar">
+
+            <div class="brand">
+
+                <div class="brand-mark">
+                    ✦
+                </div>
+
+                <div>
+                    <h1>SkillConnect</h1>
+                    <span>Share Skills. Build Tomorrow.</span>
+                </div>
+
+            </div>
+
+
+            <!-- SIDEBAR NAVIGATION -->
+            <nav class="side-nav">
+
+                <a href="dashboard.html" class="nav-item">
+                    ⌂
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="explore.html" class="nav-item">
+                    ⌕
+                    <span>Explore Skills</span>
+                </a>
+
+                <a href="live-learn.html" class="nav-item">
+                    ◉
+                    <span>Live Learn</span>
+                </a>
+
+                <a href="my-learning.html" class="nav-item">
+                    ▣
+                    <span>My Learning</span>
+                </a>
+
+                <a href="projects.html" class="nav-item active">
+                    ▣
+                    <span>Project Gallery</span>
+                </a>
+
+                <a href="messages.html" class="nav-item">
+                    ▤
+                    <span>
+                        Messages
+                        <b class="nav-badge">3</b>
+                    </span>
+                </a>
+
+                <a href="community.html" class="nav-item">
+                    ♧
+                    <span>Community</span>
+                </a>
+
+
+                <a href="bookmarks.html" class="nav-item">
+                    ♡
+                    <span>Bookmarks</span>
+                </a>
+
+                <a href="settings.html" class="nav-item">
+                    ⚙
+                    <span>Settings</span>
+                </a>
+
+            </nav>
+
+
+            <!-- SIDEBAR PROMO -->
+            <div class="sidebar-promo">
+
+                <h3>
+                    Build. Share.<br>
+                    Get Hired.
+                </h3>
+
+                <p>
+                    Your projects can create new opportunities.
+                    Showcase your skills to the world.
+                </p>
+
+                <div class="rocket">
+                    🚀
+                </div>
+
+                <button
+                    class="primary-btn full"
+                    id="sidePostBtn">
+
+                    Post Your Project →
+
+                </button>
+
+            </div>
+
+        </aside>
+
+
+
+        <!-- =====================================================
+             MAIN CONTENT
+        ====================================================== -->
+
+        <main class="main">
+
+
+            <!-- =================================================
+                 TOP BAR
+            ================================================== -->
+
+            <header class="topbar">
+
+                <!-- SEARCH -->
+                <div class="search-box">
+
+                    <span>⌕</span>
+
+                    <input
+                        id="searchInput"
+                        type="search"
+                        placeholder="Search projects, skills, technologies, people..."
+                    >
+
+                    <button id="searchBtn">
+                        ⌕
+                    </button>
+
+                </div>
+
+
+                <!-- TOP ACTIONS -->
+                <div class="top-actions">
+
+                    <!-- NOTIFICATION -->
+                    <button
+                        class="icon-btn notification-btn"
+                        id="notificationBtn">
+
+                        ♧
+
+                        <i>5</i>
+
+                    </button>
+
+
+                    <!-- PROFILE -->
+                    <div class="profile-wrap">
+
+                        <button
+                            class="profile-button"
+                            id="profileButton">
+
+                            <div class="avatar">
+                                AD
+                            </div>
+
+                            <div class="profile-text">
+
+                                <strong>
+                                    Aniket Deshmukh
+                                </strong>
+
+                                <small>
+                                    Learner • Creator
+                                </small>
+
+                            </div>
+
+                            <span class="chevron">
+                                ⌄
+                            </span>
+
+                        </button>
+
+
+                        <!-- PROFILE DROPDOWN -->
+
+                        <div
+                            class="profile-menu"
+                            id="profileMenu">
+
+                            <div class="profile-menu-head">
+
+                                <div class="avatar large">
+                                    AD
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Aniket Deshmukh
+                                    </strong>
+
+                                    <small>
+                                        Full Stack Creator
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                data-profile-action="profile">
+
+                                👤 My Profile
+
+                            </button>
+
+
+                            <button
+                                data-profile-action="settings">
+
+                                ⚙ Settings
+
+                            </button>
+
+
+                            <button
+                                data-profile-action="saved">
+
+                                ♡ Saved Projects
+
+                            </button>
+
+
+                            <hr>
+
+
+                            <button
+                                class="danger"
+                                data-profile-action="logout">
+
+                                ↪ Log out
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- =================================================
+                 FILTERS
+            ================================================== -->
+
+            <section class="filters">
+
+
+                <!-- CATEGORY -->
+
+                <label>
+
+                    <select id="categoryFilter">
+
+                        <option value="all">
+                            All Categories
+                        </option>
+
+                        <option value="Web Development">
+                            Web Development
+                        </option>
+
+                        <option value="Mobile Apps">
+                            Mobile Apps
+                        </option>
+
+                        <option value="AI/ML">
+                            AI/ML
+                        </option>
+
+                        <option value="Design">
+                            Design
+                        </option>
+
+                        <option value="Data Science">
+                            Data Science
+                        </option>
+
+                        <option value="Creative">
+                            Creative
+                        </option>
+
+                        <option value="Hardware">
+                            Hardware
+                        </option>
+
+                    </select>
+
+                </label>
+
+
+                <!-- LEVEL -->
+
+                <label>
+
+                    <select id="levelFilter">
+
+                        <option value="all">
+                            All Levels
+                        </option>
+
+                        <option value="Beginner">
+                            Beginner
+                        </option>
+
+                        <option value="Intermediate">
+                            Intermediate
+                        </option>
+
+                        <option value="Advanced">
+                            Advanced
+                        </option>
+
+                    </select>
+
+                </label>
+
+
+                <!-- LANGUAGE -->
+
+                <label>
+
+                    <select id="languageFilter">
+
+                        <option value="all">
+                            All Languages
+                        </option>
+
+                        <option value="JavaScript">
+                            JavaScript
+                        </option>
+
+                        <option value="Python">
+                            Python
+                        </option>
+
+                        <option value="React">
+                            React
+                        </option>
+
+                        <option value="Flutter">
+                            Flutter
+                        </option>
+
+                        <option value="HTML">
+                            HTML
+                        </option>
+
+                        <option value="CSS">
+                            CSS
+                        </option>
+
+                        <option value="Java">
+                            Java
+                        </option>
+
+                    </select>
+
+                </label>
+
+
+                <!-- SORT -->
+
+                <label>
+
+                    <select id="sortFilter">
+
+                        <option value="latest">
+                            Sort: Latest
+                        </option>
+
+                        <option value="likes">
+                            Sort: Most Liked
+                        </option>
+
+                        <option value="comments">
+                            Sort: Most Discussed
+                        </option>
+
+                        <option value="views">
+                            Sort: Most Viewed
+                        </option>
+
+                    </select>
+
+                </label>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 HERO / PROJECT GALLERY HEADER
+            ================================================== -->
+
+            <section class="hero">
+
+                <div class="hero-copy">
+
+                    <div class="eyebrow">
+                        SHOWCASE • COLLABORATE • GET OPPORTUNITIES
+                    </div>
+
+
+                    <h2>
+                        Project
+                        <span>Gallery</span>
+                    </h2>
+
+
+                    <p>
+                        Show your work. Inspire others. Get noticed.
+                    </p>
+
+
+                    <!-- HERO STATISTICS -->
+
+                    <div class="stats">
+
+                        <div>
+
+                            <b>◉</b>
+
+                            <strong id="heroProjects">
+                                2.4K
+                            </strong>
+
+                            <small>
+                                Projects Shared
+                            </small>
+
+                        </div>
+
+
+                        <div>
+
+                            <b>♟</b>
+
+                            <strong>
+                                8.1K
+                            </strong>
+
+                            <small>
+                                Active Creators
+                            </small>
+
+                        </div>
+
+
+                        <div>
+
+                            <b>▣</b>
+
+                            <strong>
+                                320+
+                            </strong>
+
+                            <small>
+                                Hiring Partners
+                            </small>
+
+                        </div>
+
+
+                        <div>
+
+                            <b>♛</b>
+
+                            <strong>
+                                Many
+                            </strong>
+
+                            <small>
+                                Success Stories
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- HERO BUTTONS -->
+
+                    <div class="hero-actions">
+
+                        <button
+                            class="primary-btn"
+                            id="heroShareBtn">
+
+                            ✦ Share Your Project
+
+                        </button>
+
+
+                        <button
+                            class="ghost-btn"
+                            id="howBtn">
+
+                            ▶ How it Works
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- HERO GRAPHIC -->
+
+                <div class="hero-art">
+
+                    <div class="orbit orbit-one"></div>
+
+                    <div class="orbit orbit-two"></div>
+
+
+                    <div class="laptop">
+
+                        <div class="screen">
+
+                            <div class="screen-title"></div>
+
+                            <div class="screen-card"></div>
+
+                            <div class="screen-card small"></div>
+
+                            <div class="screen-lines"></div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="github-orb">
+                        ◉
+                    </div>
+
+
+                    <div class="hero-arrow">
+
+                        Your<br>
+
+                        <b>Project</b><br>
+
+                        Matters! ↘
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 MAIN CONTENT GRID
+            ================================================== -->
+
+            <div class="content-grid">
+
+
+                <!-- =================================================
+                     PROJECT GALLERY
+                ================================================== -->
+
+                <section class="gallery-area">
+
+
+                    <!-- CATEGORY TABS -->
+
+                    <div
+                        class="category-tabs"
+                        id="categoryTabs">
+
+                        <button
+                            class="tab active"
+                            data-category="all">
+
+                            All Projects
+
+                        </button>
+
+
+                        <button
+                            class="tab"
+                            data-category="Web Development">
+
+                            Web Development
+
+                        </button>
+
+
+                        <button
+                            class="tab"
+                            data-category="Mobile Apps">
+
+                            Mobile Apps
+
+                        </button>
+
+
+                        <button
+                            class="tab"
+                            data-category="AI/ML">
+
+                            AI/ML
+
+                        </button>
+
+
+                        <button
+                            class="tab"
+                            data-category="Design">
+
+                            Design
+
+                        </button>
+
+
+                        <button
+                            class="tab"
+                            data-category="Data Science">
+
+                            Data Science
+
+                        </button>
+
+
+                        <button
+                            class="tab"
+                            data-category="Creative">
+
+                            Creative
+
+                        </button>
+
+
+                        <button
+                            class="tab"
+                            data-category="Hardware">
+
+                            Hardware
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- RESULTS -->
+
+                    <div class="results-line">
+
+                        <span id="resultCount">
+                            6 projects
+                        </span>
+
+                        <button id="clearFilters">
+                            Clear filters
+                        </button>
+
+                    </div>
+
+
+                    <!-- PROJECT CARDS -->
+
+                    <div
+                        class="project-grid"
+                        id="projectGrid">
+
+                        <!-- JavaScript inserts projects here -->
+
+                    </div>
+
+
+                    <!-- EMPTY RESULT -->
+
+                    <div
+                        class="empty-state hidden"
+                        id="emptyState">
+
+                        <div>
+                            🔎
+                        </div>
+
+                        <h3>
+                            No projects found
+                        </h3>
+
+                        <p>
+                            Try another keyword or reset your filters.
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- =================================================
+                     RIGHT SIDEBAR
+                ================================================== -->
+
+                <aside class="right-panel">
+
+
+                    <!-- =================================================
+                         YOUR IMPACT
+                    ================================================== -->
+
+                    <section class="panel impact">
+
+                        <div class="panel-title">
+
+                            <h3>
+                                Your Impact
+                            </h3>
+
+                            <button id="viewProfileBtn">
+                                View Profile →
+                            </button>
+
+                        </div>
+
+
+                        <div class="impact-row">
+
+                            <span class="impact-icon green">
+                                ✦
+                            </span>
+
+                            <span>
+                                Projects Shared
+                            </span>
+
+                            <b id="impactProjects">
+                                4
+                            </b>
+
+                        </div>
+
+
+                        <div class="impact-row">
+
+                            <span class="impact-icon blue">
+                                ◉
+                            </span>
+
+                            <span>
+                                Profile Views
+                            </span>
+
+                            <b id="impactViews">
+                                256
+                            </b>
+
+                        </div>
+
+
+                        <div class="impact-row">
+
+                            <span class="impact-icon orange">
+                                ▣
+                            </span>
+
+                            <span>
+                                Opportunities
+                            </span>
+
+                            <b id="impactOpportunities">
+                                12
+                            </b>
+
+                        </div>
+
+
+                        <div class="impact-row">
+
+                            <span class="impact-icon purple">
+                                ♟
+                            </span>
+
+                            <span>
+                                People Reached
+                            </span>
+
+                            <b id="impactReached">
+                                1.2K
+                            </b>
+
+                        </div>
+
+                    </section>
+
+
+
+                    <!-- =================================================
+                         QUICK ACTIONS
+                    ================================================== -->
+
+                    <section class="panel">
+
+                        <div class="panel-title">
+
+                            <h3>
+                                Quick Actions
+                            </h3>
+
+                        </div>
+
+
+                        <!-- SHARE -->
+
+                        <button
+                            class="quick-action"
+                            id="quickShare">
+
+                            <span class="qa-icon purple">
+                                ＋
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Share a Project
+                                </b>
+
+                                <small>
+                                    Post your work
+                                </small>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- GITHUB -->
+
+                        <button
+                            class="quick-action"
+                            id="quickGithub">
+
+                            <span class="qa-icon black">
+                                ◉
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Add GitHub Link
+                                </b>
+
+                                <small>
+                                    Import from GitHub
+                                </small>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- STORY -->
+
+                        <button
+                            class="quick-action"
+                            id="quickStory">
+
+                            <span class="qa-icon pink">
+                                ✎
+                            </span>
+
+                            <div>
+
+                                <b>
+                                    Write a Project Story
+                                </b>
+
+                                <small>
+                                    Tell your journey
+                                </small>
+
+                            </div>
+
+                        </button>
+
+                    </section>
+
+
+
+                    <!-- =================================================
+                         TOP CREATORS
+                    ================================================== -->
+
+                    <section class="panel creators">
+
+                        <div class="panel-title">
+
+                            <h3>
+                                Top Project Creators
+                            </h3>
+
+                            <button id="viewAllCreators">
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <!-- CREATOR 1 -->
+
+                        <div class="creator">
+
+                            <span class="rank crown">
+                                ♛
+                            </span>
+
+                            <div class="creator-avatar">
+                                MJ
+                            </div>
+
+                            <div>
+
+                                <b>
+                                    Meera Joshi
+                                </b>
+
+                                <small>
+                                    UI/UX • 24 projects
+                                </small>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- CREATOR 2 -->
+
+                        <div class="creator">
+
+                            <span class="rank">
+                                2
+                            </span>
+
+                            <div class="creator-avatar">
+                                AV
+                            </div>
+
+                            <div>
+
+                                <b>
+                                    Arjun Verma
+                                </b>
+
+                                <small>
+                                    Full Stack • 18 projects
+                                </small>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- CREATOR 3 -->
+
+                        <div class="creator">
+
+                            <span class="rank">
+                                3
+                            </span>
+
+                            <div class="creator-avatar">
+                                KN
+                            </div>
+
+                            <div>
+
+                                <b>
+                                    Kavya Nair
+                                </b>
+
+                                <small>
+                                    AI/ML • 16 projects
+                                </small>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- CREATOR 4 -->
+
+                        <div class="creator">
+
+                            <span class="rank">
+                                4
+                            </span>
+
+                            <div class="creator-avatar">
+                                RG
+                            </div>
+
+                            <div>
+
+                                <b>
+                                    Rohan Gupta
+                                </b>
+
+                                <small>
+                                    App Dev • 14 projects
+                                </small>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- CREATOR 5 -->
+
+                        <div class="creator">
+
+                            <span class="rank">
+                                5
+                            </span>
+
+                            <div class="creator-avatar">
+                                IM
+                            </div>
+
+                            <div>
+
+                                <b>
+                                    Isha Malik
+                                </b>
+
+                                <small>
+                                    Design • 13 projects
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+
+                    <!-- =================================================
+                         OPPORTUNITY CARD
+                    ================================================== -->
+
+                    <section class="opportunity-card">
+
+                        <div class="briefcase">
+                            ▣
+                        </div>
+
+                        <h3>
+
+                            Turn Your Projects<br>
+                            Into Opportunities
+
+                        </h3>
+
+                        <p>
+
+                            Get noticed by learners,
+                            collaborators and employers.
+
+                        </p>
+
+                        <button id="exploreJobs">
+
+                            Explore Jobs →
+
+                        </button>
+
+                    </section>
+
+                </aside>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         MODAL
+    ====================================================== -->
+
+    <div
+        class="modal-backdrop"
+        id="modalBackdrop">
+
+        <div
+            class="modal"
+            id="modal">
+
+            <button
+                class="modal-close"
+                id="modalClose">
+
+                ×
+
+            </button>
+
+            <div id="modalContent"></div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         TOAST NOTIFICATION
+    ====================================================== -->
+
+    <div
+        class="toast"
+        id="toast">
+
+    </div>
+
+
+
+    <!-- JAVASCRIPT -->
+
+    <script src="projects.js"></script>
+
+</body>
+
+</html>

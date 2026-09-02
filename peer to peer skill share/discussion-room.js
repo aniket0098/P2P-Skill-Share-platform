@@ -159,6 +159,57 @@ const toast =
 
 
 /* =========================================================
+   RECEIVE SELECTED DISCUSSION TOPIC
+   (added: Live Discussion -> matching -> room flow)
+
+   The Live Discussion page stores the joined room in
+   localStorage["skillconnect_current_room"] before the
+   matching experience runs. Apply its title here so the
+   room header reflects the topic the user actually chose.
+
+   BACKEND HOOK (Flask/PostgreSQL later): replace this
+   localStorage read with the real room payload from the
+   API/WebSocket — the DOM update stays the same.
+========================================================= */
+
+function applyCurrentRoomTopic() {
+
+    try {
+
+        const raw =
+            localStorage.getItem("skillconnect_current_room");
+
+        if (!raw) return;
+
+        const room = JSON.parse(raw);
+
+        const titleElement =
+            document.getElementById("roomTitle");
+
+        if (room && room.title && titleElement) {
+
+            titleElement.textContent = room.title;
+
+        }
+
+    } catch (error) {
+
+        /* Corrupted or missing data: keep the default title. */
+
+        console.warn(
+            "Could not apply the selected discussion topic.",
+            error
+        );
+
+    }
+
+}
+
+applyCurrentRoomTopic();
+
+
+
+/* =========================================================
    INIT
 ========================================================= */
 

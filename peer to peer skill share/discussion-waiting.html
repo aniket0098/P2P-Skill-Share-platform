@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Finding your discussion partner — SkillShare</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="discussion-waiting.css">
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         CALM BACKGROUND (mostly static, subtle depth)
+    ====================================================== -->
+
+    <div class="bg" aria-hidden="true">
+
+        <span class="orb orb-a"></span>
+        <span class="orb orb-b"></span>
+        <span class="orb orb-c"></span>
+
+    </div>
+
+
+    <!-- =====================================================
+         STAGE
+    ====================================================== -->
+
+    <main class="stage">
+
+        <section
+            class="match-card"
+            id="matchCard"
+            aria-labelledby="matchTitle"
+        >
+
+            <!-- Card header -->
+
+            <header class="card-head">
+
+                <span class="eyebrow">
+
+                    <span class="eyebrow-dot"></span>
+
+                    Live Discussion · Smart Matching
+
+                </span>
+
+                <h1 id="matchTitle">
+                    Finding Your Discussion Partner
+                </h1>
+
+                <p class="lede">
+                    We're looking for someone who shares your
+                    interests and is ready for a meaningful
+                    conversation.
+                </p>
+
+
+                <!-- Selected discussion topic (preserved from
+                     the Live Discussion page when available) -->
+
+                <p
+                    class="topic-chip"
+                    id="topicChip"
+                    hidden
+                >
+
+                    <span class="topic-label">Topic</span>
+
+                    <span id="topicName">Artificial Intelligence</span>
+
+                </p>
+
+            </header>
+
+            <!-- =====================================================
+                 MATCHING VISUALIZATION
+                 YOU + PARTNER connected through a live link
+            ====================================================== -->
+
+            <div class="match-map" aria-hidden="true">
+
+                <svg
+                    class="map-lines"
+                    viewBox="0 0 320 240"
+                    preserveAspectRatio="none"
+                >
+
+                    <defs>
+
+                        <linearGradient
+                            id="linkGrad"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                        >
+
+                            <stop offset="0%"   stop-color="#762cff" stop-opacity="0.65"/>
+                            <stop offset="50%"  stop-color="#4e9cff" stop-opacity="0.5"/>
+                            <stop offset="100%" stop-color="#00d99b" stop-opacity="0.6"/>
+
+                        </linearGradient>
+
+                    </defs>
+
+                    <!-- YOU -> sparkles -> PARTNER -->
+                    <line class="link" x1="160" y1="34"  x2="56"  y2="112"/>
+                    <line class="link" x1="160" y1="34"  x2="264" y2="112"/>
+                    <line class="link" x1="56"  y1="128" x2="160" y2="206"/>
+                    <line class="link" x1="264" y1="128" x2="160" y2="206"/>
+
+                </svg>
+
+
+                <!-- Top node: the user -->
+
+                <div class="node node-you">
+
+                    <span class="node-avatar">You</span>
+
+                    <span class="node-label">You</span>
+
+                </div>
+
+
+                <!-- Side sparkle nodes -->
+
+                <div class="node node-side node-spark-left">
+                    <span class="node-spark">✦</span>
+                </div>
+
+                <div class="node node-side node-spark-right">
+                    <span class="node-spark">✦</span>
+                </div>
+
+
+                <!-- Central connection indicator -->
+
+                <div class="match-core">
+
+                    <span class="core-ring"></span>
+                    <span class="core-ring core-ring-2"></span>
+
+                    <span class="core-icon">⇌</span>
+
+                </div>
+
+
+                <!-- Bottom node: the future partner -->
+
+                <div class="node node-partner">
+
+                    <span class="node-avatar node-avatar-soft">?</span>
+
+                    <span class="node-label">Partner</span>
+
+                </div>
+
+            </div>
+
+            <!-- =====================================================
+                 MATCHING STATUS + PROGRESS
+            ====================================================== -->
+
+            <div class="status-zone" id="statusZone">
+
+                <p
+                    class="status-text"
+                    id="statusText"
+                    aria-live="polite"
+                >
+                    Understanding your discussion interests...
+                </p>
+
+                <div
+                    class="progress-track"
+                    role="progressbar"
+                    aria-label="Discussion matching progress"
+                    aria-valuemin="1"
+                    aria-valuemax="4"
+                    aria-valuenow="1"
+                    id="progressTrack"
+                >
+
+                    <span class="progress-fill" id="progressFill"></span>
+                    <span class="progress-dot" id="progressDot"></span>
+
+                </div>
+
+                <p class="step-count" id="stepCount">
+                    Step 1 of 4
+                </p>
+
+            </div>
+
+
+            <!-- Reassuring note: the delay is intentional -->
+
+            <aside class="comfort" id="comfortBox">
+
+                <b>Great conversations take a moment ✨</b>
+
+                <p>
+                    We're matching you with someone who's ready
+                    for a real discussion — not a random pairing.
+                </p>
+
+            </aside>
+
+            <!-- =====================================================
+                 SUCCESS STATE (revealed near the end)
+            ====================================================== -->
+
+            <div class="success-zone" id="successZone" hidden>
+
+                <h2 class="success-title">
+                    Discussion partner found! <span aria-hidden="true">✨</span>
+                </h2>
+
+
+                <!-- Match preview -->
+
+                <article
+                    class="match-preview"
+                    id="matchPreview"
+                    aria-label="Your matched discussion partner"
+                >
+
+                    <div
+                        class="preview-avatar"
+                        id="previewAvatar"
+                        aria-hidden="true"
+                    >
+                        AX
+                    </div>
+
+                    <h3 id="previewName">
+                        Alex
+                    </h3>
+
+                    <p class="preview-topic" id="previewTopic">
+                        Technology &amp; AI
+                    </p>
+
+                    <p class="preview-match">
+
+                        <span class="match-score" id="previewScore">94%</span>
+
+                        Match
+
+                    </p>
+
+                    <div class="preview-interests">
+
+                        <span class="interests-label">
+                            Shared interests
+                        </span>
+
+                        <ul id="previewInterests">
+
+                            <li>Artificial Intelligence</li>
+                            <li>Technology</li>
+                            <li>Programming</li>
+
+                        </ul>
+
+                    </div>
+
+                </article>
+
+
+                <!-- Final ready note -->
+
+                <div
+                    class="ready-note"
+                    id="readyNote"
+                    hidden
+                >
+
+                    <b>Discussion Partner Found! 🎉</b>
+
+                    <p>Your conversation room is ready.</p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Quiet escape hatch -->
+
+            <button
+                class="cancel-link"
+                id="cancelBtn"
+                type="button"
+            >
+                Cancel and go back
+            </button>
+
+        </section>
+
+    </main>
+
+</body>
+
+</html>

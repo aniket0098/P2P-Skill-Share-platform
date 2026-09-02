@@ -3557,3 +3557,190 @@ img {
     }
 
 }
+/* =========================================================
+   13. CONNECT (NEW CHAT) MODAL — API sourced
+   ========================================================= */
+
+.new-chat-wrap h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.new-chat-wrap > p {
+    margin: 0 0 14px;
+    color: #9ba2bb;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.new-chat-list {
+    max-height: 380px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.new-chat-loading,
+.no-conversations,
+.chat-empty {
+    padding: 22px 14px;
+    text-align: center;
+    color: #8a91ad;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.new-chat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid #232a47;
+    border-radius: 12px;
+    background: rgba(15, 21, 48, 0.55);
+    transition: background var(--transition);
+}
+
+.new-chat-row:hover {
+    background: rgba(21, 28, 60, 0.85);
+}
+
+.new-chat-row img {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.new-chat-name {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.new-chat-name strong {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.new-chat-name span {
+    color: #8a91ad;
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.connect-action {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.connect-action.ghost {
+    background: transparent;
+    border: 1px solid #4b3f97;
+    color: #cfc4ff;
+    box-shadow: none;
+}
+
+.connect-action.sent {
+    background: #173230;
+    color: #6ee7b7;
+    box-shadow: none;
+    cursor: default;
+}
+
+.connect-action:disabled {
+    opacity: 0.85;
+    cursor: default;
+}
+
+/* Conversation list empty hint */
+.no-conversations {
+    margin: 10px 4px;
+    border: 1px dashed #2a3151;
+    border-radius: 12px;
+}
+
+.chat-empty {
+    padding: 40px 20px;
+}
+
+/* Light theme overrides for the connect modal */
+.light .new-chat-wrap h2 {
+    color: #172033;
+}
+
+.light .new-chat-row {
+    border-color: var(--line);
+    background: #ffffff;
+}
+
+.light .new-chat-row:hover {
+    background: #f6f7fb;
+}
+
+.light .new-chat-name span,
+.light .no-conversations,
+.light .chat-empty {
+    color: #707b8f;
+}
+
+.light .connect-action.ghost {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.light .connect-action.sent {
+    color: var(--green);
+    background: var(--green-soft);
+}
+/* Chat empty-state link */
+.chat-empty a {
+    color: inherit;
+
+    text-decoration: underline;
+}
+/* User ID in conversation list + chat profile panel */
+.conv-id {
+    display: block;
+
+    margin-top: 1px;
+
+    color: var(--muted);
+
+    font-size: 10.5px;
+    font-weight: 600;
+
+    letter-spacing: .3px;
+}
+
+.profile-user-id {
+    margin-top: 12px;
+
+    padding: 7px 12px;
+
+    color: var(--muted);
+
+    background: rgba(127, 127, 160, .08);
+
+    border-radius: 9px;
+
+    font-size: 11.5px;
+    font-weight: 700;
+
+    letter-spacing: .4px;
+
+    text-align: center;
+}

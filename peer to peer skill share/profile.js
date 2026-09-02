@@ -1171,6 +1171,166 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   /* =====================================================
+     REAL USER PROFILE (FastAPI + PostgreSQL)
+     profile.html?id=123 loads that user's real data. Without
+     an id, the page stays on the local profile view.
+  ====================================================== */
+
+  (async function loadRealProfile() {
+
+    const params = new URLSearchParams(window.location.search);
+    const profileId = parseInt(params.get("id"), 10);
+
+    if (!window.SkillShareAPI || !window.SkillShareAPI.getToken()) {
+      /* Visitors without a session are not shown user profile data,
+         but the page itself remains usable. */
+      return;
+    }
+
+    const API = window.SkillShareAPI;
+    const me = API.getUser();
+
+    /* Helper: put the public ID on the profile when we know the user. */
+    function setPublicId(publicId) {
+      const el = document.getElementById("profilePublicId");
+      if (el) el.textContent = publicId ? `User ID: ${publicId}` : "User ID: —";
+    }
+
+    /* Own profile (with or without ?id=self): fetch /me for the ID. */
+    if (!profileId || (me && Number(me.id) === profileId)) {
+      try {
+        const data = await API.getMe();
+        const user = (data && data.user) || null;
+        if (user) {
+          const heading = document.querySelector(".name-row h1");
+          if (heading) heading.textContent = user.name || "My Profile";
+          setPublicId(user.public_id);
+        }
+      } catch (error) {
+        setPublicId(null);
+      }
+      return;
+    }
+
+    try {
+
+      const data = await API.getUserProfile(profileId);
+      const user = (data && data.user) || null;
+      const rel = (data && data.relationship) || {};
+
+      if (!user) return;
+
+      const heading = document.querySelector(".name-row h1");
+      if (heading) heading.textContent = user.name || "SkillShare user";
+      setPublicId(user.public_id);
+
+      const bioParagraph = document.querySelector(".bio");
+      const about = document.getElementById("aboutText");
+      if (user.bio) {
+        if (bioParagraph) bioParagraph.textContent = user.bio;
+        if (about) about.textContent = user.bio;
+      }
+
+      const tags = document.getElementById("skillTags");
+      if (tags) {
+        tags.innerHTML = "";
+        const list = String(user.skills || user.interests || "")
+          .split(",").map(s => s.trim()).filter(Boolean);
+        if (list.length) {
+          list.forEach(skill => {
+            const span = document.createElement("span");
+            span.className = "tag";
+            span.textContent = skill;
+            tags.appendChild(span);
+          });
+        } else {
+          const span = document.createElement("span");
+          span.className = "tag";
+          span.textContent = "New member";
+          tags.appendChild(span);
+        }
+      }
+
+      const follow = document.getElementById("followBtn");
+      const message = document.getElementById("messageBtn");
+      const share = document.getElementById("shareBtn");
+      const edit = document.getElementById("editBtn");
+      if (edit) edit.style.display = "none";
+
+      /* Action buttons reflect the real relationship state. */
+      if (rel.connected) {
+        if (follow) {
+          follow.textContent = "✓ Connected";
+          follow.disabled = true;
+        }
+        if (message) {
+          message.addEventListener("click", () => {
+            window.location.href = "messages.html";
+          });
+        }
+      } else if (rel.pending_direction === "sent") {
+        if (follow) {
+          follow.textContent = "Request Pending";
+          follow.disabled = true;
+        }
+        if (message) {
+          message.addEventListener("click", () => {
+            showToast("You can message once you are connected.");
+          });
+        }
+      } else if (rel.pending_direction === "received") {
+        if (follow) {
+          follow.textContent = "Respond in Requests";
+          follow.addEventListener("click", () => {
+            window.location.href = "requests.html";
+          });
+        }
+        if (message) {
+          message.addEventListener("click", () => {
+            showToast("You can message once you are connected.");
+          });
+        }
+      } else {
+        if (follow) {
+          follow.textContent = "+ Send Request";
+          follow.addEventListener("click", async () => {
+            follow.disabled = true;
+            follow.textContent = "Sending...";
+            try {
+              await API.sendRequest(profileId, "I'd love to connect and learn together!");
+              follow.textContent = "Request Sent ✓";
+              showToast("Request sent to " + (user.name || "them") + ".");
+            } catch (error) {
+              follow.disabled = false;
+              follow.textContent = "+ Send Request";
+              showToast(error && error.detail
+                ? error.detail
+                : "Unable to send the request. Please try again.");
+            }
+          });
+        }
+        if (message) {
+          message.addEventListener("click", () => {
+            showToast("You need to be connected before messaging this user.");
+          });
+        }
+      }
+
+      if (share) share.addEventListener("click", () => {
+        showToast("Profile: " + (user.name || ""));
+      });
+
+    } catch (error) {
+      if (error && error.status === 404) {
+        showToast("User not found.");
+      } else if (error && error.status === 401) {
+        window.location.href = "login.html";
+      }
+    }
+  })();
+
+
+  /* =====================================================
      PROFILE READY
   ====================================================== */
 

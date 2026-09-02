@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
        LOGIN FORM
     ========================================== */
 
-    loginForm.addEventListener("submit", (event) => {
+    loginForm.addEventListener("submit", async (event) => {
 
         event.preventDefault();
 
@@ -236,82 +236,123 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /* ======================================
-           CHECK DEMO ACCOUNT
-        ====================================== */
-
-        if (
-            email.toLowerCase() !== DEMO_EMAIL ||
-            password !== DEMO_PASSWORD
-        ) {
-
-            passwordError.textContent =
-                "Incorrect email or password.";
-
-            showToast(
-                "Invalid email or password."
-            );
-
-            return;
-        }
-
-
-        /* ======================================
-           LOGIN SUCCESS
+           LOGIN VIA FASTAPI BACKEND
         ====================================== */
 
         emailError.textContent = "";
         passwordError.textContent = "";
 
 
-        /* ======================================
-           REMEMBER LOGIN
-        ====================================== */
+        const submitBtn = document.querySelector(".login-submit");
 
-        if (rememberCheckbox && rememberCheckbox.checked) {
+        if (submitBtn) {
 
-            localStorage.setItem(
-                "skillshareLoggedIn",
-                "true"
-            );
+            submitBtn.disabled = true;
 
-            localStorage.setItem(
-                "skillshareUserEmail",
-                DEMO_EMAIL
-            );
-
-        } else {
-
-            sessionStorage.setItem(
-                "skillshareLoggedIn",
-                "true"
-            );
-
-            sessionStorage.setItem(
-                "skillshareUserEmail",
-                DEMO_EMAIL
-            );
+            submitBtn.innerHTML =
+                "<span>Signing in...</span>";
 
         }
 
 
-        /* ======================================
-           SUCCESS MESSAGE
-        ====================================== */
+        try {
 
-        showToast(
-            "Login successful! Welcome back."
-        );
+            const result =
+                await window.SkillShareAPI.login(
+                    email,
+                    password
+                );
 
 
-        /* ======================================
-           REDIRECT TO DASHBOARD
-        ====================================== */
+            /* ======================================
+               SAVE SESSION
+            ====================================== */
 
-        setTimeout(() => {
+            window.SkillShareAPI.setSession(
+                result.access_token,
+                result.user
+            );
 
-            window.location.href = "dashboard.html";
 
-        }, 1200);
+            if (
+                rememberCheckbox &&
+                rememberCheckbox.checked
+            ) {
+
+                localStorage.setItem(
+                    "skillshareLoggedIn",
+                    "true"
+                );
+
+            } else {
+
+                sessionStorage.setItem(
+                    "skillshareLoggedIn",
+                    "true"
+                );
+
+            }
+
+
+            /* ======================================
+               SUCCESS MESSAGE
+            ====================================== */
+
+            showToast(
+                "Login successful! Welcome back."
+            );
+
+
+            /* ======================================
+               REDIRECT TO DASHBOARD
+            ====================================== */
+
+            setTimeout(() => {
+
+                window.location.href =
+                    "dashboard.html";
+
+            }, 700);
+
+
+        } catch (error) {
+
+
+            if (submitBtn) {
+
+                submitBtn.disabled = false;
+
+                submitBtn.innerHTML =
+                    "<span>Login</span><b>→</b><i class=\"button-shine\"></i>";
+
+            }
+
+
+            const message =
+                error && error.detail
+                    ? error.detail
+                    : (
+                        error && error.status === 0
+                            ? "Server unavailable. Please check that the backend is running."
+                            : "Unable to log in. Please try again."
+                    );
+
+
+            /* ======================================
+               AUTH FAILURE — 401 = bad credentials
+            ====================================== */
+
+            if (error && error.status === 401) {
+
+                passwordError.textContent =
+                    "Incorrect email or password.";
+
+            }
+
+
+            showToast(message);
+
+        }
 
     });
 

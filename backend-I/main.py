@@ -1,9 +1,9 @@
 ﻿import re
+import secrets
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import and_, or_, func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -16,11 +16,86 @@ from models import (
     ConversationParticipant,
     Message,
 )
+# SQLAlchemy helpers used across the request/message endpoints.
+from sqlalchemy import or_, and_, func
 import auth
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
+
+
+# ==========================================
+# PUBLIC USER ID
+# ==========================================
+# Human-friendly unique identifier shown on every profile
+# (e.g. "SC-8F42K7"). It is generated at signup and also
+# backfilled for existing users by the startup migration.
+
+PUBLIC_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+PUBLIC_ID_PREFIX = "SC-"
+
+
+def generate_public_id() -> str:
+    return PUBLIC_ID_PREFIX + "".join(
+        secrets.choice(PUBLIC_ID_ALPHABET) for _ in range(6)
+    )
+
+
+def allocate_public_id(db) -> str:
+    """Generate a public user ID that is unique in the users table."""
+    for _ in range(50):
+        candidate = generate_public_id()
+        exists = (
+            db.query(User).filter(User.public_id == candidate).first()
+        )
+        if not exists:
+            return candidate
+    raise HTTPException(status_code=500, detail="Could not allocate a unique user ID")
+
+
+# ==========================================
+# LIGHTWEIGHT SCHEMA MIGRATION
+# ==========================================
+# Base.metadata.create_all() only creates missing tables; it never
+# alters existing ones. These idempotent ALTERs add the public
+# profile columns to the existing users table on startup.
+
+def _run_startup_migrations():
+    from sqlalchemy import text
+
+    statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS skills VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS interests VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS public_id VARCHAR",
+    ]
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+    # Backfill public IDs for existing users (idempotent).
+    with engine.begin() as connection:
+        rows = connection.execute(
+            text("SELECT id FROM users WHERE public_id IS NULL")
+        ).fetchall()
+        for (user_id,) in rows:
+            for _ in range(50):
+                candidate = generate_public_id()
+                taken = connection.execute(
+                    text("SELECT 1 FROM users WHERE public_id = :pid"),
+                    {"pid": candidate},
+                ).fetchone()
+                if not taken:
+                    connection.execute(
+                        text("UPDATE users SET public_id = :pid WHERE id = :uid"),
+                        {"pid": candidate, "uid": user_id},
+                    )
+                    break
+
+
+_run_startup_migrations()
 
 
 # ==========================================
@@ -105,6 +180,7 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
     new_user = User(
         name=data.name.strip(),
         email=email,
+        public_id=allocate_public_id(db),
         # Password is stored as a bcrypt hash using the existing auth module
         password_hash=auth.hash_password(data.password),
     )
@@ -117,6 +193,7 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
         "message": "Account created successfully",
         "user": {
             "id": new_user.id,
+            "public_id": new_user.public_id,
             "name": new_user.name,
             "email": new_user.email,
         },
@@ -149,6 +226,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user": {
             "id": user.id,
+            "public_id": user.public_id,
             "name": user.name,
             "email": user.email,
         },
@@ -187,6 +265,7 @@ def get_current_user(
 
     return {
         "id": user.id,
+        "public_id": user.public_id,
         "name": user.name,
         "email": user.email,
     }
@@ -241,14 +320,23 @@ class SendMessageSchema(BaseModel):
 
 
 def user_summary(u):
+    """Public, safe summary of a user. Never exposes password hashes
+    or any private credentials."""
     if u is None:
         return None
     key = (u.name or "").strip().split()[0].lower()
     return {
         "id": u.id,
+        "public_id": getattr(u, "public_id", None),
         "name": u.name,
-        "email": u.email,
-        "avatar": AVATAR_BY_KEY.get(key, "assets/avatar1.svg"),
+        # NOTE: email is intentionally NOT returned. It is private
+        # account data and must not be exposed to other users.
+        "avatar": getattr(u, "avatar_url", None) or AVATAR_BY_KEY.get(
+            key, "assets/avatar1.svg"
+        ),
+        "bio": getattr(u, "bio", None),
+        "skills": getattr(u, "skills", None),
+        "interests": getattr(u, "interests", None),
     }
 
 
@@ -365,6 +453,89 @@ def list_api_users(
     return {"users": [user_summary(u) for u in users]}
 
 
+@app.get("/api/users/search")
+def search_users(
+    q: str = "",
+    limit: int = 25,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Search real registered users by name, email, bio, skills or
+    interests. The search runs in PostgreSQL, not in the frontend."""
+    term = (q or "").strip()
+    query = db.query(User).filter(User.id != current_user["id"])
+
+    if term:
+        pattern = f"%{term}%"
+        # Matching the term (allows partial "rahu" -> "Rahul" and the
+        # public ID without the "SC-" prefix, e.g. "8F42K7").
+        term_upper = term.upper()
+        query = query.filter(
+            or_(
+                User.name.ilike(pattern),
+                User.public_id.ilike(f"%{term_upper}%"),
+                User.email.ilike(pattern),
+                User.bio.ilike(pattern),
+                User.skills.ilike(pattern),
+                User.interests.ilike(pattern),
+            )
+        )
+
+    rows = query.order_by(User.name).limit(min(max(limit, 1), 50)).all()
+    return {"users": [user_summary(u) for u in rows], "query": term}
+
+
+@app.get("/api/users/{user_id}")
+def get_user_profile(
+    user_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Public profile of any registered user (no private fields)."""
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    me = current_user["id"]
+    connection = get_pair_connection(db, me, user_id)
+    pending = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.status == "pending",
+            or_(
+                and_(
+                    ConnectionRequest.sender_id == me,
+                    ConnectionRequest.receiver_id == user_id,
+                ),
+                and_(
+                    ConnectionRequest.sender_id == user_id,
+                    ConnectionRequest.receiver_id == me,
+                ),
+            ),
+        )
+        .first()
+    )
+
+    conversation_id = None
+    if connection is not None:
+        conversation = find_pair_conversation(db, me, user_id)
+        conversation_id = conversation.id if conversation else None
+
+    return {
+        "user": user_summary(user),
+        "relationship": {
+            "connected": connection is not None,
+            "pending_request_id": pending.id if pending else None,
+            "pending_direction": (
+                "sent"
+                if pending and pending.sender_id == me
+                else "received" if pending else None
+            ),
+            "conversation_id": conversation_id,
+        },
+    }
+
+
 # ---------------------------------------------------------
 # REQUESTS
 # ---------------------------------------------------------
@@ -456,6 +627,81 @@ def list_requests(
         .all()
     )
     return {"requests": [serialize_request(db, r, me) for r in rows]}
+
+
+@app.get("/api/requests/connections")
+def list_connections(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """All accepted connections of the logged-in user, each with the
+    shared conversation id so the frontend can open a chat."""
+    me = current_user["id"]
+
+    rows = (
+        db.query(Connection)
+        .filter(
+            or_(Connection.user_one_id == me, Connection.user_two_id == me),
+            Connection.status == "active",
+        )
+        .order_by(Connection.created_at.desc())
+        .all()
+    )
+
+    connections = []
+    for connection in rows:
+        other_id = (
+            connection.user_two_id
+            if connection.user_one_id == me
+            else connection.user_one_id
+        )
+        other = db.get(User, other_id)
+        conversation = find_pair_conversation(db, me, other_id)
+        connections.append(
+            {
+                "id": connection.id,
+                "user": user_summary(other),
+                "conversation_id": conversation.id if conversation else None,
+                "connected_since": (
+                    connection.created_at.isoformat()
+                    if connection.created_at
+                    else None
+                ),
+            }
+        )
+
+    return {"connections": connections}
+
+
+@app.delete("/api/requests/{request_id}")
+def cancel_request(
+    request_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cancel a pending request the current user has SENT."""
+    me = current_user["id"]
+    request = db.get(ConnectionRequest, request_id)
+    if request is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+    if request.sender_id != me:
+        raise HTTPException(
+            status_code=403, detail="You can only cancel requests you sent"
+        )
+    if request.status != "pending":
+        raise HTTPException(
+            status_code=409, detail="This request has already been processed"
+        )
+
+    request.status = "cancelled"
+    request.updated_at = func.now()
+    db.commit()
+    db.refresh(request)
+
+    return {
+        "success": True,
+        "request": serialize_request(db, request, me),
+    }
 
 
 @app.patch("/api/requests/{request_id}/accept")

@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkillConnect - Industry Skills</title>
+
+    <link rel="stylesheet" href="industry-skills.css">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-logo">
+                <span>✦</span>
+            </div>
+
+            <div>
+                <h2>SkillConnect</h2>
+                <p>Learn. Share. Get Hired.</p>
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <a href="dashboard.html">
+                <span class="nav-icon">⌂</span>
+                Dashboard
+            </a>
+
+            <a href="explore-skills.html">
+                <span class="nav-icon">⌕</span>
+                Explore Skills
+            </a>
+
+            <a href="live-learn.html">
+                <span class="nav-icon">◉</span>
+                Live Learn
+            </a>
+
+            <a href="my-learning.html">
+                <span class="nav-icon">▢</span>
+                My Learning
+            </a>
+
+            <a href="my-projects.html">
+                <span class="nav-icon">♧</span>
+                My Projects
+            </a>
+
+            <a href="skill-analyzer.html">
+                <span class="nav-icon">◈</span>
+                Skill Analyzer
+            </a>
+
+            <a href="career-match.html">
+                <span class="nav-icon">♧</span>
+                Career Match
+            </a>
+
+            <a href="industry-skills.html" class="active">
+                <span class="nav-icon">♙</span>
+                Industry Skills
+
+                <span class="new-badge">New</span>
+            </a>
+
+            <a href="opportunities.html">
+                <span class="nav-icon">♙</span>
+                Opportunities
+            </a>
+
+            <a href="job-board.html">
+                <span class="nav-icon">▣</span>
+                Job Board
+            </a>
+
+            <a href="messages.html">
+                <span class="nav-icon">▱</span>
+                Messages
+
+                <span class="count-badge">3</span>
+            </a>
+
+            <a href="community.html">
+                <span class="nav-icon">♧</span>
+                Community
+            </a>
+
+            <a href="settings.html">
+                <span class="nav-icon">⚙</span>
+                Settings
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-promo">
+
+            <h3>
+                Stay Ahead.<br>
+                Learn What<br>
+                The Future Needs.
+            </h3>
+
+            <p>
+                Get insights on the most in-demand and future skills across industries.
+            </p>
+
+            <button id="exploreInsightsBtn">
+                Explore Insights
+                <span>→</span>
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="main">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <div class="page-heading">
+
+                <h1>Industry Skills</h1>
+
+                <p>
+                    Discover in-demand skills, market trends and future-ready competencies.
+                </p>
+
+            </div>
+
+
+            <div class="header-actions">
+
+                <button class="analyzer-btn" id="skillAnalyzerBtn">
+                    <span>⌁</span>
+                    Skill Analyzer
+                </button>
+
+
+                <div class="notification-wrapper">
+
+                    <button
+                        class="notification-btn"
+                        id="notificationBtn"
+                    >
+                        ♧
+
+                        <span class="notification-count">
+                            5
+                        </span>
+                    </button>
+
+
+                    <div
+                        class="notification-dropdown"
+                        id="notificationDropdown"
+                    >
+
+                        <h3>Notifications</h3>
+
+                        <div class="notification-item">
+                            🔥
+                            <div>
+                                <strong>AI skills are trending</strong>
+                                <p>Demand increased this month.</p>
+                            </div>
+                        </div>
+
+                        <div class="notification-item">
+                            📈
+                            <div>
+                                <strong>New market report</strong>
+                                <p>Industry data has been updated.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="profile-wrapper">
+
+                    <button
+                        class="profile-button"
+                        id="profileButton"
+                    >
+
+                        <div class="avatar">
+                            AD
+                        </div>
+
+                        <div class="profile-text">
+
+                            <strong>
+                                Aniket Deshmukh
+                            </strong>
+
+                            <span>
+                                Learner
+                            </span>
+
+                        </div>
+
+                        <span class="profile-arrow">
+                           ⌄
+                        </span>
+
+                    </button>
+
+
+                    <div
+                        class="profile-dropdown"
+                        id="profileDropdown"
+                    >
+
+                        <div class="profile-dropdown-header">
+
+                            <div class="avatar large">
+                                AD
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Aniket Deshmukh
+                                </strong>
+
+                                <span>
+                                    Learner
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <button onclick="openProfile()">
+                            👤 My Profile
+                        </button>
+
+                        <button onclick="openSettings()">
+                            ⚙ Settings
+                        </button>
+
+                        <button onclick="logoutUser()" class="logout">
+                            ↪ Logout
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ================= SEARCH ================= -->
+
+        <section class="search-section">
+
+            <div class="search-box">
+
+                <span class="search-icon">
+                    ⌕
+                </span>
+
+                <input
+                    type="text"
+                    id="skillSearch"
+                    placeholder="Search skills, domains or technologies..."
+                >
+
+                <button id="searchBtn">
+                    ⌕
+                </button>
+
+            </div>
+
+
+            <button
+                class="download-btn"
+                id="downloadReportBtn"
+            >
+                ↓
+                Download Industry Report
+            </button>
+
+        </section>
+
+
+        <!-- SEARCH RESULTS -->
+
+        <div
+            class="search-results"
+            id="searchResults"
+        ></div>
+
+
+        <!-- ================= DOMAIN FILTER ================= -->
+
+        <section class="domain-filter">
+
+            <button class="domain-btn selected" data-domain="all">
+                All Domains
+            </button>
+
+            <button class="domain-btn" data-domain="technology">
+                Technology
+            </button>
+
+            <button class="domain-btn" data-domain="business">
+                Business
+            </button>
+
+            <button class="domain-btn" data-domain="design">
+                Design
+            </button>
+
+            <button class="domain-btn" data-domain="marketing">
+                Marketing
+            </button>
+
+            <button class="domain-btn" data-domain="healthcare">
+                Healthcare
+            </button>
+
+            <button class="domain-btn" data-domain="finance">
+                Finance
+            </button>
+
+            <button class="domain-btn" data-domain="education">
+                Education
+            </button>
+
+            <button class="domain-btn" data-domain="space">
+                Space
+            </button>
+
+            <button class="domain-btn more-domain" id="moreDomainBtn">
+                More ⌄
+            </button>
+
+        </section>
+
+
+        <!-- ================= DASHBOARD GRID ================= -->
+
+        <section class="dashboard-grid">
+
+            <!-- LEFT -->
+
+            <div class="content-area">
+
+
+                <!-- ================= IN DEMAND ================= -->
+
+                <section class="panel demand-panel">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>In Demand Right Now</h2>
+                            <p>Skills that employers are actively hiring for</p>
+                        </div>
+
+                        <button
+                            class="view-all"
+                            onclick="showAllSkills()"
+                        >
+                            View All →
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="skill-cards"
+                        id="skillCards"
+                    >
+
+                        <div class="skill-card" data-domain="technology">
+
+                            <div class="skill-icon purple">
+                                &lt;/&gt;
+                            </div>
+
+                            <span class="demand-tag">
+                                🔥 High Demand
+                            </span>
+
+                            <h3>
+                                Full Stack Development
+                            </h3>
+
+                            <p>
+                                23.5K Job Openings
+                            </p>
+
+                            <div class="learners">
+                                👤 👤 👤
+                                <span>+12K learners</span>
+                            </div>
+
+                            <div class="progress">
+                                <span style="width:92%"></span>
+                            </div>
+
+                            <strong class="very-high">
+                                Very High
+                            </strong>
+
+                            <small>
+                                Demand Level
+                            </small>
+
+                        </div>
+
+
+                        <div class="skill-card" data-domain="technology">
+
+                            <div class="skill-icon green">
+                                ▦
+                            </div>
+
+                            <span class="demand-tag">
+                                🔥 High Demand
+                            </span>
+
+                            <h3>
+                                Data Science
+                            </h3>
+
+                            <p>
+                                18.2K Job Openings
+                            </p>
+
+                            <div class="learners">
+                                👤 👤 👤
+                                <span>+9K learners</span>
+                            </div>
+
+                            <div class="progress">
+                                <span style="width:88%"></span>
+                            </div>
+
+                            <strong class="green-text">
+                                Very High
+                            </strong>
+
+                            <small>
+                                Demand Level
+                            </small>
+
+                        </div>
+
+
+                        <div class="skill-card" data-domain="technology">
+
+                            <div class="skill-icon cyan">
+                                ☁
+                            </div>
+
+                            <span class="demand-tag">
+                                🔥 High Demand
+                            </span>
+
+                            <h3>
+                                Cloud Computing
+                            </h3>
+
+                            <p>
+                                15.7K Job Openings
+                            </p>
+
+                            <div class="learners">
+                                👤 👤 👤
+                                <span>+8K learners</span>
+                            </div>
+
+                            <div class="progress">
+                                <span style="width:76%"></span>
+                            </div>
+
+                            <strong class="cyan-text">
+                                High
+                            </strong>
+
+                            <small>
+                                Demand Level
+                            </small>
+
+                        </div>
+
+
+                        <div class="skill-card" data-domain="technology">
+
+                            <div class="skill-icon violet">
+                                ✦
+                            </div>
+
+                            <span class="demand-tag">
+                                🔥 High Demand
+                            </span>
+
+                            <h3>
+                                AI / Machine Learning
+                            </h3>
+
+                            <p>
+                                14.8K Job Openings
+                            </p>
+
+                            <div class="learners">
+                                👤 👤 👤
+                                <span>+7K learners</span>
+                            </div>
+
+                            <div class="progress">
+                                <span style="width:68%"></span>
+                            </div>
+
+                            <strong class="violet-text">
+                                High
+                            </strong>
+
+                            <small>
+                                Demand Level
+                            </small>
+
+                        </div>
+
+
+                        <div class="skill-card" data-domain="technology">
+
+                            <div class="skill-icon orange">
+                                ◈
+                            </div>
+
+                            <span class="demand-tag">
+                                🔥 High Demand
+                            </span>
+
+                            <h3>
+                                Cybersecurity
+                            </h3>
+
+                            <p>
+                                12.9K Job Openings
+                            </p>
+
+                            <div class="learners">
+                                👤 👤 👤
+                                <span>+6K learners</span>
+                            </div>
+
+                            <div class="progress">
+                                <span style="width:62%"></span>
+                            </div>
+
+                            <strong class="orange-text">
+                                High
+                            </strong>
+
+                            <small>
+                                Demand Level
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ================= MIDDLE ROW ================= -->
+
+                <div class="middle-grid">
+
+
+                    <!-- SKILLS BY GROWTH -->
+
+                    <section class="panel growth-panel">
+
+                        <div class="section-heading">
+
+                            <div>
+                                <h2>Skills by Growth</h2>
+                                <p>Fastest growing skills in the market</p>
+                            </div>
+
+                            <button
+                                class="view-all"
+                                onclick="showGrowthSkills()"
+                            >
+                                View All →
+                            </button>
+
+                        </div>
+
+
+                        <div id="growthList">
+
+                            <div class="growth-item">
+                                <span class="rank">1</span>
+                                <span class="growth-icon">✦</span>
+                                <strong>Generative AI</strong>
+                                <div class="growth-bar">
+                                    <span style="width:95%"></span>
+                                </div>
+                                <b>↑ 125%</b>
+                            </div>
+
+
+                            <div class="growth-item">
+                                <span class="rank">2</span>
+                                <span class="growth-icon">◈</span>
+                                <strong>Data Engineering</strong>
+                                <div class="growth-bar">
+                                    <span style="width:78%"></span>
+                                </div>
+                                <b>↑ 98%</b>
+                            </div>
+
+
+                            <div class="growth-item">
+                                <span class="rank">3</span>
+                                <span class="growth-icon">⌁</span>
+                                <strong>Prompt Engineering</strong>
+                                <div class="growth-bar">
+                                    <span style="width:68%"></span>
+                                </div>
+                                <b>↑ 85%</b>
+                            </div>
+
+
+                            <div class="growth-item">
+                                <span class="rank">4</span>
+                                <span class="growth-icon">☁</span>
+                                <strong>DevOps</strong>
+                                <div class="growth-bar">
+                                    <span style="width:57%"></span>
+                                </div>
+                                <b>↑ 72%</b>
+                            </div>
+
+
+                            <div class="growth-item">
+                                <span class="rank">5</span>
+                                <span class="growth-icon">♢</span>
+                                <strong>Blockchain</strong>
+                                <div class="growth-bar">
+                                    <span style="width:44%"></span>
+                                </div>
+                                <b>↑ 65%</b>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- TOP DOMAINS -->
+
+                    <section class="panel domains-panel">
+
+                        <div class="section-heading">
+
+                            <div>
+                                <h2>Top Domains</h2>
+                                <p>Explore skills by domain</p>
+                            </div>
+
+                            <button
+                                class="view-all"
+                                onclick="showDomains()"
+                            >
+                                View All →
+                            </button>
+
+                        </div>
+
+
+                        <div class="domain-grid">
+
+                            <button class="domain-card" onclick="selectDomain('technology')">
+                                <span>▣</span>
+                                <div>
+                                    <strong>Technology</strong>
+                                    <small>350+ Skills</small>
+                                </div>
+                            </button>
+
+
+                            <button class="domain-card" onclick="selectDomain('business')">
+                                <span>♟</span>
+                                <div>
+                                    <strong>Business</strong>
+                                    <small>280+ Skills</small>
+                                </div>
+                            </button>
+
+
+                            <button class="domain-card" onclick="selectDomain('design')">
+                                <span>✎</span>
+                                <div>
+                                    <strong>Design</strong>
+                                    <small>190+ Skills</small>
+                                </div>
+                            </button>
+
+
+                            <button class="domain-card" onclick="selectDomain('marketing')">
+                                <span>⚑</span>
+                                <div>
+                                    <strong>Marketing</strong>
+                                    <small>220+ Skills</small>
+                                </div>
+                            </button>
+
+
+                            <button class="domain-card" onclick="selectDomain('healthcare')">
+                                <span>♥</span>
+                                <div>
+                                    <strong>Healthcare</strong>
+                                    <small>150+ Skills</small>
+                                </div>
+                            </button>
+
+
+                            <button class="domain-card" onclick="selectDomain('space')">
+                                <span>🚀</span>
+                                <div>
+                                    <strong>Space</strong>
+                                    <small>120+ Skills</small>
+                                </div>
+                            </button>
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+
+                <!-- ================= SKILL SPOTLIGHT ================= -->
+
+                <section class="panel spotlight-panel">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>Skill Spotlight</h2>
+                            <p>Deep dive into a high impact skill</p>
+                        </div>
+
+                        <button
+                            class="view-all"
+                            id="viewSkillDetails"
+                        >
+                            View Details →
+                        </button>
+
+                    </div>
+
+
+                    <div class="spotlight-content">
+
+                        <div class="spotlight-info">
+
+                            <div class="python-icon">
+                                🐍
+                            </div>
+
+                            <div>
+
+                                <h2>
+                                    Python Programming
+                                </h2>
+
+                                <span class="very-demand-tag">
+                                    🔥 Very High Demand
+                                </span>
+
+                            </div>
+
+                            <p class="spotlight-description">
+                                Python is one of the most in-demand programming
+                                languages across industries.
+                            </p>
+
+
+                            <div class="spotlight-stats">
+
+                                <div>
+                                    <strong>26.4K</strong>
+                                    <span>Job Openings</span>
+                                </div>
+
+                                <div>
+                                    <strong>$95K</strong>
+                                    <span>Avg Salary</span>
+                                </div>
+
+                                <div>
+                                    <strong>12.5K</strong>
+                                    <span>Active Learners</span>
+                                </div>
+
+                            </div>
+
+
+                            <div class="tags">
+
+                                <span>Beginner Friendly</span>
+
+                                <span>Versatile</span>
+
+                                <span>High Impact</span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="spotlight-chart">
+
+                            <div class="chart-header">
+
+                                <span>
+                                    Demand Trend
+                                </span>
+
+                                <select id="spotlightPeriod">
+
+                                    <option value="6">
+                                        6 Months
+                                    </option>
+
+                                    <option value="12">
+                                        1 Year
+                                    </option>
+
+                                    <option value="24">
+                                        2 Years
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <canvas
+                                id="spotlightCanvas"
+                            ></canvas>
+
+
+                            <div class="chart-labels">
+                                <span>May</span>
+                                <span>Jun</span>
+                                <span>Jul</span>
+                                <span>Aug</span>
+                                <span>Sep</span>
+                                <span>Oct</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ================= LEARNING PATH ================= -->
+
+                <section class="panel learning-panel">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>Learning Path Recommendations</h2>
+                            <p>Paths aligned with market demand</p>
+                        </div>
+
+                        <button
+                            class="view-all"
+                            onclick="showLearningPaths()"
+                        >
+                            View All →
+                        </button>
+
+                    </div>
+
+
+                    <div class="learning-grid">
+
+                        <div class="learning-card">
+
+                            <div class="learning-icon purple">
+                                ✦
+                            </div>
+
+                            <h3>
+                                Full Stack
+                                <br>
+                                Developer
+                            </h3>
+
+                            <div class="tech-icons">
+                                HTML CSS JS React Node
+                            </div>
+
+                            <p>
+                                9 Skills · 6 Months
+                            </p>
+
+                            <span>
+                                High Demand
+                            </span>
+
+                        </div>
+
+
+                        <div class="learning-card">
+
+                            <div class="learning-icon green">
+                                ▦
+                            </div>
+
+                            <h3>
+                                Data Scientist
+                                <br>
+                                Path
+                            </h3>
+
+                            <div class="tech-icons">
+                                Python R SQL
+                            </div>
+
+                            <p>
+                                8 Skills · 5 Months
+                            </p>
+
+                            <span>
+                                High Demand
+                            </span>
+
+                        </div>
+
+
+                        <div class="learning-card">
+
+                            <div class="learning-icon cyan">
+                                ☁
+                            </div>
+
+                            <h3>
+                                Cloud Engineer
+                                <br>
+                                Path
+                            </h3>
+
+                            <div class="tech-icons">
+                                AWS Azure Docker
+                            </div>
+
+                            <p>
+                                7 Skills · 4 Months
+                            </p>
+
+                            <span>
+                                High Demand
+                            </span>
+
+                        </div>
+
+
+                        <div class="learning-card">
+
+                            <div class="learning-icon violet">
+                                ✦
+                            </div>
+
+                            <h3>
+                                AI Engineer
+                                <br>
+                                Path
+                            </h3>
+
+                            <div class="tech-icons">
+                                Python AI ML
+                            </div>
+
+                            <p>
+                                10 Skills · 7 Months
+                            </p>
+
+                            <span class="very-high-bg">
+                                Very High Demand
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- ================= RIGHT SIDEBAR ================= -->
+
+            <aside class="right-column">
+
+
+                <!-- MARKET OVERVIEW -->
+
+                <section class="panel market-panel">
+
+                    <div class="section-heading">
+
+                        <h2>
+                            Market Overview
+                        </h2>
+
+                        <select id="marketPeriod">
+
+                            <option value="month">
+                                This Month
+                            </option>
+
+                            <option value="quarter">
+                                This Quarter
+                            </option>
+
+                            <option value="year">
+                                This Year
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="market-stats">
+
+                        <div>
+
+                            <span>
+                                Total Job Openings
+                            </span>
+
+                            <strong>
+                                1.24M
+                                <small>↑ 18.6%</small>
+                            </strong>
+
+                            <p>
+                                vs last month
+                            </p>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                Hiring Companies
+                            </span>
+
+                            <strong>
+                                38.2K
+                                <small>↑ 14.3%</small>
+                            </strong>
+
+                            <p>
+                                vs last month
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="market-chart">
+
+                        <canvas
+                            id="marketCanvas"
+                        ></canvas>
+
+                        <div class="market-labels">
+                            <span>May</span>
+                            <span>Jun</span>
+                            <span>Jul</span>
+                            <span>Aug</span>
+                            <span>Sep</span>
+                            <span>Oct</span>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ================= FUTURE SKILLS ================= -->
+
+                <section class="panel future-panel">
+
+                    <div class="section-heading">
+
+                        <div>
+
+                            <h2>
+                                Future Skills
+                            </h2>
+
+                            <p>
+                                Skills shaping the future
+                            </p>
+
+                        </div>
+
+                        <button
+                            class="view-all"
+                            onclick="showFutureSkills()"
+                        >
+                            View All →
+                        </button>
+
+                    </div>
+
+
+                    <div id="futureSkillsList">
+
+                        <button class="future-item">
+
+                            <span class="future-number">
+                                1
+                            </span>
+
+                            <span class="future-icon">
+                                ✦
+                            </span>
+
+                            <strong>
+                                Quantum Computing
+                            </strong>
+
+                            <em>
+                                High Impact
+                            </em>
+
+                            <small>
+                                3-5 Years
+                            </small>
+
+                        </button>
+
+
+                        <button class="future-item">
+
+                            <span class="future-number">
+                                2
+                            </span>
+
+                            <span class="future-icon">
+                                🚀
+                            </span>
+
+                            <strong>
+                                Space Technology
+                            </strong>
+
+                            <em>
+                                High Impact
+                            </em>
+
+                            <small>
+                                3-5 Years
+                            </small>
+
+                        </button>
+
+
+                        <button class="future-item">
+
+                            <span class="future-number">
+                                3
+                            </span>
+
+                            <span class="future-icon">
+                                ◈
+                            </span>
+
+                            <strong>
+                                Sustainable Tech
+                            </strong>
+
+                            <em>
+                                High Impact
+                            </em>
+
+                            <small>
+                                2-4 Years
+                            </small>
+
+                        </button>
+
+
+                        <button class="future-item">
+
+                            <span class="future-number">
+                                4
+                            </span>
+
+                            <span class="future-icon">
+                                ✧
+                            </span>
+
+                            <strong>
+                                Neural Interfaces
+                            </strong>
+
+                            <em class="medium-impact">
+                                Medium Impact
+                            </em>
+
+                            <small>
+                                4-6 Years
+                            </small>
+
+                        </button>
+
+
+                        <button class="future-item">
+
+                            <span class="future-number">
+                                5
+                            </span>
+
+                            <span class="future-icon">
+                                ◉
+                            </span>
+
+                            <strong>
+                                Bioinformatics
+                            </strong>
+
+                            <em class="medium-impact">
+                                Medium Impact
+                            </em>
+
+                            <small>
+                                3-5 Years
+                            </small>
+
+                        </button>
+
+                    </div>
+
+                </section>
+
+            </aside>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- ================= MODAL ================= -->
+
+<div
+    class="modal-overlay"
+    id="modalOverlay"
+>
+
+    <div class="modal">
+
+        <button
+            class="modal-close"
+            id="modalClose"
+        >
+            ×
+        </button>
+
+        <div id="modalContent"></div>
+
+    </div>
+
+</div>
+
+
+<script src="industry-skills.js"></script>
+
+</body>
+</html>
