@@ -819,10 +819,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     event.preventDefault();
 
 
-                    showToast(
-                        "Demo login: demo@skillshare.com / 123456",
-                        "info"
-                    );
+                    window.location.href = "login.html";
 
                 }
             );

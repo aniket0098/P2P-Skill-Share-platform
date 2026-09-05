@@ -1,14 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     /* ==========================================
-       DEMO ACCOUNT
-       ========================================== */
-
-    const DEMO_EMAIL = "demo@skillshare.com";
-    const DEMO_PASSWORD = "123456";
-
-
-    /* ==========================================
        ELEMENTS
        ========================================== */
 
@@ -41,6 +33,41 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Login form elements not found.");
         return;
     }
+
+
+    /* ==========================================
+       PLATFORM STATISTICS (real backend data)
+       Populated from GET /api/stats — no hardcoded
+       marketing numbers. On failure the "—"
+       placeholders remain visible.
+       ========================================== */
+
+    (async function loadPlatformStats() {
+
+        if (!window.SkillShareAPI || !window.SkillShareAPI.getStats) {
+            return;
+        }
+
+        try {
+
+            const stats = await window.SkillShareAPI.getStats();
+
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el && Number.isFinite(value)) {
+                    el.textContent = value.toLocaleString();
+                }
+            };
+
+            setValue("statLearners", stats.members);
+            setValue("statSkills", stats.skills_offered);
+            setValue("statConnections", stats.connections);
+
+        } catch (error) {
+            /* Backend unreachable — leave placeholders in place. */
+        }
+
+    })();
 
 
     /* ==========================================

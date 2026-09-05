@@ -3,6 +3,8 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
+import config
+
 # ==========================================
 # PASSWORD HASHING
 # ==========================================
@@ -11,14 +13,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # ==========================================
-# JWT SETTINGS
+# JWT SETTINGS (from environment config)
 # ==========================================
 
-SECRET_KEY = "skillshare-super-secret-key-change-this-later"
-
-ALGORITHM = "HS256"
-
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+SECRET_KEY = config.SECRET_KEY
+ALGORITHM = config.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
 
 
 # ==========================================

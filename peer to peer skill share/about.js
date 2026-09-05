@@ -194,6 +194,55 @@ const counters =
         "[data-count]"
     );
 
+/* ---------------------------------------------------------
+   REAL PLATFORM STATISTICS
+   The three counters (learners / skills / connections) are
+   fed from the backend's public GET /api/stats endpoint —
+   no hardcoded marketing numbers. If the backend is not
+   reachable the counters simply remain at 0.
+   --------------------------------------------------------- */
+
+(async function loadPlatformStats() {
+
+    const base = window.SKILLSHARE_API_BASE;
+
+    if (!base) {
+        return; // config.js not loaded — nothing to fetch from
+    }
+
+    const statKeys = {
+        statLearners: "members",
+        statSkills: "skills_offered",
+        statConnections: "connections",
+    };
+
+    try {
+
+        const response = await fetch(base + "/api/stats");
+
+        if (!response.ok) {
+            return;
+        }
+
+        const stats = await response.json();
+
+        counters.forEach(counter => {
+
+            const key = statKeys[counter.id];
+
+            if (key && Number.isFinite(stats[key])) {
+                counter.dataset.count = String(stats[key]);
+                delete counter.dataset.suffix;
+            }
+
+        });
+
+    } catch (error) {
+        /* Backend unreachable — counters remain at 0. */
+    }
+
+})();
+
 let countersStarted = false;
 
 
