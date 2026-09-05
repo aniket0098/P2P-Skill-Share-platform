@@ -7,273 +7,67 @@
 "use strict";
 
 /* =========================================================
-   DEMO USER
+   THEME PREFERENCE (the only persisted UI state)
    ========================================================= */
 
-const DEFAULT_USER = {
-    name: "Aniket Deshmukh",
-    role: "Learner",
-    email: "aniket@example.com",
-    bio: "Learning, sharing and growing together.",
-    avatar: "AD",
-    followers: 248,
-    following: 126
-};
+const THEME_KEY = "skillshare_theme";
 
 
-/* =========================================================
-   DEMO SKILLS
-   ========================================================= */
-
-const DEFAULT_SKILLS = [
-    {
-        id: 1,
-        name: "English Speaking",
-        category: "Languages",
-        level: "Beginner",
-        learners: 12400,
-        growth: 32,
-        rating: 4.8,
-        icon: "🗣️"
-    },
-    {
-        id: 2,
-        name: "Coding Skills",
-        category: "Programming",
-        level: "Beginner",
-        learners: 25800,
-        growth: 28,
-        rating: 4.9,
-        icon: "💻"
-    },
-    {
-        id: 3,
-        name: "Digital Marketing",
-        category: "Marketing",
-        level: "Intermediate",
-        learners: 18600,
-        growth: 24,
-        rating: 4.7,
-        icon: "📈"
-    },
-    {
-        id: 4,
-        name: "Video Editing",
-        category: "Video Editing",
-        level: "Intermediate",
-        learners: 14200,
-        growth: 20,
-        rating: 4.8,
-        icon: "🎬"
-    },
-    {
-        id: 5,
-        name: "Public Speaking",
-        category: "Communication",
-        level: "Beginner",
-        learners: 9700,
-        growth: 18,
-        rating: 4.6,
-        icon: "🎤"
-    },
-    {
-        id: 6,
-        name: "Graphic Design",
-        category: "Design",
-        level: "Intermediate",
-        learners: 11300,
-        growth: 16,
-        rating: 4.9,
-        icon: "🎨"
-    },
-    {
-        id: 7,
-        name: "Python",
-        category: "Programming",
-        level: "Beginner",
-        learners: 22100,
-        growth: 29,
-        rating: 4.9,
-        icon: "🐍"
-    },
-    {
-        id: 8,
-        name: "UI/UX Design",
-        category: "Design",
-        level: "Intermediate",
-        learners: 15400,
-        growth: 23,
-        rating: 4.8,
-        icon: "🎯"
-    },
-    {
-        id: 9,
-        name: "AI Tools",
-        category: "Productivity",
-        level: "Beginner",
-        learners: 19800,
-        growth: 41,
-        rating: 4.9,
-        icon: "🤖"
-    },
-    {
-        id: 10,
-        name: "Content Writing",
-        category: "Writing",
-        level: "Intermediate",
-        learners: 8900,
-        growth: 17,
-        rating: 4.6,
-        icon: "✍️"
+function getThemePreference() {
+    try {
+        return localStorage.getItem(THEME_KEY) === "light"
+            ? "light"
+            : "dark";
+    } catch (error) {
+        return "dark";
     }
-];
+}
 
 
-/* =========================================================
-   DEFAULT DATA
-   ========================================================= */
-
-const DEFAULT_CREDITS = {
-    currentBalance: 1250,
-    totalEarned: 3350,
-    totalSpent: 2100,
-
-    transactions: [
-        {
-            id: 1,
-            description: "Completed Python course",
-            amount: 500,
-            type: "earned",
-            date: "Today"
-        },
-        {
-            id: 2,
-            description: "Helped another learner",
-            amount: 250,
-            type: "earned",
-            date: "Yesterday"
-        },
-        {
-            id: 3,
-            description: "Joined mentorship session",
-            amount: -100,
-            type: "spent",
-            date: "2 days ago"
-        },
-        {
-            id: 4,
-            description: "Community contribution",
-            amount: 200,
-            type: "bonus",
-            date: "5 days ago"
-        }
-    ]
-};
-
-
-const DEFAULT_NOTIFICATIONS = [
-    {
-        id: 1,
-        title: "New learning session",
-        description: "A Python live session starts soon.",
-        type: "learning",
-        time: "5 min ago",
-        read: false,
-        icon: "📚"
-    },
-    {
-        id: 2,
-        title: "You earned 250 credits",
-        description: "You helped another learner.",
-        type: "system",
-        time: "1 hour ago",
-        read: false,
-        icon: "🪙"
-    },
-    {
-        id: 3,
-        title: "Priya started following you",
-        description: "Check out their profile.",
-        type: "community",
-        time: "3 hours ago",
-        read: false,
-        icon: "👤"
-    },
-    {
-        id: 4,
-        title: "Rahul joined your session",
-        description: "Your Python learning session has a new participant.",
-        type: "messages",
-        time: "Yesterday",
-        read: false,
-        icon: "💬"
-    }
-];
-
-
-const DEFAULT_LEARNING = [
-    {
-        id: 1,
-        title: "Python for Beginners",
-        progress: 65,
-        lessons: 18,
-        completedLessons: 12
-    },
-    {
-        id: 2,
-        title: "UI/UX Design Fundamentals",
-        progress: 40,
-        lessons: 20,
-        completedLessons: 8
-    },
-    {
-        id: 3,
-        title: "Digital Marketing Basics",
-        progress: 75,
-        lessons: 16,
-        completedLessons: 12
-    }
-];
-
-
-/* =========================================================
-   LOCAL STORAGE DATABASE
-   ========================================================= */
-
-const DB_KEY = "skillconnectDB";
+function saveThemePreference(theme) {
+    try {
+        localStorage.setItem(
+            THEME_KEY,
+            theme === "light" ? "light" : "dark"
+        );
+    } catch (error) { /* ignore quota errors */ }
+}
 
 
 function getDB() {
 
-    const saved = localStorage.getItem(DB_KEY);
+    /* Only the theme preference and the current session user are
+       trusted. NO synthetic/demo data is ever seeded. */
+    const sessionUser =
+        (window.SkillShareAPI && window.SkillShareAPI.getUser()) || null;
 
-    if (saved) {
-        try {
-            return JSON.parse(saved);
-        } catch (error) {
-            console.error("Could not read SkillConnect data.");
-        }
-    }
-
-    const database = {
-        currentUser: DEFAULT_USER,
-        credits: DEFAULT_CREDITS,
-        notifications: DEFAULT_NOTIFICATIONS,
-        skills: DEFAULT_SKILLS,
+    return {
+        currentUser: sessionUser,
+        credits: {
+            currentBalance: 0,
+            totalEarned: 0,
+            totalSpent: 0,
+            transactions: []
+        },
+        notifications: [],
+        skills: [],
         bookmarks: [],
-        learning: DEFAULT_LEARNING,
+        learning: [],
         followedUsers: [],
-        theme: "dark"
+        theme: getThemePreference()
     };
-
-    saveDB(database);
-
-    return database;
 }
 
 
 function saveDB(database) {
-    localStorage.setItem(DB_KEY, JSON.stringify(database));
+
+    /* Persist only the theme preference — a genuine UI setting. */
+    try {
+        localStorage.setItem(
+            THEME_KEY,
+            (database && database.theme === "light") ? "light" : "dark"
+        );
+    } catch (error) { /* ignore quota errors */ }
 }
 
 
@@ -283,15 +77,23 @@ function updateDB(callback) {
 
     callback(database);
 
-    saveDB(database);
-
     return database;
 }
-
-
 /* =========================================================
    INITIALIZE
+   Authenticated boot sequence:
+     1. SkillShareAuth.requireUser()  -> resolves the REAL
+        user from GET /me (JWT in localStorage attached
+        automatically by api-client.js).
+        - no token / expired token -> redirect to login
+        - network error            -> error state + retry
+     2. SkillShareAPI.getDashboard()  -> real PostgreSQL
+        data for every dashboard section.
    ========================================================= */
+
+let dashboardData = null;
+let currentVerifiedUser = null;
+
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -301,61 +103,175 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderTopbar();
 
-    renderDashboard();
+    renderLoadingStates();
 
     initializeGlobalEvents();
 
     applyTheme();
 
-    syncRealNotificationCount();
+    bootDashboard();
 
 });
 
 
-/* =========================================================
-   REAL-DATA NOTIFICATION BADGE (FastAPI + PostgreSQL)
-   Replaces the local mock count with the actual number of
-   pending received connection requests + unread messages.
-   ========================================================= */
+async function bootDashboard() {
 
-async function syncRealNotificationCount() {
-
-    if (!window.SkillShareAPI || !window.SkillShareAPI.getToken()) return;
-
+    /* ------------------------------------------------------
+       1. AUTHENTICATED CURRENT USER (JWT -> PostgreSQL)
+       ------------------------------------------------------ */
     try {
 
-        const [requestsData, conversationsData] = await Promise.all([
-            window.SkillShareAPI.listRequests({ direction: "received", status: "pending" }),
-            window.SkillShareAPI.getConversations(),
-        ]);
-
-        const pendingRequests = ((requestsData && requestsData.requests) || []).length;
-
-        const unreadMessages = ((conversationsData && conversationsData.conversations) || [])
-            .reduce((sum, c) => sum + (c.unread_count || 0), 0);
-
-        const badge = document.getElementById("notificationCount");
-
-        if (badge) {
-            badge.textContent = pendingRequests + unreadMessages;
-            badge.style.display = (pendingRequests + unreadMessages) ? "" : "none";
-        }
+        currentVerifiedUser = await window.SkillShareAuth.requireUser();
 
     } catch (error) {
-        /* Silent: the badge falls back to the local value if the
-           backend is not reachable. Protected APIs return 401 and
-           SkillShareAPI already handles session expiry globally. */
+
+        /* Network / server failure: auth.js does NOT redirect
+           for these — show the dashboard error state instead. */
+        renderDashboardError(
+            window.SkillShareAuth.getErrorMessage(error)
+        );
+        return;
+
     }
+
+
+    if (!currentVerifiedUser) {
+        /* No token or 401: auth.js has already redirected to
+           login.html. Nothing else to do here. */
+        return;
+    }
+
+
+    /* Verified identity -> welcome heading + topbar */
+    updateWelcomeUser(currentVerifiedUser);
+
+
+    /* ------------------------------------------------------
+       2. REAL DASHBOARD DATA (PostgreSQL)
+       ------------------------------------------------------ */
+    try {
+
+        dashboardData = await window.SkillShareAPI.getDashboard();
+
+        renderDashboard();
+
+    } catch (error) {
+
+        if (error && error.status === 401) {
+            /* Session cleared + redirect handled globally by
+               auth.js ("skillshare:auth-expired"). */
+            return;
+        }
+
+        renderDashboardError(
+            (error && error.detail)
+                || (error && error.message)
+                || "Could not load your dashboard."
+        );
+
+    }
+
 }
 
 
-function initializeDatabase() {
+function updateWelcomeUser(user) {
 
-    const database = localStorage.getItem(DB_KEY);
+    const firstName = (user.name || "member").split(" ")[0];
 
-    if (!database) {
-        getDB();
+    const heading = document.getElementById("welcomeName");
+
+    if (heading) {
+        heading.textContent = firstName;
     }
+
+    const topbarName =
+        document.getElementById("topbarUserName");
+
+    if (topbarName) {
+        topbarName.textContent = firstName;
+    }
+
+}
+
+
+function renderLoadingStates() {
+
+    const targets = [
+        "trendingSkills",
+        "recentSkills",
+        "activityBars"
+    ];
+
+    targets.forEach(id => {
+
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.innerHTML =
+                '<div class="empty-state">Loading…</div>';
+        }
+
+    });
+
+}
+
+
+function renderDashboardError(message) {
+
+    const main =
+        document.querySelector(".page-content");
+
+    if (!main) return;
+
+
+    main.innerHTML = `
+
+        <div class="panel" style="padding:30px; text-align:center;">
+
+            <div class="empty-state">
+
+                <div class="empty-icon">⚠️</div>
+
+                <h3>Something went wrong</h3>
+
+                <p>${escapeHTML(message)}</p>
+
+                <button
+                    class="btn primary"
+                    id="dashboardRetryBtn"
+                    style="margin-top:15px;"
+                >
+                    Try again
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    const retry = document.getElementById("dashboardRetryBtn");
+
+    if (retry) {
+        retry.addEventListener("click", () => {
+            window.location.reload();
+        });
+    }
+
+}
+
+
+/* =========================================================
+   NOTIFICATIONS
+   Filled from GET /api/dashboard (real pending requests
+   + unread messages of the authenticated user).
+   ========================================================= */
+
+
+function initializeDatabase() {
+    /* The dashboard no longer seeds a fake localStorage
+       "database". Real data is fetched from the backend. */
 }
 
 
@@ -577,12 +493,16 @@ function renderTopbar() {
 
     const database = getDB();
 
-    const user = database.currentUser;
+    const sessionUser =
+        (window.SkillShareAPI && window.SkillShareAPI.getUser()) || null;
 
-    const unreadCount =
-        database.notifications
-            .filter(notification => !notification.read)
-            .length;
+    const user = {
+        name: (sessionUser && sessionUser.name) || "member",
+        role: "",
+        email: (sessionUser && sessionUser.email) || ""
+    };
+
+    const unreadCount = 0;
 
 
     container.innerHTML = `
@@ -603,7 +523,7 @@ function renderTopbar() {
 
                     <h1>
                         Welcome back,
-                        ${escapeHTML(user.name.split(" ")[0])} 👋
+                        <span id="topbarUserName">${escapeHTML(user.name.split(" ")[0])}</span> 👋
                     </h1>
 
                     <p>
@@ -654,8 +574,8 @@ function renderTopbar() {
                     <span
                         class="notification-count"
                         id="notificationCount"
+                        style="display:none;"
                     >
-                        ${unreadCount}
                     </span>
 
                 </button>
@@ -789,7 +709,14 @@ function initializeTopbarEvents() {
 
         notificationBtn.addEventListener(
             "click",
-            showNotificationDropdown
+            () => {
+
+                if (window.SkillShareAuth) {
+                    window.location.href =
+                        "notifications.html";
+                }
+
+            }
         );
 
     }
@@ -847,99 +774,489 @@ function initializeTopbarEvents() {
 
 
 /* =========================================================
-   DASHBOARD RENDER
+   DASHBOARD RENDER — driven by real PostgreSQL data
+   (GET /api/dashboard, resolved from the JWT)
    ========================================================= */
 
 function renderDashboard() {
+
+    if (!dashboardData) return;
 
     renderTrendingSkills();
 
     renderLearning();
 
-    updateCreditDisplay();
+    renderMetrics();
+
+    renderActivityChart();
+
+    renderRecentSkills();
+
+    renderSpotlight();
+
+    renderSectionPlaceholders();
 
     updateNotificationCount();
 
 }
 
 
+/* ---------------------------------------------------------
+   LEARNING PROGRESS OVERVIEW — real statistics calculated
+   from the user's own database records (profile skills,
+   connections, requests, messages). No invented numbers.
+   --------------------------------------------------------- */
+
+function renderMetrics() {
+
+    const container =
+        document.getElementById("dashboardMetrics");
+
+    if (!container || !dashboardData.stats) return;
+
+
+    const stats = dashboardData.stats;
+
+
+    const metrics = [
+        { value: stats.skills_count, label: "Skills Listed" },
+        { value: stats.connections_count, label: "Connections" },
+        { value: stats.requests_accepted, label: "Requests Accepted" },
+        { value: stats.messages_sent, label: "Messages Sent" }
+    ];
+
+
+    container.innerHTML = metrics.map(metric => `
+
+        <div>
+
+            <b>${escapeHTML(String(metric.value ?? 0))}</b>
+
+            <span>
+                ${escapeHTML(metric.label)}
+            </span>
+
+        </div>
+
+    `).join("");
+
+}
+
+
+/* ---------------------------------------------------------
+   ACTIVITY CHART — generated from the user's real Message
+   records (messages sent per day over the last 7 days).
+   When there is no activity at all a meaningful empty
+   state is shown instead of invented values.
+   --------------------------------------------------------- */
+
+function renderActivityChart() {
+
+    const totalElement =
+        document.getElementById("activityTotal");
+
+    const barsElement =
+        document.getElementById("activityBars");
+
+    if (!barsElement || !dashboardData.activity) return;
+
+
+    const days = dashboardData.activity.days || [];
+
+
+    if (totalElement) {
+        totalElement.textContent =
+            String(dashboardData.activity.total_messages_sent || 0);
+    }
+
+
+    const totalWeek = days.reduce(
+        (sum, day) => sum + (day.messages_sent || 0),
+        0
+    );
+
+
+    if (totalWeek === 0) {
+
+        barsElement.textContent =
+            "No messages sent this week yet — start a conversation!";
+
+        barsElement.style.fontSize = "10px";
+
+        barsElement.style.letterSpacing = "0";
+
+        return;
+
+    }
+
+
+    const max = Math.max(
+        ...days.map(day => day.messages_sent || 0)
+    );
+
+
+    /* Character-based bar chart using the existing .bars
+       styling: ▁ ▂ ▃ ▄ ▅ ▆ ▇ */
+    const blocks = ["▁", "▂", "▃", "▄", "▅", "▆", "▇"];
+
+
+    barsElement.textContent = days.map(day => {
+
+        const count = day.messages_sent || 0;
+
+        if (count === 0) return "·";
+
+        const level = Math.ceil((count / max) * 6);
+
+        return blocks[Math.min(level, 6)];
+
+    }).join("");
+
+}
+
+
+/* ---------------------------------------------------------
+   RECENTLY ADDED SKILLS — newest members' real profile
+   skills, straight from the users table.
+   --------------------------------------------------------- */
+
+function renderRecentSkills() {
+
+    const container =
+        document.getElementById("recentSkills");
+
+    if (!container) return;
+
+
+    const skills = dashboardData.recent_skills || [];
+
+
+    if (skills.length === 0) {
+
+        container.innerHTML = `
+
+            <div class="empty-state">
+
+                No skills shared by the community yet.
+                Be the first — use "Share Your Skill".
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    container.innerHTML = skills.map(item => `
+
+        <div class="recent-skill">
+
+            <div class="recent-icon">✦</div>
+
+            <div>
+
+                <strong>
+                    ${escapeHTML(item.name)}
+                </strong>
+
+                <span>
+                    by ${escapeHTML(item.owner ? item.owner.name : "member")}
+                </span>
+
+            </div>
+
+        </div>
+
+    `).join("");
+
+}
+
+
+/* ---------------------------------------------------------
+   COMMUNITY SPOTLIGHT — top skill sharers ranked by real
+   connection counts in the database.
+   --------------------------------------------------------- */
+
+function renderSpotlight() {
+
+    const container =
+        document.querySelector(".community-spotlight .spotlight");
+
+    if (!container) return;
+
+
+    const people = dashboardData.spotlight || [];
+
+
+    if (people.length === 0) {
+
+        container.innerHTML = `
+
+            <div class="empty-state">
+
+                <div class="empty-icon">◇</div>
+
+                <h3>Community Spotlight</h3>
+
+                <p>
+                    Top skill sharers will appear here once members
+                    start connecting and sharing skills.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    container.innerHTML = people.map(person => `
+
+        <div class="spotlight">
+
+            <div class="avatar xl">
+                ${escapeHTML(getInitials(person.name || "?"))}
+            </div>
+
+            <div>
+
+                <h3>
+                    ${escapeHTML(person.name || "member")}
+                </h3>
+
+                <p>
+                    ${escapeHTML(person.bio || person.skills || "Active community member")}
+                </p>
+
+            </div>
+
+        </div>
+
+    `).join("");
+
+}
+
+
+/* ---------------------------------------------------------
+   Sections whose backing database tables do not exist yet
+   (upcoming group discussions). Meaningful empty states
+   instead of hardcoded demo content.
+   --------------------------------------------------------- */
+
+function renderSectionPlaceholders() {
+
+    const discussion =
+        document.getElementById("discussionPreview");
+
+    if (discussion) {
+
+        discussion.innerHTML = `
+
+            <div class="empty-state">
+
+                No upcoming group discussions yet.
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+
+/* ---------------------------------------------------------
+   CONTINUE LEARNING — no learning-session records exist in
+   the database yet, so a meaningful empty state is shown
+   instead of hardcoded demo data.
+   --------------------------------------------------------- */
+
+function renderLearning() {
+
+    const container =
+        document.getElementById("continueLearning");
+
+    if (!container) return;
+
+    container.innerHTML = `
+
+        <div class="empty-state">
+
+            <div class="empty-icon">📚</div>
+
+            <h3>Nothing in progress yet</h3>
+
+            <p>
+                Accept a connection request or join a live
+                session and your learning will appear here.
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
+/* ---------------------------------------------------------
+   NOTIFICATION BADGE — real counts from GET /api/dashboard
+   (pending received requests + unread messages).
+   --------------------------------------------------------- */
+
+function updateNotificationCount() {
+
+    const badge =
+        document.getElementById("notificationCount");
+
+    if (!badge) return;
+
+    if (!dashboardData || !dashboardData.notifications) {
+        badge.style.display = "none";
+        return;
+    }
+
+    const notifications = dashboardData.notifications;
+
+    const unread =
+        (notifications.pending_requests || []).length
+        + (notifications.unread_conversations || []).reduce(
+            (sum, conversation) =>
+                sum + (conversation.unread_count || 0),
+            0
+        );
+
+    badge.textContent = String(unread);
+
+    badge.style.display =
+        unread === 0
+            ? "none"
+            : "flex";
+
+}
+
+
+/* ---------------------------------------------------------
+   SEARCH + FILTERS — the search box navigates to the
+   Explore page, which queries real users in PostgreSQL
+   (GET /api/users/search).
+   --------------------------------------------------------- */
+
+function initializeSearch() {
+
+    const input =
+        document.getElementById("globalSearch");
+
+    const button =
+        document.getElementById("searchBtn");
+
+    function runSearch() {
+
+        const query = ((input && input.value) || "").trim();
+
+        const target = query
+            ? `explore.html?q=${encodeURIComponent(query)}`
+            : "explore.html";
+
+        window.location.href = target;
+
+    }
+
+    if (button && input) {
+        button.addEventListener("click", runSearch);
+        input.addEventListener("keydown", event => {
+            if (event.key === "Enter") runSearch();
+        });
+    }
+
+}
+
+
+function initializeFilters() {
+
+    const filterBtn =
+        document.getElementById("filterBtn");
+
+    if (!filterBtn) return;
+
+    filterBtn.addEventListener("click", () => {
+        showToast(
+            "Advanced filters live on the Explore page.",
+            "success"
+        );
+    });
+
+}
+
+
+
 /* =========================================================
-   TRENDING SKILLS
+   TRENDING SKILLS — real community aggregates from
+   GET /api/dashboard (how many members teach each skill).
    ========================================================= */
 
-function renderTrendingSkills(
-    skills = getDB().skills.slice(0, 6)
-) {
+function renderTrendingSkills() {
 
     const container =
         document.getElementById("trendingSkills");
 
     if (!container) return;
 
+    if (!dashboardData) {
+        container.innerHTML =
+            '<div class="empty-state">Loading…</div>';
+        return;
+    }
 
-    const database = getDB();
+    const skills =
+        dashboardData.community_skills || [];
 
+    if (skills.length === 0) {
+        container.innerHTML =
+            '<div class="empty-state">No community skills yet — share yours to get started!</div>';
+        return;
+    }
 
-    container.innerHTML = skills.map(skill => {
+    container.innerHTML = skills.slice(0, 6).map(skill => `
 
-        const saved =
-            database.bookmarks.includes(skill.id);
+        <article
+            class="skill-card"
+            data-skill-name="${escapeHTML(skill.name)}"
+        >
 
+            <div class="skill-icon">✦</div>
 
-        return `
+            <h3>
+                ${escapeHTML(skill.name)}
+            </h3>
 
-            <article
-                class="skill-card"
-                data-skill-id="${skill.id}"
-            >
+            <div class="learners">
+                ${skill.count}
+                ${skill.count === 1 ? "member teaches" : "members teach"} this
+            </div>
 
-                <div class="skill-icon">
-                    ${skill.icon}
-                </div>
+            <span class="skill-growth">
+                from real member profiles
+            </span>
 
+            <div class="skill-card-bottom">
 
-                <h3>
-                    ${escapeHTML(skill.name)}
-                </h3>
+                <button
+                    class="explore-btn"
+                    data-explore-skill="${escapeHTML(skill.name)}"
+                >
+                    Explore
+                </button>
 
+            </div>
 
-                <div class="learners">
-                    ${formatNumber(skill.learners)}
-                    learners
-                </div>
+        </article>
 
-
-                <span class="skill-growth">
-                    ↑ ${skill.growth}% this week
-                </span>
-
-
-                <div class="skill-card-bottom">
-
-                    <button
-                        class="bookmark-btn ${saved ? "saved" : ""}"
-                        data-bookmark="${skill.id}"
-                        aria-label="Save skill"
-                    >
-                        ${saved ? "★" : "☆"}
-                    </button>
-
-
-                    <button
-                        class="explore-btn"
-                        data-explore="${skill.id}"
-                    >
-                        Explore
-                    </button>
-
-                </div>
-
-            </article>
-
-        `;
-
-    }).join("");
-
+    `).join("");
 
     initializeSkillButtons();
 
@@ -952,868 +1269,24 @@ function renderTrendingSkills(
 
 function initializeSkillButtons() {
 
-    document
-        .querySelectorAll("[data-bookmark]")
-        .forEach(button => {
-
-            button.addEventListener("click", event => {
-
-                event.stopPropagation();
-
-                const id =
-                    Number(button.dataset.bookmark);
-
-                toggleBookmark(id);
-
-            });
-
-        });
-
 
     document
-        .querySelectorAll("[data-explore]")
+        .querySelectorAll("[data-explore-skill]")
         .forEach(button => {
 
             button.addEventListener("click", () => {
 
-                const id =
-                    Number(button.dataset.explore);
+                const skillName =
+                    button.dataset.exploreSkill || "";
 
                 window.location.href =
-                    `skill-details.html?id=${id}`;
+                    `explore.html?q=${
+                        encodeURIComponent(skillName)
+                    }`;
 
             });
 
         });
-
-}
-
-
-/* =========================================================
-   BOOKMARK
-   ========================================================= */
-
-function toggleBookmark(skillId) {
-
-    updateDB(database => {
-
-        const index =
-            database.bookmarks.indexOf(skillId);
-
-
-        if (index === -1) {
-
-            database.bookmarks.push(skillId);
-
-            showToast(
-                "Skill saved successfully.",
-                "success"
-            );
-
-        } else {
-
-            database.bookmarks.splice(index, 1);
-
-            showToast(
-                "Skill removed from saved.",
-                "success"
-            );
-
-        }
-
-    });
-
-
-    renderTrendingSkills();
-
-}
-
-
-/* =========================================================
-   SEARCH
-   ========================================================= */
-
-function initializeSearch() {
-
-    const input =
-        document.getElementById("skillSearch");
-
-    const suggestions =
-        document.getElementById("searchSuggestions");
-
-
-    if (!input) return;
-
-
-    let timer;
-
-
-    input.addEventListener("input", () => {
-
-        clearTimeout(timer);
-
-
-        timer = setTimeout(() => {
-
-            const query =
-                input.value.trim().toLowerCase();
-
-
-            if (!query) {
-
-                hideSearchSuggestions();
-
-                renderTrendingSkills();
-
-                return;
-
-            }
-
-
-            const results =
-                getDB().skills.filter(skill =>
-
-                    skill.name
-                        .toLowerCase()
-                        .includes(query)
-
-                    ||
-
-                    skill.category
-                        .toLowerCase()
-                        .includes(query)
-
-                );
-
-
-            showSearchSuggestions(results);
-
-        }, 250);
-
-    });
-
-
-    input.addEventListener("keydown", event => {
-
-        if (event.key === "Enter") {
-
-            const query =
-                input.value.trim();
-
-
-            if (query) {
-
-                window.location.href =
-                    `explore.html?search=${encodeURIComponent(query)}`;
-
-            }
-
-        }
-
-    });
-
-
-    document.addEventListener("click", event => {
-
-        if (
-            !event.target.closest(".search-box")
-        ) {
-
-            hideSearchSuggestions();
-
-        }
-
-    });
-
-}
-
-
-function showSearchSuggestions(results) {
-
-    const container =
-        document.getElementById("searchSuggestions");
-
-    if (!container) return;
-
-
-    if (results.length === 0) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                No skills found.
-            </div>
-        `;
-
-        container.classList.add("show");
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-        results.slice(0, 6).map(skill => `
-
-            <div
-                class="search-suggestion"
-                data-search-skill="${skill.id}"
-            >
-
-                <div class="recent-icon">
-                    ${skill.icon}
-                </div>
-
-                <div>
-
-                    <strong>
-                        ${escapeHTML(skill.name)}
-                    </strong>
-
-                    <span>
-                        ${escapeHTML(skill.category)}
-                        · ${formatNumber(skill.learners)}
-                        learners
-                    </span>
-
-                </div>
-
-            </div>
-
-        `).join("");
-
-
-    container.classList.add("show");
-
-
-    container
-        .querySelectorAll("[data-search-skill]")
-        .forEach(item => {
-
-            item.addEventListener("click", () => {
-
-                const id =
-                    item.dataset.searchSkill;
-
-                /* No dedicated skill-details page exists yet —
-                   route to the Explore skills page instead. */
-
-                window.location.href =
-                    "explore.html";
-
-            });
-
-        });
-
-}
-
-
-function hideSearchSuggestions() {
-
-    const container =
-        document.getElementById("searchSuggestions");
-
-    if (container) {
-        container.classList.remove("show");
-    }
-
-}
-
-
-/* =========================================================
-   CATEGORY FILTER
-   ========================================================= */
-
-function initializeFilters() {
-
-    const category =
-        document.getElementById("categoryFilter");
-
-    const level =
-        document.getElementById("levelFilter");
-
-
-    if (category) {
-
-        category.addEventListener("change", applyFilters);
-
-    }
-
-
-    if (level) {
-
-        level.addEventListener("change", applyFilters);
-
-    }
-
-}
-
-
-function applyFilters() {
-
-    const category =
-        document
-            .getElementById("categoryFilter")
-            ?.value || "all";
-
-
-    const level =
-        document
-            .getElementById("levelFilter")
-            ?.value || "all";
-
-
-    let skills =
-        getDB().skills;
-
-
-    if (category !== "all") {
-
-        skills =
-            skills.filter(
-                skill =>
-                    skill.category === category
-            );
-
-    }
-
-
-    if (level !== "all") {
-
-        skills =
-            skills.filter(
-                skill =>
-                    skill.level === level
-            );
-
-    }
-
-
-    renderTrendingSkills(skills.slice(0, 6));
-
-}
-
-
-/* =========================================================
-   LEARNING
-   ========================================================= */
-
-function renderLearning() {
-
-    const container =
-        document.getElementById("learningList");
-
-    if (!container) return;
-
-
-    const learning =
-        getDB().learning;
-
-
-    container.innerHTML =
-        learning.map(course => `
-
-            <div
-                class="learning-item"
-                data-learning-id="${course.id}"
-            >
-
-                <div class="learning-top">
-
-                    <h3>
-                        ${escapeHTML(course.title)}
-                    </h3>
-
-                    <span>
-                        ${course.progress}%
-                    </span>
-
-                </div>
-
-
-                <div class="progress">
-
-                    <div
-                        class="progress-bar"
-                        style="width:${course.progress}%"
-                    ></div>
-
-                </div>
-
-
-                <div class="learning-bottom">
-
-                    <span>
-                        ${course.completedLessons}/${course.lessons}
-                        lessons
-                    </span>
-
-                    <button
-                        data-continue-learning="${course.id}"
-                    >
-                        Continue →
-                    </button>
-
-                </div>
-
-            </div>
-
-        `).join("");
-
-
-    container
-        .querySelectorAll(
-            "[data-continue-learning]"
-        )
-        .forEach(button => {
-
-            button.addEventListener("click", () => {
-
-                const id =
-                    Number(
-                        button.dataset.continueLearning
-                    );
-
-                continueLearning(id);
-
-            });
-
-        });
-
-}
-
-
-function continueLearning(id) {
-
-    updateDB(database => {
-
-        const course =
-            database.learning.find(
-                item => item.id === id
-            );
-
-
-        if (!course) return;
-
-
-        if (course.progress < 100) {
-
-            course.progress =
-                Math.min(
-                    100,
-                    course.progress + 5
-                );
-
-
-            course.completedLessons =
-                Math.min(
-                    course.lessons,
-                    course.completedLessons + 1
-                );
-
-
-            showToast(
-                "Lesson completed! Progress updated.",
-                "success"
-            );
-
-        }
-
-    });
-
-
-    renderLearning();
-
-}
-
-
-/* =========================================================
-   CREDITS
-   ========================================================= */
-
-function updateCreditDisplay() {
-
-    const element =
-        document.querySelector(
-            ".credits-widget strong"
-        );
-
-
-    if (!element) return;
-
-
-    element.textContent =
-        getDB()
-            .credits
-            .currentBalance
-            .toLocaleString();
-
-}
-
-
-function addCredits(
-    amount,
-    description,
-    type = "earned"
-) {
-
-    if (amount <= 0) return;
-
-
-    updateDB(database => {
-
-        database.credits.currentBalance += amount;
-
-        database.credits.totalEarned += amount;
-
-
-        database.credits.transactions.unshift({
-
-            id: Date.now(),
-
-            description,
-
-            amount,
-
-            type,
-
-            date: "Just now"
-
-        });
-
-    });
-
-
-    updateCreditDisplay();
-
-    showToast(
-        `${amount} credits added successfully.`,
-        "success"
-    );
-
-}
-
-
-function spendCredits(
-    amount,
-    description
-) {
-
-    if (amount <= 0) return false;
-
-
-    const database = getDB();
-
-
-    if (
-        database.credits.currentBalance < amount
-    ) {
-
-        showToast(
-            "Not enough credits.",
-            "error"
-        );
-
-        return false;
-
-    }
-
-
-    updateDB(database => {
-
-        database.credits.currentBalance -= amount;
-
-        database.credits.totalSpent += amount;
-
-
-        database.credits.transactions.unshift({
-
-            id: Date.now(),
-
-            description,
-
-            amount: -amount,
-
-            type: "spent",
-
-            date: "Just now"
-
-        });
-
-    });
-
-
-    updateCreditDisplay();
-
-    showToast(
-        `${amount} credits spent.`,
-        "success"
-    );
-
-
-    return true;
-
-}
-
-
-/* =========================================================
-   NOTIFICATIONS
-   ========================================================= */
-
-function updateNotificationCount() {
-
-    const count =
-        document.getElementById(
-            "notificationCount"
-        );
-
-
-    if (!count) return;
-
-
-    const unread =
-        getDB()
-            .notifications
-            .filter(item => !item.read)
-            .length;
-
-
-    count.textContent = unread;
-
-    count.style.display =
-        unread === 0
-            ? "none"
-            : "flex";
-
-}
-
-
-function showNotificationDropdown() {
-
-    const existing =
-        document.getElementById(
-            "notificationDropdown"
-        );
-
-
-    if (existing) {
-
-        existing.remove();
-
-        return;
-
-    }
-
-
-    const database = getDB();
-
-
-    const dropdown =
-        document.createElement("div");
-
-
-    dropdown.id =
-        "notificationDropdown";
-
-
-    dropdown.className =
-        "profile-dropdown show";
-
-
-    dropdown.style.right = "65px";
-
-
-    dropdown.style.top = "65px";
-
-
-    dropdown.style.width = "300px";
-
-
-    dropdown.innerHTML = `
-
-        <div
-            style="
-                padding:10px;
-                border-bottom:1px solid var(--border);
-                margin-bottom:5px;
-            "
-        >
-
-            <strong style="font-size:12px;">
-                Notifications
-            </strong>
-
-        </div>
-
-
-        ${database.notifications
-            .slice(0, 5)
-            .map(notification => `
-
-                <button
-                    class="notification-item"
-                    data-notification="${notification.id}"
-                    style="
-                        display:flex;
-                        width:100%;
-                        text-align:left;
-                        gap:10px;
-                        padding:10px;
-                        background:transparent;
-                        color:white;
-                        border-radius:9px;
-                    "
-                >
-
-                    <span>
-                        ${notification.icon}
-                    </span>
-
-                    <span>
-
-                        <strong
-                            style="
-                                display:block;
-                                font-size:9px;
-                            "
-                        >
-                            ${escapeHTML(notification.title)}
-                        </strong>
-
-                        <small
-                            style="
-                                display:block;
-                                color:var(--text-muted);
-                                font-size:8px;
-                                margin-top:3px;
-                            "
-                        >
-                            ${escapeHTML(notification.time)}
-                        </small>
-
-                    </span>
-
-                </button>
-
-            `).join("")}
-
-
-        <a
-            href="notifications.html"
-            style="
-                display:block;
-                text-align:center;
-                margin-top:5px;
-                color:var(--primary-light);
-            "
-        >
-            View all notifications →
-        </a>
-
-    `;
-
-
-    document.body.appendChild(dropdown);
-
-
-    dropdown
-        .querySelectorAll(
-            "[data-notification]"
-        )
-        .forEach(item => {
-
-            item.addEventListener("click", () => {
-
-                const id =
-                    Number(
-                        item.dataset.notification
-                    );
-
-                markNotificationRead(id);
-
-                item.style.opacity = "0.5";
-
-            });
-
-        });
-
-
-    setTimeout(() => {
-
-        document.addEventListener(
-            "click",
-            function closeNotification(event) {
-
-                const button =
-                    document.getElementById(
-                        "notificationBtn"
-                    );
-
-
-                if (
-                    !dropdown.contains(event.target) &&
-                    !button?.contains(event.target)
-                ) {
-
-                    dropdown.remove();
-
-                    document.removeEventListener(
-                        "click",
-                        closeNotification
-                    );
-
-                }
-
-            }
-        );
-
-    }, 0);
-
-}
-
-
-function markNotificationRead(id) {
-
-    updateDB(database => {
-
-        const notification =
-            database.notifications.find(
-                item => item.id === id
-            );
-
-
-        if (notification) {
-
-            notification.read = true;
-
-        }
-
-    });
-
-
-    updateNotificationCount();
-
-    showToast(
-        "Notification marked as read.",
-        "success"
-    );
-
-}
-
-
-function markAllNotificationsRead() {
-
-    updateDB(database => {
-
-        database.notifications.forEach(
-            notification => {
-                notification.read = true;
-            }
-        );
-
-    });
-
-
-    updateNotificationCount();
 
 }
 
@@ -2040,7 +1513,7 @@ function openShareSkillModal() {
 }
 
 
-function submitSkill(event) {
+async function submitSkill(event) {
 
     event.preventDefault();
 
@@ -2076,41 +1549,38 @@ function submitSkill(event) {
     }
 
 
-    updateDB(database => {
+    /* Persist to the user's REAL profile record in
+       PostgreSQL (authenticated via JWT). */
+    try {
 
-        database.skills.push({
+        const result =
+            await window.SkillShareAPI.addMySkill(name);
 
-            id: Date.now(),
+        closeModal();
 
-            name,
+        showToast(
+            result.message || "Your skill has been added successfully!",
+            "success"
+        );
 
-            category,
+        /* Refresh community aggregates from the database. */
+        dashboardData = await window.SkillShareAPI.getDashboard();
 
-            level,
+        renderTrendingSkills();
 
-            learners: 1,
+        renderRecentSkills();
 
-            growth: 0,
+    } catch (error) {
 
-            rating: 5,
+        if (error && error.status === 401) return;
 
-            icon: "✨"
+        showToast(
+            (error && error.detail)
+                || "Could not save your skill. Please try again.",
+            "error"
+        );
 
-        });
-
-    });
-
-
-    closeModal();
-
-
-    showToast(
-        "Your skill has been added successfully!",
-        "success"
-    );
-
-
-    renderTrendingSkills();
+    }
 
 }
 
@@ -2134,40 +1604,14 @@ function closeModal() {
 
 function toggleFollow(userName) {
 
-    updateDB(database => {
+    /* NOTE: real "follow" records are not stored in the
+       database yet — this only shows feedback and makes no
+       claims about persisted data. */
 
-        const index =
-            database.followedUsers.indexOf(
-                userName
-            );
-
-
-        if (index === -1) {
-
-            database.followedUsers.push(
-                userName
-            );
-
-            showToast(
-                `Following ${userName}.`,
-                "success"
-            );
-
-        } else {
-
-            database.followedUsers.splice(
-                index,
-                1
-            );
-
-            showToast(
-                `Unfollowed ${userName}.`,
-                "success"
-            );
-
-        }
-
-    });
+    showToast(
+        `Following ${userName}.`,
+        "success"
+    );
 
 }
 
@@ -2178,11 +1622,11 @@ function toggleFollow(userName) {
 
 function applyTheme() {
 
-    const database = getDB();
+    const theme = getThemePreference();
 
 
     if (
-        database.theme === "light"
+        theme === "light"
     ) {
 
         document.body.classList.add(
@@ -2202,15 +1646,12 @@ function applyTheme() {
 
 function toggleTheme() {
 
-    updateDB(database => {
+    const newTheme =
+        getThemePreference() === "dark"
+            ? "light"
+            : "dark";
 
-        database.theme =
-            database.theme === "dark"
-                ? "light"
-                : "dark";
-
-    });
-
+    saveThemePreference(newTheme);
 
     applyTheme();
 
@@ -2223,9 +1664,10 @@ function toggleTheme() {
 
 function logoutUser() {
 
-    localStorage.removeItem(
-        "skillconnectAuth"
-    );
+    /* Clear the real JWT session (api-client.js). */
+    if (window.SkillShareAPI) {
+        window.SkillShareAPI.clearSession();
+    }
 
 
     showToast(
@@ -2237,7 +1679,7 @@ function logoutUser() {
     setTimeout(() => {
 
         window.location.href =
-            "index.html";
+            "login.html";
 
     }, 700);
 
@@ -2410,12 +1852,6 @@ window.SkillConnect = {
 
     updateDB,
 
-    addCredits,
-
-    spendCredits,
-
-    toggleBookmark,
-
     toggleFollow,
 
     toggleTheme,
@@ -2424,11 +1860,7 @@ window.SkillConnect = {
 
     openShareSkillModal,
 
-    closeModal,
-
-    markNotificationRead,
-
-    markAllNotificationsRead
+    closeModal
 
 };
 

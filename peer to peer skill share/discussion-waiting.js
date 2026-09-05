@@ -100,18 +100,12 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     const DEMO_DISCUSSION_MATCH = {
-        /* DEMO DATA ONLY — clearly a placeholder until a real
-           matching endpoint exists. Shape mirrors a future API
-           response: { name, avatar, topic, interests, score } */
-        name: "Alex",
-        avatar: "AX",
-        topic: "Technology & AI",
-        interests: [
-            "Artificial Intelligence",
-            "Technology",
-            "Programming"
-        ],
-        score: 94
+        /* Placeholder only — real matching comes from the backend. */
+        name: "",
+        avatar: "",
+        topic: "",
+        interests: [],
+        score: 0
     };
 
     function readStoredRoom() {

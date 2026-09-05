@@ -1,5 +1,6 @@
 ﻿import re
 import secrets
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -235,15 +236,29 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
 # ==========================================
 # CURRENT USER (PROTECTED)
+#
+# The identity of the logged-in user is derived from the JWT
+# "sub" claim ONLY and then resolved against the PostgreSQL
+# `users` table. A user_id sent by the frontend (query param,
+# header, or request body) is NEVER accepted as the source of
+# truth for the current user.
 # ==========================================
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def get_current_user(
+def get_current_user_model(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
-):
+) -> User:
+    """
+    Resolve the real User SQLAlchemy record for the request.
+
+    The lookup key comes exclusively from the signed JWT "sub"
+    claim (set at login time by /login). If the token is missing,
+    invalid, expired, or refers to a deleted user, the request is
+    rejected with 401 before any endpoint logic runs.
+    """
 
     if credentials is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -258,22 +273,379 @@ def get_current_user(
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    try:
+        user_pk = int(user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    user = db.query(User).filter(User.id == user_pk).first()
 
     if user is None:
         raise HTTPException(status_code=401, detail="User no longer exists")
 
+    return user
+
+
+def get_current_user(
+    current_user: User = Depends(get_current_user_model),
+) -> dict:
+    """Dict view of the authenticated user (used by existing endpoints)."""
+    return {
+        "id": current_user.id,
+        "public_id": current_user.public_id,
+        "name": current_user.name,
+        "email": current_user.email,
+    }
+
+
+def serialize_current_user(user: User) -> dict:
+    """Full, safe serialization of the authenticated user's own
+    database record. Never exposes password_hash or other secrets."""
     return {
         "id": user.id,
         "public_id": user.public_id,
         "name": user.name,
         "email": user.email,
+        "bio": user.bio,
+        "skills": user.skills,
+        "interests": user.interests,
+        "avatar_url": user.avatar_url,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
 
 @app.get("/me")
-def me(current_user: dict = Depends(get_current_user)):
-    return {"user": current_user}
+@app.get("/users/me")
+def me(current_user: User = Depends(get_current_user_model)):
+    """
+    Current authenticated user, straight from PostgreSQL.
+
+    GET /me and GET /users/me are equivalent. The returned record
+    always reflects the live database row for the JWT subject.
+    """
+    return {"user": serialize_current_user(current_user)}
+    return {"user": serialize_current_user(current_user)}
+
+
+# ==========================================
+# DASHBOARD AGGREGATE (PROTECTED)
+#
+# Single endpoint that powers the main dashboard page.
+# Everything returned here is calculated from real
+# PostgreSQL records that belong to the authenticated
+# user (or are genuinely public community aggregates).
+#
+# Identity: derived from the JWT only (get_current_user_model).
+# The endpoint accepts NO user_id parameter — there is no way
+# to request another user's dashboard data.
+# ==========================================
+
+
+def _split_csv(value) -> list[str]:
+    """Split a comma-separated profile field into a clean list."""
+    if not value:
+        return []
+    return [item.strip() for item in str(value).split(",") if item.strip()]
+
+
+def _naive_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to naive UTC so comparisons against
+    PostgreSQL timestamps never fail on tz-aware/naive mixing."""
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
+@app.get("/api/dashboard")
+def get_dashboard(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    me = current_user.id
+
+    # ------------------------------------------------------
+    # USER'S OWN SKILLS / INTERESTS (real profile record)
+    # ------------------------------------------------------
+    skills_list = _split_csv(current_user.skills)
+    interests_list = _split_csv(current_user.interests)
+
+    # ------------------------------------------------------
+    # STATISTICS calculated from real database records
+    # ------------------------------------------------------
+    connections_count = (
+        db.query(Connection)
+        .filter(
+            or_(Connection.user_one_id == me, Connection.user_two_id == me),
+            Connection.status == "active",
+        )
+        .count()
+    )
+
+    requests_sent = (
+        db.query(ConnectionRequest).filter(ConnectionRequest.sender_id == me).count()
+    )
+    requests_received = (
+        db.query(ConnectionRequest).filter(ConnectionRequest.receiver_id == me).count()
+    )
+    requests_accepted = (
+        db.query(ConnectionRequest)
+        .filter(
+            or_(
+                ConnectionRequest.sender_id == me,
+                ConnectionRequest.receiver_id == me,
+            ),
+            ConnectionRequest.status == "accepted",
+        )
+        .count()
+    )
+    pending_received = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.receiver_id == me,
+            ConnectionRequest.status == "pending",
+        )
+        .count()
+    )
+
+    messages_sent = db.query(Message).filter(Message.sender_id == me).count()
+
+    days_member = None
+    created = _naive_utc(current_user.created_at)
+    if created is not None:
+        now = _naive_utc(datetime.now(timezone.utc))
+        days_member = max((now - created).days, 0)
+
+    # ------------------------------------------------------
+    # ACTIVITY CHART — messages sent per day, last 7 days.
+    # Generated from real Message rows; days with no activity
+    # are simply 0 (the frontend shows a meaningful empty
+    # state when the whole week is empty).
+    # ------------------------------------------------------
+    now = _naive_utc(datetime.now(timezone.utc))
+    week_start = (now - timedelta(days=6)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    rows = (
+        db.query(Message.created_at)
+        .filter(Message.sender_id == me, Message.created_at >= week_start)
+        .all()
+    )
+    per_day = {index: 0 for index in range(7)}
+    for (msg_created,) in rows:
+        msg_created = _naive_utc(msg_created)
+        if msg_created is None:
+            continue
+        day_index = (msg_created.date() - week_start.date()).days
+        if 0 <= day_index <= 6:
+            per_day[day_index] += 1
+
+    activity_days = [
+        {
+            "date": (week_start + timedelta(days=offset)).strftime("%Y-%m-%d"),
+            "label": (week_start + timedelta(days=offset)).strftime("%a"),
+            "messages_sent": per_day[offset],
+        }
+        for offset in range(7)
+    ]
+
+    # ------------------------------------------------------
+    # TRENDING SKILLS — aggregated from every user's real
+    # "skills" profile field (how many members teach each).
+    # ------------------------------------------------------
+    skill_counts: dict[str, dict] = {}
+    for (skills_csv,) in db.query(User.skills).all():
+        for skill_name in _split_csv(skills_csv):
+            key = skill_name.lower()
+            entry = skill_counts.setdefault(
+                key, {"name": skill_name, "count": 0}
+            )
+            entry["count"] += 1
+
+    community_skills = sorted(
+        skill_counts.values(),
+        key=lambda item: (-item["count"], item["name"].lower()),
+    )[:8]
+
+    # ------------------------------------------------------
+    # RECENTLY ADDED SKILLS — from the newest members who
+    # list skills on their real profile records.
+    # ------------------------------------------------------
+    recent_skill_owners = (
+        db.query(User)
+        .filter(User.skills.isnot(None), User.skills != "")
+        .order_by(User.id.desc())
+        .limit(12)
+        .all()
+    )
+    recent_skills: list[dict] = []
+    for owner in recent_skill_owners:
+        for skill_name in _split_csv(owner.skills):
+            recent_skills.append({"name": skill_name, "owner": user_summary(owner)})
+            if len(recent_skills) >= 6:
+                break
+        if len(recent_skills) >= 6:
+            break
+
+    # ------------------------------------------------------
+    # COMMUNITY SPOTLIGHT — top skill sharers ranked by real
+    # accepted connections, then by skills listed.
+    # ------------------------------------------------------
+    connection_pairs = (
+        db.query(Connection.user_one_id, Connection.user_two_id)
+        .filter(Connection.status == "active")
+        .all()
+    )
+    connection_counts: dict[int, int] = {}
+    for user_one, user_two in connection_pairs:
+        connection_counts[user_one] = connection_counts.get(user_one, 0) + 1
+        connection_counts[user_two] = connection_counts.get(user_two, 0) + 1
+
+    spotlight_candidates = (
+        db.query(User)
+        .filter(
+            or_(
+                User.skills.isnot(None),
+                User.id.in_(connection_counts.keys()),
+            )
+        )
+        .all()
+    )
+    ranked = sorted(
+        spotlight_candidates,
+        key=lambda u: (
+            connection_counts.get(u.id, 0),
+            len(_split_csv(u.skills)),
+        ),
+        reverse=True,
+    )
+    spotlight = [
+        user_summary(u)
+        for u in ranked[:3]
+        if connection_counts.get(u.id, 0) > 0 or _split_csv(u.skills)
+    ]
+
+    # ------------------------------------------------------
+    # NOTIFICATIONS — real pending requests + unread messages
+    # (replaces the old localStorage notification list).
+    # ------------------------------------------------------
+    pending_request_rows = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.receiver_id == me,
+            ConnectionRequest.status == "pending",
+        )
+        .order_by(ConnectionRequest.updated_at.desc())
+        .limit(5)
+        .all()
+    )
+    pending_requests = [
+        {
+            "id": request.id,
+            "sender": user_summary(db.get(User, request.sender_id)),
+            "skill": request.skill,
+            "message": request.message,
+            "created_at": (
+                request.created_at.isoformat() if request.created_at else None
+            ),
+        }
+        for request in pending_request_rows
+    ]
+
+    unread_conversations = []
+    for conversation_id in _user_conversation_ids(db, me):
+        conv = db.get(Conversation, conversation_id)
+        if conv is None:
+            continue
+        summary = serialize_conversation(db, conv, me)
+        if (summary.get("unread_count") or 0) > 0:
+            unread_conversations.append(
+                {
+                    "id": summary["id"],
+                    "other_user": summary["other_user"],
+                    "unread_count": summary["unread_count"],
+                    "last_message": summary["last_message"],
+                    "updated_at": summary["updated_at"],
+                }
+            )
+    unread_conversations.sort(
+        key=lambda item: item.get("updated_at") or "", reverse=True
+    )
+    unread_conversations = unread_conversations[:5]
+
+    return {
+        "user": serialize_current_user(current_user),
+        "stats": {
+            "skills_count": len(skills_list),
+            "interests_count": len(interests_list),
+            "connections_count": connections_count,
+            "requests_sent": requests_sent,
+            "requests_received": requests_received,
+            "requests_accepted": requests_accepted,
+            "pending_received": pending_received,
+            "messages_sent": messages_sent,
+            "days_member": days_member,
+        },
+        "activity": {
+            "days": activity_days,
+            "total_messages_sent": messages_sent,
+        },
+        "community_skills": community_skills,
+        "recent_skills": recent_skills,
+        "spotlight": spotlight,
+        "notifications": {
+            "pending_requests": pending_requests,
+            "unread_conversations": unread_conversations,
+        },
+    }
+
+
+class AddSkillSchema(BaseModel):
+    name: str
+
+
+@app.patch("/api/users/me/skills")
+def add_my_skill(
+    data: AddSkillSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Append a skill to the AUTHENTICATED user's own profile
+    record (comma-separated `skills` column). The target user
+    comes from the JWT only — there is no user_id parameter."""
+    skill_name = (data.name or "").strip()
+
+    if not skill_name:
+        raise HTTPException(status_code=400, detail="Skill name is required")
+
+    if len(skill_name) > 60:
+        raise HTTPException(
+            status_code=400, detail="Skill name is too long (max 60 characters)"
+        )
+
+    existing = _split_csv(current_user.skills)
+
+    if any(skill.lower() == skill_name.lower() for skill in existing):
+        return {
+            "success": True,
+            "message": "Skill already on your profile",
+            "skills": existing,
+        }
+
+    updated = existing + [skill_name]
+    current_user.skills = ", ".join(updated)
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "success": True,
+        "message": "Skill added to your profile",
+        "skills": _split_csv(current_user.skills),
+    }
+
+
 # =========================================================
 # REQUESTS ↔ MESSAGES CONNECTION SYSTEM
 #

@@ -112,20 +112,16 @@ document.addEventListener("DOMContentLoaded", () => {
            opened directly without the Live Learning flow. */
 
         const fallback = {
-            name: "Alex",
-            role: "English Coach",
-            skills: [
-                "English conversation",
-                "Communication",
-                "Daily practice"
-            ],
-            rating: 4.8,
-            avatar: "AX"
+            name: "",
+            role: "",
+            skills: [],
+            rating: 0,
+            avatar: ""
         };
 
         const match = person || fallback;
 
-        const initials = (match.avatar || match.name || "A")
+        const initials = (match.avatar || match.name || "")
             .split(" ")
             .map(word => word[0])
             .join("")
@@ -142,15 +138,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? match.skills.slice(0, 3)
                 : fallback.skills;
 
-        const score =
-            Math.min(
-                98,
-                Math.round(84 + (match.rating || 4.7) * 2.4)
-            );
+        const score = 0;
 
         previewAvatar.textContent = initials;
 
-        previewName.textContent = match.name || "Alex";
+        previewName.textContent = match.name || "";
 
         previewSkill.textContent = skillLine;
 

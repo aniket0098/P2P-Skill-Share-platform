@@ -9,216 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
        PROJECT DATA
     ===================================================== */
 
-    let projects = JSON.parse(
-        localStorage.getItem("skillconnectProjects")
-    ) || [
-
-        {
-            id: 1,
-            title: "EcoTrack — Carbon Footprint Tracker",
-            description:
-                "Track your daily activities and learn how to reduce your carbon footprint.",
-            category: "Web Development",
-            level: "Intermediate",
-            language: "JavaScript",
-            technologies: [
-                "Node.js",
-                "MongoDB",
-                "Sustainability"
-            ],
-            creator: "Riya Patel",
-            role: "B.Tech CSE",
-            time: "3 days ago",
-            likes: 124,
-            comments: [
-                {
-                    user: "Arjun",
-                    text: "Really useful project!"
-                },
-                {
-                    user: "Meera",
-                    text: "The UI looks amazing."
-                }
-            ],
-            saves: 32,
-            views: 210,
-            type: "web",
-            badge: "Featured",
-            github: "https://github.com/",
-            story:
-                "I built EcoTrack to help people understand their environmental impact and make better everyday decisions."
-        },
-
-        {
-            id: 2,
-            title: "SkillSwap — P2P Learning Platform",
-            description:
-                "A peer-to-peer skill sharing platform connecting learners and teachers.",
-            category: "Web Development",
-            level: "Advanced",
-            language: "JavaScript",
-            technologies: [
-                "HTML",
-                "CSS",
-                "JavaScript",
-                "FastAPI"
-            ],
-            creator: "Aniket Deshmukh",
-            role: "Full Stack Developer",
-            time: "1 week ago",
-            likes: 210,
-            comments: [
-                {
-                    user: "Harshal",
-                    text: "Great concept for skill sharing!"
-                },
-                {
-                    user: "Atharv",
-                    text: "The project has huge potential."
-                }
-            ],
-            saves: 48,
-            views: 340,
-            type: "web",
-            badge: "Featured",
-            github: "https://github.com/",
-            story:
-                "SkillSwap was created to make learning more accessible by allowing anyone to become both a teacher and learner."
-        },
-
-        {
-            id: 3,
-            title: "HabitFlow — Habit Tracking App",
-            description:
-                "Minimal and beautiful habit tracker for a better you.",
-            category: "Mobile Apps",
-            level: "Intermediate",
-            language: "Flutter",
-            technologies: [
-                "Flutter",
-                "Firebase",
-                "Mobile",
-                "Productivity"
-            ],
-            creator: "Karan Mehta",
-            role: "App Developer",
-            time: "5 days ago",
-            likes: 98,
-            comments: [
-                {
-                    user: "Isha",
-                    text: "Very clean mobile UI."
-                }
-            ],
-            saves: 24,
-            views: 190,
-            type: "mobile",
-            badge: "Open Source",
-            github: "https://github.com/",
-            story:
-                "HabitFlow helps users build positive habits through reminders, progress tracking and simple visual feedback."
-        },
-
-        {
-            id: 4,
-            title: "FoodLens — AI Food Recognition",
-            description:
-                "Identify food and get nutrition information using AI.",
-            category: "AI/ML",
-            level: "Advanced",
-            language: "Python",
-            technologies: [
-                "Python",
-                "TensorFlow",
-                "OpenCV",
-                "AI"
-            ],
-            creator: "Sneha Iyer",
-            role: "Data Science",
-            time: "4 days ago",
-            likes: 176,
-            comments: [
-                {
-                    user: "Rohan",
-                    text: "Interesting AI application."
-                }
-            ],
-            saves: 41,
-            views: 280,
-            type: "ai",
-            badge: "AI",
-            github: "https://github.com/",
-            story:
-                "FoodLens uses computer vision to identify food items and provide useful nutritional information."
-        },
-
-        {
-            id: 5,
-            title: "3D Interactive Room",
-            description:
-                "A 3D virtual room built with Three.js and interactive animations.",
-            category: "Creative",
-            level: "Advanced",
-            language: "JavaScript",
-            technologies: [
-                "Three.js",
-                "JavaScript",
-                "3D",
-                "WebGL"
-            ],
-            creator: "Aditya Rao",
-            role: "3D Enthusiast",
-            time: "1 week ago",
-            likes: 132,
-            comments: [
-                {
-                    user: "Kavya",
-                    text: "The 3D effects are excellent!"
-                }
-            ],
-            saves: 29,
-            views: 250,
-            type: "creative",
-            badge: "Featured",
-            github: "https://github.com/",
-            story:
-                "This project explores how Three.js can be used to create interactive 3D environments directly in the browser."
-        },
-
-        {
-            id: 6,
-            title: "Blogify — Markdown CMS",
-            description:
-                "A simple and fast markdown based blogging platform.",
-            category: "Web Development",
-            level: "Intermediate",
-            language: "JavaScript",
-            technologies: [
-                "Next.js",
-                "Tailwind",
-                "Supabase",
-                "CMS"
-            ],
-            creator: "Priya Singh",
-            role: "Web Developer",
-            time: "6 days ago",
-            likes: 89,
-            comments: [
-                {
-                    user: "Meera",
-                    text: "Simple and practical."
-                }
-            ],
-            saves: 18,
-            views: 160,
-            type: "web",
-            badge: "",
-            github: "https://github.com/",
-            story:
-                "Blogify provides creators with a lightweight platform for publishing markdown content."
-        }
-
-    ];
+    let projects = [];
 
 
     /* =====================================================
@@ -284,14 +75,12 @@ document.addEventListener("DOMContentLoaded", () => {
        USER STATE
     ===================================================== */
 
-    let userData = JSON.parse(
-        localStorage.getItem("skillconnectUserData")
-    ) || {
+    let userData = {
 
-        projectsShared: 4,
-        profileViews: 256,
-        opportunities: 12,
-        peopleReached: 1200,
+        projectsShared: 0,
+        profileViews: 0,
+        opportunities: 0,
+        peopleReached: 0,
 
         likedProjects: [],
         savedProjects: []
@@ -1346,7 +1135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     project.comments.push({
 
-                        user: "Aniket",
+                        user: "Anonymous",
                         text: text
 
                     });
@@ -1881,7 +1670,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 : [language],
 
                         creator:
-                            "Aniket Deshmukh",
+                            "Anonymous",
 
                         role:
                             "Creator",
@@ -1910,7 +1699,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             "https://github.com/",
 
                         story:
-                            "A new project shared by Aniket Deshmukh."
+                            "A new project was just shared."
 
                     };
 
@@ -2408,7 +2197,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 openModal(`
 
                     <h2>
-                        👤 Aniket Deshmukh
+                        👤 Anonymous
                     </h2>
 
                     <p>
@@ -2488,7 +2277,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="comment-list">
 
                         <div class="comment">
-                            <b>🥇 Meera Joshi</b>
+                            <b>🥇 Anonymous</b>
                             <p>UI/UX • 24 projects</p>
                         </div>
 

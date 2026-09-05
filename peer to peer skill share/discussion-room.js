@@ -8,87 +8,7 @@
    DEMO ROOM DATA
 ========================================================= */
 
-const defaultParticipants = [
-    {
-        id: 1,
-        name: "Aniket Deshmukh",
-        initials: "Ad",
-        host: true,
-        muted: false
-    },
-
-    {
-        id: 2,
-        name: "Priya Singh",
-        initials: "PS",
-        host: false,
-        muted: false
-    },
-
-    {
-        id: 3,
-        name: "Rahul Sharma",
-        initials: "RS",
-        host: false,
-        muted: false
-    },
-
-    {
-        id: 4,
-        name: "Neha Patel",
-        initials: "NP",
-        host: false,
-        muted: true
-    },
-
-    {
-        id: 5,
-        name: "Rohit Kumar",
-        initials: "RK",
-        host: false,
-        muted: false
-    },
-
-    {
-        id: 6,
-        name: "Sneha Iyer",
-        initials: "SI",
-        host: false,
-        muted: false
-    },
-
-    {
-        id: 7,
-        name: "Vikram Joshi",
-        initials: "VJ",
-        host: false,
-        muted: false
-    },
-
-    {
-        id: 8,
-        name: "Meera Joshi",
-        initials: "MJ",
-        host: false,
-        muted: false
-    },
-
-    {
-        id: 9,
-        name: "Arjun Nair",
-        initials: "AN",
-        host: false,
-        muted: true
-    },
-
-    {
-        id: 10,
-        name: "Kavya Reddy",
-        initials: "KR",
-        host: false,
-        muted: false
-    }
-];
+const defaultParticipants = [];
 
 
 
@@ -99,7 +19,7 @@ const defaultParticipants = [
 let participants =
     JSON.parse(
         localStorage.getItem("skillconnect_room_participants")
-    ) || defaultParticipants;
+    ) || [];
 
 let roomStartTime =
     localStorage.getItem("skillconnect_room_start");
@@ -1216,7 +1136,7 @@ function sendMessage(text) {
         <div>
 
             <strong>
-                Aniket Deshmukh
+                Anonymous
             </strong>
 
             <small>
@@ -1440,7 +1360,7 @@ function leaveRoom() {
         participants.filter(
             participant =>
                 participant.name !==
-                "Aniket Deshmukh"
+                "Anonymous"
         );
 
 

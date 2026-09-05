@@ -43,75 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
        DATA
     ===================================== */
 
-    const skills = [
-
-        {
-            name: "Full Stack Development",
-            domain: "Technology",
-            jobs: "23.5K"
-        },
-
-        {
-            name: "Data Science",
-            domain: "Technology",
-            jobs: "18.2K"
-        },
-
-        {
-            name: "Cloud Computing",
-            domain: "Technology",
-            jobs: "15.7K"
-        },
-
-        {
-            name: "AI / Machine Learning",
-            domain: "Technology",
-            jobs: "14.8K"
-        },
-
-        {
-            name: "Cybersecurity",
-            domain: "Technology",
-            jobs: "12.9K"
-        },
-
-        {
-            name: "Generative AI",
-            domain: "Technology",
-            jobs: "11.8K"
-        },
-
-        {
-            name: "UI/UX Design",
-            domain: "Design",
-            jobs: "9.4K"
-        },
-
-        {
-            name: "Digital Marketing",
-            domain: "Marketing",
-            jobs: "8.7K"
-        },
-
-        {
-            name: "Financial Analytics",
-            domain: "Finance",
-            jobs: "7.8K"
-        },
-
-        {
-            name: "Healthcare Analytics",
-            domain: "Healthcare",
-            jobs: "6.4K"
-        },
-
-        {
-            name: "Space Technology",
-            domain: "Space",
-            jobs: "4.2K"
-        }
-
-    ];
+    const skills = [];
 
 
     /* =====================================
@@ -805,51 +737,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (period === 6) {
 
-            data = [
-                43,
-                48,
-                55,
-                63,
-                72,
-                86
-            ];
+            data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
         } else if (period === 12) {
 
-            data = [
-                30,
-                34,
-                39,
-                43,
-                48,
-                53,
-                58,
-                65,
-                70,
-                76,
-                83,
-                91
-            ];
+            data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
         } else {
 
-            data = [
-                20,
-                24,
-                29,
-                33,
-                39,
-                44,
-                49,
-                55,
-                60,
-                65,
-                71,
-                78,
-                82,
-                87,
-                93
-            ];
+            data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
         }
 
@@ -1078,60 +974,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (period === "month") {
 
-            data = [
-                250,
-                420,
-                460,
-                720,
-                780,
-                610,
-                690,
-                870,
-                1100,
-                850,
-                930,
-                1200,
-                1080,
-                1150,
-                1240
-            ];
+            data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
         } else if (period === "quarter") {
 
-            data = [
-                430,
-                500,
-                620,
-                590,
-                710,
-                780,
-                850,
-                790,
-                940,
-                1010,
-                970,
-                1150
-            ];
+            data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
         } else {
 
-            data = [
-                350,
-                390,
-                430,
-                470,
-                510,
-                560,
-                610,
-                680,
-                720,
-                780,
-                850,
-                910,
-                980,
-                1080,
-                1160
-            ];
+            data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
         }
 

@@ -688,7 +688,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                 showToast(
-                    "🎉 Your post has been published!"
+                    "Posting will be available once discussions are connected to the backend."
                 );
 
 

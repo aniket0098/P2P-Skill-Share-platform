@@ -11,13 +11,13 @@
 const DEFAULT_SETTINGS = {
 
     profile: {
-        firstName: "Aniket",
-        lastName: "Deshmukh",
-        username: "aniket",
+        firstName: "",
+        lastName: "",
+        username: "",
         bio: "Learning, teaching and building something new every day.",
-        location: "India",
+        location: "",
         website: "",
-        avatar: "https://i.pravatar.cc/300?img=12"
+        avatar: ""
     },
 
     skills: [
@@ -718,7 +718,7 @@ function handleAvatarUpload(event) {
 function removeAvatarImage() {
 
     const defaultAvatar =
-        "https://i.pravatar.cc/300?img=12";
+        "";
 
 
     settings.profile.avatar =

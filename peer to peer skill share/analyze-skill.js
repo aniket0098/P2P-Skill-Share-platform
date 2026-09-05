@@ -4,58 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
        DATA
     ===================================================== */
 
-    const defaultSkills = [
-
-        {
-            name: "HTML",
-            score: 90,
-            industry: 95,
-            level: "Expert"
-        },
-
-        {
-            name: "CSS",
-            score: 80,
-            industry: 90,
-            level: "Advanced"
-        },
-
-        {
-            name: "JavaScript",
-            score: 75,
-            industry: 95,
-            level: "Advanced"
-        },
-
-        {
-            name: "React.js",
-            score: 60,
-            industry: 85,
-            level: "Intermediate"
-        },
-
-        {
-            name: "Node.js",
-            score: 40,
-            industry: 70,
-            level: "Beginner"
-        },
-
-        {
-            name: "MongoDB",
-            score: 35,
-            industry: 60,
-            level: "Beginner"
-        },
-
-        {
-            name: "TypeScript",
-            score: 20,
-            industry: 80,
-            level: "Beginner"
-        }
-
-    ];
+    const defaultSkills = [];
 
 
     let skills =
@@ -133,6 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function calculateOverall(){
+
+        if (!skills.length) return 0;
 
         const total =
             skills.reduce(
@@ -836,7 +787,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
         const communication =
-            65;
+            0;
 
         const industry =
             average(
@@ -1585,7 +1536,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     openModal(`
 
                         <h2>
-                            👤 Aniket Deshmukh
+                            👤 Anonymous
                         </h2>
 
                         <div class="modal-card">
