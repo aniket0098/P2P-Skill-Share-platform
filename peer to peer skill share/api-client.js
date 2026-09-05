@@ -102,6 +102,9 @@ window.SkillShareAPI = (() => {
         getMe: () => request("/me"),
         getDashboard: () => request("/api/dashboard"),
 
+        // Public, aggregated platform statistics (no auth required).
+        getStats: () => request("/api/stats"),
+
         // Append a skill to the AUTHENTICATED user's own
         // profile (backend derives the user from the JWT).
         addMySkill: (name) =>

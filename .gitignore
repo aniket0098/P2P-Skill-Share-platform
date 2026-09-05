@@ -1,0 +1,62 @@
+# ============================
+# Environment / secrets
+# ============================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ============================
+# Python
+# ============================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+env/
+ENV/
+
+# ============================
+# Node (preview server)
+# ============================
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# ============================
+# Databases / generated data
+# ============================
+*.db
+*.sqlite
+*.sqlite3
+*.sql.gz
+backups/
+
+# ============================
+# Logs
+# ============================
+*.log
+logs/
+
+# ============================
+# IDE / OS
+# ============================
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================
+# Temp / scratch files
+# ============================
+_tracked.txt
+*.tmp
+*.bak

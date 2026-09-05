@@ -20,6 +20,7 @@ from models import (
 # SQLAlchemy helpers used across the request/message endpoints.
 from sqlalchemy import or_, and_, func
 import auth
+import config
 
 app = FastAPI()
 
@@ -100,17 +101,17 @@ _run_startup_migrations()
 
 
 # ==========================================
-# CORS (LOCAL DEVELOPMENT ONLY)
+# CORS
 # ==========================================
-# Allows the frontend while it is served from any
-# local development origin (Live Server, python -m
-# http.server, etc.) or opened directly from disk.
-# This is intentionally NOT a broad production config.
+# Local development: any localhost / 127.0.0.1 origin (Live Server,
+# python -m http.server, etc.) or file:// (Origin: null) is allowed.
+# Production: set the FRONTEND_URL environment variable (comma-separated
+# list) on the backend host (Render) — e.g. the future Vercel URL.
 
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
-    allow_origins=["null"],  # pages opened directly via file:// send Origin: null
+    allow_origins=["null", *config.FRONTEND_URLS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -324,7 +325,6 @@ def me(current_user: User = Depends(get_current_user_model)):
     always reflects the live database row for the JWT subject.
     """
     return {"user": serialize_current_user(current_user)}
-    return {"user": serialize_current_user(current_user)}
 
 
 # ==========================================
@@ -356,6 +356,37 @@ def _naive_utc(dt: datetime) -> datetime:
     if dt.tzinfo is not None:
         return dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
+
+
+# ==========================================
+# PUBLIC PLATFORM STATISTICS
+# ==========================================
+# Real, aggregated counts used by the public marketing pages
+# (landing page / about page). No authentication required and
+# no user-identifying data is exposed — only totals.
+
+@app.get("/api/stats")
+def get_platform_stats(db: Session = Depends(get_db)):
+    total_members = db.query(User).count()
+    total_connections = (
+        db.query(Connection).filter(Connection.status == "active").count()
+    )
+    total_messages = db.query(Message).count()
+
+    skill_counts: dict[str, int] = {}
+    for (skills_csv,) in db.query(User.skills).all():
+        for skill_name in _split_csv(skills_csv):
+            skill_counts[skill_name.lower()] = (
+                skill_counts.get(skill_name.lower(), 0) + 1
+            )
+    skills_offered = len(skill_counts)
+
+    return {
+        "members": total_members,
+        "connections": total_connections,
+        "messages_exchanged": total_messages,
+        "skills_offered": skills_offered,
+    }
 
 
 @app.get("/api/dashboard")

@@ -162,13 +162,13 @@
                 </div>
 
 
-                <!-- Statistics -->
+                <!-- Statistics (real values are loaded from the backend /api/stats) -->
 
                 <div class="stats">
 
                     <div class="stat">
 
-                        <b data-count="10" data-suffix="K+">
+                        <b id="statLearners" data-count="0">
                             0
                         </b>
 
@@ -181,7 +181,7 @@
 
                     <div class="stat">
 
-                        <b data-count="500" data-suffix="+">
+                        <b id="statSkills" data-count="0">
                             0
                         </b>
 
@@ -194,7 +194,7 @@
 
                     <div class="stat">
 
-                        <b data-count="25" data-suffix="K+">
+                        <b id="statConnections" data-count="0">
                             0
                         </b>
 
@@ -839,7 +839,8 @@
 
     <!-- JavaScript -->
 
-    <script src="about.js"></script>
+    <script src="config.js"></script>
+<script src="about.js"></script>
 
 </body>
 
