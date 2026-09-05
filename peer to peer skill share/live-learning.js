@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const state = {
 
-        credits: 1250,
+        credits: 0,
 
         selectedSkill: "English Speaking",
 
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         currentProgress: 0,
 
-        notificationCount: 4
+        notificationCount: 0
 
     };
 
@@ -274,191 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
        PEOPLE DATABASE
     ========================================================= */
 
-    const people = [
-
-        {
-            id: 1,
-
-            name: "Priya Sharma",
-
-            role: "English Coach",
-
-            skills: [
-                "English Speaking",
-                "Conversation Practice",
-                "Fluency",
-                "Grammar"
-            ],
-
-            rating: 4.9,
-
-            sessions: 128,
-
-            credits: 20,
-
-            avatar: "PS",
-
-            online: true
-
-        },
-
-        {
-            id: 2,
-
-            name: "Rahul Verma",
-
-            role: "Spoken English Trainer",
-
-            skills: [
-                "English Speaking",
-                "Speaking",
-                "Pronunciation",
-                "IELTS Speaking"
-            ],
-
-            rating: 4.8,
-
-            sessions: 96,
-
-            credits: 18,
-
-            avatar: "RV",
-
-            online: true
-
-        },
-
-        {
-            id: 3,
-
-            name: "Neha Patel",
-
-            role: "Communication Coach",
-
-            skills: [
-                "English Speaking",
-                "Public Speaking",
-                "Confidence",
-                "Communication"
-            ],
-
-            rating: 4.9,
-
-            sessions: 142,
-
-            credits: 22,
-
-            avatar: "NP",
-
-            online: true
-
-        },
-
-        {
-            id: 4,
-
-            name: "Aman Verma",
-
-            role: "Python Developer",
-
-            skills: [
-                "Python Programming",
-                "DSA with Python",
-                "Problem Solving",
-                "Projects"
-            ],
-
-            rating: 4.9,
-
-            sessions: 87,
-
-            credits: 19,
-
-            avatar: "AV",
-
-            online: true
-
-        },
-
-        {
-            id: 5,
-
-            name: "Rohit Sharma",
-
-            role: "Full Stack Developer",
-
-            skills: [
-                "Web Development",
-                "JavaScript",
-                "React",
-                "Full Stack"
-            ],
-
-            rating: 4.8,
-
-            sessions: 115,
-
-            credits: 24,
-
-            avatar: "RS",
-
-            online: true
-
-        },
-
-        {
-            id: 6,
-
-            name: "Sneha Kulkarni",
-
-            role: "Digital Marketing Expert",
-
-            skills: [
-                "Digital Marketing",
-                "SEO",
-                "Social Media Marketing",
-                "Content Marketing"
-            ],
-
-            rating: 4.9,
-
-            sessions: 73,
-
-            credits: 17,
-
-            avatar: "SK",
-
-            online: true
-
-        },
-
-        {
-            id: 7,
-
-            name: "Vikram Joshi",
-
-            role: "Public Speaking Mentor",
-
-            skills: [
-                "Public Speaking",
-                "Confidence",
-                "Presentation Skills",
-                "Storytelling"
-            ],
-
-            rating: 4.8,
-
-            sessions: 64,
-
-            credits: 16,
-
-            avatar: "VJ",
-
-            online: true
-
-        }
-
-    ];
+    const people = [];
 
 
     /* =========================================================
@@ -852,6 +668,12 @@ document.addEventListener("DOMContentLoaded", () => {
             getMatches();
 
         matchesContainer.innerHTML = "";
+
+        if (!matches || matches.length === 0) {
+            matchesContainer.innerHTML =
+                '<div class="empty-state">No matches yet — connect real learners to the Live Learning page.</div>';
+            return;
+        }
 
         matches.forEach(person => {
 

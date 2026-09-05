@@ -25,85 +25,13 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     const CREDITS_DEMO = {
-
-        balance: 2450,
-
-        earnedThisMonth: 320,
-
-        spentThisMonth: 180,
-
-        reviewsReceived: 27,
-
-        averageRating: 4.8,
-
-        monthlyGoal: 500,
-
-        activity: [
-            {
-                id: 1,
-                type: "rewards",
-                amount: 50,
-                title: "5-star review received",
-                detail: "Alex · Live Learning",
-                date: "Today",
-                icon: "fa-solid fa-star"
-            },
-            {
-                id: 2,
-                type: "earned",
-                amount: 25,
-                title: "Learning session completed",
-                detail: "Live Learning",
-                date: "Yesterday",
-                icon: "fa-solid fa-graduation-cap"
-            },
-            {
-                id: 3,
-                type: "spent",
-                amount: -100,
-                title: "Live Learning session",
-                detail: "Python Programming",
-                date: "Aug 30",
-                icon: "fa-solid fa-video"
-            },
-            {
-                id: 4,
-                type: "rewards",
-                amount: 50,
-                title: "5-star review received",
-                detail: "Priya · Live Learning",
-                date: "Aug 28",
-                icon: "fa-solid fa-star"
-            },
-            {
-                id: 5,
-                type: "purchased",
-                amount: 1200,
-                title: "Credits purchased",
-                detail: "Popular package · ₹99",
-                date: "Aug 25",
-                icon: "fa-solid fa-bolt"
-            },
-            {
-                id: 6,
-                type: "earned",
-                amount: 25,
-                title: "Learning session completed",
-                detail: "Live Learning",
-                date: "Aug 22",
-                icon: "fa-solid fa-graduation-cap"
-            },
-            {
-                id: 7,
-                type: "spent",
-                amount: -80,
-                title: "Premium discussion room",
-                detail: "Live Discussion",
-                date: "Aug 20",
-                icon: "fa-solid fa-comments"
-            }
-        ]
-
+        balance: 0,
+        earnedThisMonth: 0,
+        spentThisMonth: 0,
+        reviewsReceived: 0,
+        averageRating: 0,
+        monthlyGoal: 0,
+        activity: []
     };
 
 
@@ -114,9 +42,19 @@ document.addEventListener("DOMContentLoaded", () => {
     function loadCreditsData() {
 
         /* Future: return fetch("/api/credits").then(r => r.json())
-           — every renderer below consumes this object only. */
+           — every renderer below consumes this object only.
+           Until the backend is wired, the wallet and every
+           counter render 0 — no seeded demo values reach the UI. */
 
-        return CREDITS_DEMO;
+        return {
+            balance: 0,
+            earnedThisMonth: 0,
+            spentThisMonth: 0,
+            reviewsReceived: 0,
+            averageRating: 0,
+            monthlyGoal: 0,
+            activity: []
+        };
 
     }
 

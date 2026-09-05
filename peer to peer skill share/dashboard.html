@@ -46,7 +46,7 @@
                 <div>
                     <h1>
                         Welcome back,
-                        <span>Admin</span> 👋
+                        <span id="welcomeName">member</span> 👋
                     </h1>
 
                     <p>
@@ -113,6 +113,7 @@
             ========================== -->
             <section class="section">
 
+                <!-- 🔥 Trending Skills -->
                 <div class="section-head">
 
                     <div>
@@ -121,7 +122,7 @@
                         </h2>
 
                         <p>
-                            Most learners are learning these skills right now
+                            Skills the community is teaching right now
                         </p>
                     </div>
 
@@ -165,42 +166,29 @@
                         </div>
 
                         <span class="live-badge">
-                            ● Live Now
+                            ● Live Learning
                         </span>
 
                     </div>
 
 
-                    <div class="live-card">
+                    <!-- No live-session records exist in the database yet,
+                         so this section shows a meaningful empty state
+                         instead of hardcoded demo data. -->
+                    <div class="live-card" id="liveLearningCard">
 
-                        <div class="avatar big">
-                            RS
-                        </div>
+                        <div class="empty-state">
 
+                            <div class="empty-icon">🔴</div>
 
-                        <div>
-
-                            <h3>
-                                Master Python Basics
-                            </h3>
+                            <h3>No live sessions right now</h3>
 
                             <p>
-                                by Rahul Sharma
+                                Live learning sessions will appear here as
+                                soon as they are stored in the database.
                             </p>
 
-                            <span class="tag">
-                                Python
-                            </span>
-
                         </div>
-
-
-                        <button
-                            class="btn primary"
-                            onclick="location.href='live-learning.html?session=python'"
-                        >
-                            Join Live
-                        </button>
 
                     </div>
 
@@ -302,59 +290,61 @@
                     </div>
 
 
-                    <!-- Metrics -->
-                    <div class="metric-grid">
+                    <!-- Metrics — filled from real PostgreSQL records
+                         (user profile + requests + messages). -->
+                    <div class="metric-grid" id="dashboardMetrics">
 
                         <div>
-                            <b>24</b>
+                            <b>—</b>
                             <span>
-                                Skills Learned
+                                Skills Listed
                             </span>
                         </div>
 
 
                         <div>
-                            <b>3</b>
+                            <b>—</b>
                             <span>
-                                Active Learning
+                                Connections
                             </span>
                         </div>
 
 
                         <div>
-                            <b>15</b>
+                            <b>—</b>
                             <span>
-                                Completed
+                                Requests Accepted
                             </span>
                         </div>
 
 
                         <div>
-                            <b>12 🔥</b>
+                            <b>—</b>
                             <span>
-                                Day Streak
+                                Messages Sent
                             </span>
                         </div>
 
                     </div>
 
 
-                    <!-- Credit Activity -->
+                    <!-- Activity chart — generated from real Message
+                         records (messages sent per day, last 7 days). -->
                     <div class="credit-chart">
 
                         <div>
-                            <b>
-                                +1000
-                            </b>
+
+                            <b id="activityTotal">—</b>
 
                             <span>
-                                Credits earned this month
+                                Messages sent this week
                             </span>
+
                         </div>
 
 
-                        <div class="bars">
-                            ▂ ▅ ▃ ▆ ▄ ▇ ▅ ▆ ▃ ▇
+                        <div class="bars" id="activityBars">
+                            Loading…
                         </div>
 
                     </div>
@@ -406,34 +396,17 @@
                     </div>
 
 
-                    <div class="spotlight">
+                    <div class="spotlight" id="spotlightPanel">
 
-                        <div class="avatar xl">
-                            MJ
-                        </div>
+                        <div class="empty-state">
 
+                            <div class="empty-icon">◇</div>
 
-                        <div>
-
-                            <h3>
-                                Meera Joshi
-                            </h3>
+                            <h3>Community Spotlight</h3>
 
                             <p>
-                                Top Skill Sharer
+                                Loading…
                             </p>
-
-                            <p>
-                                Helping 250+ learners grow their Design skills.
-                            </p>
-
-
-                            <button
-                                class="btn ghost follow-btn"
-                                data-user="Meera Joshi"
-                            >
-                                Follow
-                            </button>
 
                         </div>
 
@@ -468,8 +441,8 @@
     <!-- Frontend API client (FastAPI + PostgreSQL) -->
     <script src="api-client.js"></script>
 
-    <!-- Global application logic -->
-    <script src="app.js"></script>
+    <!-- Authenticated current-user service (JWT -> GET /me) -->
+    <script src="auth.js"></script>
 
     <!-- Dashboard-specific logic -->
     <script src="dashboard.js"></script>

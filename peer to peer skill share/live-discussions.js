@@ -5,120 +5,17 @@
 
 /* ================= DATA ================= */
 
-const defaultRooms = [
-
-    {
-        id: 1,
-        title: "UI/UX Design Discussion",
-        category: "Design",
-        description: "Discuss best practices, real world case studies and improve your UI/UX skills together.",
-        host: "Aman Verma",
-        members: 10,
-        capacity: 10,
-        start: "05:32",
-        status: "LIVE",
-        theme: "uiux"
-    },
-
-    {
-        id: 2,
-        title: "Python Programming Help",
-        category: "Programming",
-        description: "Stuck on a concept? Ask, discuss and solve problems with the community.",
-        host: "Rahul Sharma",
-        members: 8,
-        capacity: 10,
-        start: "12:15",
-        status: "LIVE",
-        theme: "python"
-    },
-
-    {
-        id: 3,
-        title: "Digital Marketing Trends 2024",
-        category: "Marketing",
-        description: "Share strategies, tools and latest trends in digital marketing.",
-        host: "Priya Singh",
-        members: 5,
-        capacity: 10,
-        start: "18:45",
-        status: "LIVE",
-        theme: "marketing"
-    },
-
-    {
-        id: 4,
-        title: "Public Speaking Mastery",
-        category: "Communication",
-        description: "Overcome stage fear and become a confident speaker with practice and feedback.",
-        host: "Neha Patel",
-        members: 0,
-        capacity: 15,
-        start: "Tomorrow, 07:00 PM",
-        status: "UPCOMING",
-        theme: "speaking"
-    },
-
-    {
-        id: 5,
-        title: "Web Development Talk",
-        category: "Programming",
-        description: "Discuss modern web development technologies.",
-        host: "Aman Verma",
-        members: 15,
-        capacity: 15,
-        start: "LIVE",
-        status: "LIVE",
-        theme: "uiux"
-    },
-
-    {
-        id: 6,
-        title: "AI Tools & Productivity",
-        category: "Programming",
-        description: "Discover AI tools that improve your productivity.",
-        host: "Meera Joshi",
-        members: 9,
-        capacity: 10,
-        start: "LIVE",
-        status: "LIVE",
-        theme: "marketing"
-    },
-
-    {
-        id: 7,
-        title: "English Speaking Practice",
-        category: "Communication",
-        description: "Practice English speaking with other learners.",
-        host: "Priya Singh",
-        members: 10,
-        capacity: 10,
-        start: "LIVE",
-        status: "LIVE",
-        theme: "python"
-    }
-
-];
+const defaultRooms = [];
 
 
 /* ================= LOCAL STORAGE ================= */
 
 function getRooms() {
 
-    const saved = localStorage.getItem("skillconnect_rooms");
+    /* Discussion rooms are provided by the backend.
+       No seed data is written to localStorage. */
 
-    if (!saved) {
-
-        localStorage.setItem(
-            "skillconnect_rooms",
-            JSON.stringify(defaultRooms)
-        );
-
-        return defaultRooms;
-
-    }
-
-    return JSON.parse(saved);
+    return [];
 }
 
 
@@ -720,7 +617,7 @@ document
 
             description: description,
 
-            host: "Aniket Deshmukh",
+            host: "Anonymous",
 
             members: 1,
 
@@ -893,7 +790,7 @@ profileMenu.addEventListener("click", e => {
 function loadCredits() {
 
     const credits =
-        localStorage.getItem("skillconnect_credits") || "1250";
+        localStorage.getItem("skillconnect_credits") || "0";
 
     const element =
         document.getElementById("topCredits");
@@ -953,22 +850,22 @@ function renderActivity() {
         activities = [
 
             {
-                text: "Aman Verma created UI/UX Design Discussion",
+                text: "Anonymous created UI/UX Design Discussion",
                 time: "10 min ago"
             },
 
             {
-                text: "Rahul Sharma joined Python Programming Help",
+                text: "Anonymous joined Python Programming Help",
                 time: "25 min ago"
             },
 
             {
-                text: "Priya Singh scheduled Digital Marketing Trends",
+                text: "Anonymous scheduled Digital Marketing Trends",
                 time: "1 hour ago"
             },
 
             {
-                text: "Neha Patel created Public Speaking Mastery",
+                text: "Anonymous created Public Speaking Mastery",
                 time: "2 hours ago"
             }
 

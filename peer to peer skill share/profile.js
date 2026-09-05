@@ -1,6 +1,6 @@
 /* =========================================================
    SKILLSHARE — PROFILE PAGE JS
-   Aniket Deshmukh
+   Anonymous
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
           "✓ Following";
 
         showToast(
-          "You are now following Aniket."
+          "You are now following Anonymous."
         );
 
       } else {
@@ -190,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
           "+ Follow";
 
         showToast(
-          "You unfollowed Aniket."
+          "You unfollowed Anonymous."
         );
 
       }
@@ -237,10 +237,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const shareData = {
 
           title:
-            "Aniket Deshmukh | SkillShare",
+            "Anonymous | SkillShare",
 
           text:
-            "Check out Aniket Deshmukh's profile on SkillShare.",
+            "Check out Anonymous's profile on SkillShare.",
 
           url:
             profileUrl

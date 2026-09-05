@@ -100,6 +100,15 @@ window.SkillShareAPI = (() => {
         signup: (name, email, password) =>
             request("/signup", { method: "POST", body: JSON.stringify({ name, email, password }) }),
         getMe: () => request("/me"),
+        getDashboard: () => request("/api/dashboard"),
+
+        // Append a skill to the AUTHENTICATED user's own
+        // profile (backend derives the user from the JWT).
+        addMySkill: (name) =>
+            request("/api/users/me/skills", {
+                method: "PATCH",
+                body: JSON.stringify({ name }),
+            }),
 
         // --- Users ---
         listUsers: () => request("/api/users"),

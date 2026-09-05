@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
        CURRENT DATE
     ----------------------------------------------------- */
 
-    let currentDate = new Date(2026, 7, 1);
+    let currentDate = new Date();
 
     const months = [
         "January",
@@ -92,23 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
        EVENT DATA
     ----------------------------------------------------- */
 
-    const eventData = [
-        {
-            title: "Figma for beginners",
-            person: "Priya Sharma",
-            time: "10:00 AM – 10:45 AM"
-        },
-        {
-            title: "You teach: UI/UX basics",
-            person: "Rohit Mehta",
-            time: "2:00 PM – 3:00 PM"
-        },
-        {
-            title: "Portfolio review",
-            person: "Neha Kapoor",
-            time: "6:00 PM – 6:30 PM"
-        }
-    ];
+    const eventData = [];
 
     /* -----------------------------------------------------
        EVENT CLICK
