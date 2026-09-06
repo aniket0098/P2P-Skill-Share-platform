@@ -117,8 +117,11 @@ Then open <http://127.0.0.1:5500/login.html>.
 (Windows convenience: run `start-skillshare.bat` to launch both servers.)
 
 The frontend reads the backend URL from **one place**:
-`peer to peer skill share/config.js` (`API_BASE_URL`). Update it there when
-your backend URL changes — no need to edit every page.
+`peer to peer skill share/config.js`. Locally it auto-detects
+`localhost`/`127.0.0.1` and calls `http://127.0.0.1:8000`. On Vercel the
+production Render URL is injected at **build time** from the
+`SKILLSHARE_API_BASE` environment variable (see `generate-config.js` +
+`vercel.json`) — no per-page edits, no committed URLs.
 
 ### 7. Optional demo data (development only)
 
@@ -165,5 +168,8 @@ Deployment checklist (when ready):
    `uvicorn main:app --host 0.0.0.0 --port $PORT`.
 2. **Neon (database)** — copy the pooled connection string into Render's
    `DATABASE_URL`.
-3. **Vercel (frontend)** — update `API_BASE_URL` in
-   `peer to peer skill share/config.js` to the Render backend URL.
+3. **Vercel (frontend)** — set the Root Directory to `peer to peer skill share`
+   and add the environment variable `SKILLSHARE_API_BASE` = your Render
+   backend URL (e.g. `https://your-backend.onrender.com`). `vercel.json` runs
+   `generate-config.js` at build time to inject it into `config.js`.
+   Every push to `main` then auto-deploys both platforms.

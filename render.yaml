@@ -1,0 +1,32 @@
+# ==========================================================
+# SkillShare backend — Render Blueprint (OPTIONAL)
+#
+# This file is only used if you create the Render service via
+# "New → Blueprint". If you already created the service in the
+# Render dashboard, this file is ignored and you can delete it.
+#
+# Secrets are NEVER stored here:
+#   * DATABASE_URL / FRONTEND_URL → you are prompted at
+#     creation time (sync: false) and can edit them in the
+#     Render dashboard afterwards.
+#   * SECRET_KEY → generated once by Render and kept stable
+#     across redeploys (generateValue: true).
+# ==========================================================
+
+services:
+  - type: web
+    name: skillshare-backend
+    runtime: python
+    rootDir: backend-I
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/stats
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # Neon pooled connection string (entered in dashboard)
+      - key: SECRET_KEY
+        generateValue: true  # generated once, stable across deploys
+      - key: FRONTEND_URL
+        sync: false          # Vercel frontend URL (entered in dashboard)
+      - key: ENVIRONMENT
+        value: production    # enables strict config checks (fail fast)

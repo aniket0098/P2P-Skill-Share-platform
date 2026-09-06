@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node generate-config.js",
+  "outputDirectory": ".",
+  "installCommand": "echo skip",
+  "framework": null
+}
