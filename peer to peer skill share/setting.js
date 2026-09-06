@@ -2477,7 +2477,7 @@ function initializeNavigation() {
                     ) {
 
                         window.location.href =
-                            "settings.html";
+                            "setting.html";
 
                     }
 
@@ -2499,7 +2499,7 @@ function initializeNavigation() {
         () => {
 
             window.location.href =
-                "teach.html";
+                "tutor-profile.html";
 
         }
     );
@@ -2896,7 +2896,7 @@ function initializeSupport() {
         () => {
 
             window.location.href =
-                "community-guidelines.html";
+                "community.html";
 
         }
     );
@@ -3151,7 +3151,7 @@ function initializeSearch() {
         () => {
 
             window.location.href =
-                "search.html";
+                "explore.html";
 
         }
     );
