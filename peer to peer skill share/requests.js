@@ -1,895 +1,839 @@
 /* =========================================================
-   SKILLSHARE — CONNECTIONS
-   Powered by FastAPI + PostgreSQL (backend is source of truth).
-   Tabs: Received / Sent (requests) · Connections · Find People.
+   SKILLSHARE - CONNECTIONS PAGE
+   Fully database-backed: every card, counter and status on
+   this page comes from the FastAPI + PostgreSQL backend via
+   the authenticated API client (JWT bearer token).
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
     "use strict";
 
-    /* =====================================================
-       AUTH GUARD
-    ===================================================== */
+    const API = window.SkillShareAPI;
 
-    if (!window.SkillShareAPI || !window.SkillShareAPI.getToken()) {
+    /* AUTH GUARD */
+    if (!API || !API.getToken()) {
         window.location.href = "login.html";
         return;
     }
 
-    /* =====================================================
-       ELEMENTS
-    ===================================================== */
+    const $ = (id) => document.getElementById(id);
 
-    const tabs = document.querySelectorAll(".tabs button");
-    const incomingPanel = document.getElementById("incoming");
-    const outgoingPanel = document.getElementById("outgoing");
-    const connectionsPanel = document.getElementById("connections");
-    const peopleResults = document.getElementById("peopleResults");
-    const peopleSearch = document.getElementById("peopleSearch");
-    const toast = document.getElementById("toast");
+    const refreshBtn = $("refreshBtn");
+    const bellBtn = $("bellBtn");
+    const bellCount = $("bellCount");
+    const headerAvatar = $("headerAvatar");
+    const headerUserName = $("headerUserName");
+    const peopleSearch = $("peopleSearch");
+    const searchSpinner = $("searchSpinner");
+    const searchClear = $("peopleSearchClear");
+    const searchResults = $("searchResults");
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+    const counts = {
+        incoming: $("incomingCount"),
+        sent: $("sentCount"),
+        connections: $("connectionsCount"),
+    };
+    const grids = {
+        all: $("allPeopleResults"),
+        incoming: $("incomingResults"),
+        sent: $("sentResults"),
+        connections: $("connectionsResults"),
+    };
+    const sentPanelHead = document.querySelector("#panel-sent .panel-head");
+    const toastContainer = $("toastContainer");
+    const profileModal = $("profileModal");
+    const modalBody = $("modalBody");
+    const modalClose = $("modalClose");
+    const confirmModal = $("confirmModal");
+    const confirmTitle = $("confirmTitle");
+    const confirmText = $("confirmText");
+    const confirmOk = $("confirmOk");
+    const confirmCancel = $("confirmCancel");
 
     /* =====================================================
        STATE
     ===================================================== */
 
-    let allRequests = [];
-    let allConnections = [];
-    let searchTimer = null;
-    let connectedIds = new Set();
-    let pendingSentIds = new Set();
-    let pendingReceivedIds = new Set();
+    const state = {
+        me: null,           // current user (from /me, DB-backed)
+        requests: [],       // every request touching me (DB rows)
+        connections: [],    // accepted connections (DB rows)
+        discover: [],       // people for the All tab (DB rows)
+        sentFilter: "all",
+        activeTab: "all",
+        searchSeq: 0,
+        discoverSeq: 0,
+        loaded: false,
+    };
 
     /* =====================================================
-       TOAST
+       SMALL HELPERS
     ===================================================== */
 
-    function showToast(message) {
-        if (!toast) return;
-        toast.textContent = message;
-        toast.classList.add("show");
-        clearTimeout(window.skillshareRequestsToast);
-        window.skillshareRequestsToast = setTimeout(() => {
-            toast.classList.remove("show");
-        }, 3200);
+    function escapeHtml(value) {
+        return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function initialsOf(name) {
+        const parts = String(name || "?").trim().split(/\s+/);
+        return ((parts[0] || "?")[0] +
+            (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+    }
+
+    function avatarHtml(user, extra) {
+        const cls = "avatar" + (extra ? " " + extra : "");
+        const name = user && user.name ? user.name : "?";
+        if (user && user.avatar && String(user.avatar).trim() !== "") {
+            return '<span class="' + cls + '"><img src="' + escapeHtml(user.avatar) +
+                '" alt="" onerror="this.remove()"></span>';
+        }
+        return '<span class="' + cls + '" aria-hidden="true">' +
+            escapeHtml(initialsOf(name)) + "</span>";
+    }
+
+    function formatDate(iso) {
+        if (!iso) return "";
+        try {
+            return new Date(iso).toLocaleDateString(undefined, {
+                month: "short", day: "numeric", year: "numeric",
+            });
+        } catch (e) { return ""; }
+    }
+
+    function chipsHtml(list, limit) {
+        const items = String(list || "").split(",").map(s => s.trim()).filter(Boolean);
+        if (!items.length) return "";
+        const shown = items.slice(0, limit || 4);
+        const rest = items.length - shown.length;
+        return '<div class="chip-row">' +
+            shown.map(s => '<span class="chip skill">' + escapeHtml(s) + "</span>").join("") +
+            (rest > 0 ? '<span class="chip">+' + rest + "</span>" : "") + "</div>";
+    }
+
+    function publicIdLabel(publicId) {
+        const code = publicId ? String(publicId).replace(/^SC-?/i, "") : "";
+        return code
+            ? '<span class="card-idcode">ID: ' + escapeHtml(code) + "</span>"
+            : "";
+    }
+
+    function setBtnLoading(btn, on) {
+        if (!btn) return;
+        if (on) btn.classList.add("loading");
+        else btn.classList.remove("loading");
+    }
+
+    /* Map failures to friendly text; raw detail only for 400/409. */
+    function friendlyError(err) {
+        const status = err && err.status;
+        if (status === 0) return "Cannot reach the server. Check your connection and try again.";
+        if (status === 401) return "Your session has expired. Please log in again.";
+        if (status === 403) return "You don't have permission to do that.";
+        if (status === 404) return "That item no longer exists.";
+        if (status === 409 || status === 400) {
+            return (err && err.detail) ? String(err.detail) : "That action isn't allowed right now.";
+        }
+        if (status === 422) return "The request was invalid. Please try again.";
+        if (status && status >= 500) return "Server error. Please try again in a moment.";
+        return (err && err.detail) ? String(err.detail) : "Something went wrong. Please try again.";
     }
 
     /* =====================================================
-       TAB SYSTEM
+       TOASTS
     ===================================================== */
 
-    tabs.forEach(tab => {
-        tab.addEventListener("click", () => {
-            const target = tab.dataset.tab;
-            if (target) switchTab(target);
-        });
+    function toast(type, title, message) {
+        const el = document.createElement("div");
+        el.className = "toast toast-" + type;
+        el.setAttribute("role", type === "error" ? "alert" : "status");
+        const icon = type === "success" ? "&#10003;" : type === "error" ? "!" : "i";
+        el.innerHTML =
+            '<span class="toast-icon" aria-hidden="true">' + icon + "</span>" +
+            '<div><p class="toast-title">' + escapeHtml(title) + "</p>" +
+            (message ? '<p class="toast-msg">' + escapeHtml(message) + "</p>" : "") + "</div>";
+        toastContainer.appendChild(el);
+        setTimeout(() => {
+            el.classList.add("leaving");
+            el.addEventListener("animationend", () => el.remove(), { once: true });
+        }, 4600);
+    }
+
+    /* =====================================================
+       CONFIRM DIALOG (destructive actions)
+    ===================================================== */
+
+    let confirmResolve = null;
+
+    function confirmDialog(opts) {
+        confirmTitle.textContent = opts.title || "Are you sure?";
+        confirmText.textContent = opts.text || "";
+        confirmOk.textContent = opts.okLabel || "Confirm";
+        confirmModal.hidden = false;
+        confirmCancel.focus();
+        return new Promise((resolve) => { confirmResolve = resolve; });
+    }
+
+    function settleConfirm(result) {
+        if (!confirmModal.hidden) {
+            confirmModal.hidden = true;
+            if (confirmResolve) { confirmResolve(result); confirmResolve = null; }
+        }
+    }
+
+    confirmOk.addEventListener("click", () => settleConfirm(true));
+    confirmCancel.addEventListener("click", () => settleConfirm(false));
+    confirmModal.addEventListener("click", (e) => {
+        if (e.target === confirmModal) settleConfirm(false);
     });
 
-    function switchTab(target) {
-        tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === target));
+
+    /* =====================================================
+       CURRENT USER (from /me - live database row)
+    ===================================================== */
+
+    function renderHeader() {
+        if (!state.me) return;
+        const name = state.me.name || "User";
+        headerUserName.textContent = name;
+        headerAvatar.innerHTML = state.me.avatar_url
+            ? '<img src="' + escapeHtml(state.me.avatar_url) + '" alt="" onerror="this.remove()">'
+            : escapeHtml(initialsOf(name));
+    }
+
+    async function loadMe() {
+        try {
+            const res = await API.getMe();
+            state.me = res && res.user ? res.user : API.getUser();
+        } catch (err) {
+            if (err.status !== 401) {
+                // Fall back to the cached session user (still real data).
+                state.me = API.getUser();
+            }
+        }
+        renderHeader();
+    }
+
+    document.addEventListener("skillshare:auth-expired", () => {
+        toast("error", "Session expired", "Please log in again.");
+        setTimeout(() => { window.location.href = "login.html"; }, 1200);
+    });
+
+    /* =====================================================
+       COUNTERS (real values from the database)
+    ===================================================== */
+
+    function updateCounters() {
+        const incoming = state.requests.filter(
+            r => r.direction === "received" && r.status === "pending"
+        ).length;
+        const sent = state.requests.filter(
+            r => r.direction === "sent" && r.status === "pending"
+        ).length;
+        const connections = state.connections.length;
+
+        counts.incoming.textContent = incoming;
+        counts.sent.textContent = sent;
+        counts.connections.textContent = connections;
+
+        bellCount.textContent = incoming;
+        bellCount.classList.toggle("zero", incoming === 0);
+    }
+
+    /* =====================================================
+       EMPTY STATES + SKELETONS
+    ===================================================== */
+
+    function emptyState(icon, title, hint) {
+        return '<div class="empty-state"><div class="empty-icon" aria-hidden="true">' +
+            icon + "</div><h3>" + escapeHtml(title) + "</h3><p>" +
+            escapeHtml(hint) + "</p></div>";
+    }
+
+    function skeletons(n) {
+        let html = "";
+        for (let i = 0; i < (n || 3); i++) {
+            html += '<div class="card skeleton">' +
+                '<div class="sk-row"><span class="sk sk-avatar"></span>' +
+                '<div class="sk-lines"><span class="sk sk-line" style="width:60%"></span>' +
+                '<span class="sk sk-line short"></span></div></div>' +
+                '<span class="sk sk-line" style="width:80%"></span>' +
+                '<div class="sk-btns"><span class="sk sk-btn"></span><span class="sk sk-btn"></span></div>' +
+                "</div>";
+        }
+        return html;
+    }
+
+    /* =====================================================
+       TABS
+    ===================================================== */
+
+    function switchTab(tabName) {
+        state.activeTab = tabName;
+        tabs.forEach(t => {
+            const active = t.dataset.tab === tabName;
+            t.classList.toggle("active", active);
+            t.setAttribute("aria-selected", active ? "true" : "false");
+        });
         document.querySelectorAll(".tab-panel").forEach(p => {
-            p.classList.toggle("active", p.id === target);
+            p.classList.toggle("active", p.id === "panel-" + tabName);
         });
-        window.history.replaceState(null, "", `#${target}`);
-        if (target === "discover") loadPeople(true);
+        // Lazily load discover people the first time the tab is shown.
+        if (tabName === "all" && !state.discover.length && state.loaded) {
+            loadDiscover();
+        }
     }
 
-    const initialHash = window.location.hash.replace("#", "");
-    if (["incoming", "outgoing", "connections", "discover"].includes(initialHash)) {
-        switchTab(initialHash);
-    }
+    tabs.forEach(t => {
+        t.addEventListener("click", () => switchTab(t.dataset.tab));
+    });
+
+    bellBtn.addEventListener("click", () => switchTab("incoming"));
 
     /* =====================================================
-       HELPERS
+       CORE DATA LOAD (requests + connections from PostgreSQL)
     ===================================================== */
 
-    function timeAgo(value) {
-        if (!value) return "";
-        const date = new Date(value);
-        if (isNaN(date.getTime())) return "";
-        const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-        if (seconds < 60) return "Just now";
-        const minutes = Math.floor(seconds / 60);
-        if (minutes < 60) return `${minutes}m ago`;
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `${hours}h ago`;
-        const days = Math.floor(hours / 24);
-        if (days <= 1) return "Yesterday";
-        if (days < 30) return `${days}d ago`;
-        return date.toLocaleDateString();
+    async function loadData(withSkeletons) {
+        if (withSkeletons) {
+            grids.incoming.innerHTML = skeletons(3);
+            grids.sent.innerHTML = skeletons(3);
+            grids.connections.innerHTML = skeletons(3);
+        }
+        try {
+            const [reqRes, connRes] = await Promise.all([
+                API.listRequests(),
+                API.getConnections(),
+            ]);
+            state.requests = (reqRes && reqRes.requests) || [];
+            state.connections = (connRes && connRes.connections) || [];
+            state.loaded = true;
+            renderIncoming();
+            renderSent();
+            renderConnections();
+            updateCounters();
+            if (state.activeTab === "all" && !state.discover.length) {
+                loadDiscover();
+            }
+        } catch (err) {
+            if (err.status !== 401) {
+                toast("error", "Could not load your data", friendlyError(err));
+                [grids.incoming, grids.sent, grids.connections].forEach(g => {
+                    g.innerHTML = emptyState("&#9888;", "Couldn't load", friendlyError(err));
+                });
+            }
+        }
     }
 
-    function skillList(user) {
-        if (!user) return [];
-        const raw = user.skills || user.interests || "";
-        return String(raw)
-            .split(",")
-            .map(s => s.trim())
-            .filter(Boolean)
-            .slice(0, 4);
-    }
-
-    function publicIdText(user) {
-        return (user && user.public_id) ? `ID: ${user.public_id}` : "ID: —";
-    }
+    refreshBtn.addEventListener("click", async () => {
+        refreshBtn.classList.add("spinning");
+        await Promise.all([loadData(false), loadDiscover(true)]);
+        refreshBtn.classList.remove("spinning");
+        toast("info", "Refreshed", "Latest data loaded from the server.");
+    });
 
     /* =====================================================
-       FILTERED LISTS (from PostgreSQL responses)
+       CARD RENDERERS (all data = real DB records)
     ===================================================== */
 
-    function incomingRequests() {
-        return allRequests.filter(r => r.direction === "received" && r.status === "pending");
+    function profileBtnHtml(userId) {
+        return '<button type="button" class="btn btn-ghost" data-act="profile" ' +
+            'data-user-id="' + userId + '">View Profile</button>';
     }
 
-    function outgoingRequests() {
-        return allRequests.filter(r => r.direction === "sent" && r.status === "pending");
-    }
+    /* One card per relationship state (spec #7). */
+    function personCard(user) {
+        const rel = (user && user.relationship) || { relationship: "none" };
+        let actions = "";
+        let pill = "";
 
-    function pastRequests() {
-        return allRequests.filter(r => r.status !== "pending");
-    }
-
-    /* =====================================================
-       CARD BUILDERS
-    ===================================================== */
-
-    function makeButton(label, className, onClick) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = className;
-        button.textContent = label;
-        if (onClick) button.addEventListener("click", onClick);
-        return button;
-    }
-
-    function statusLabel(status) {
-        return {
-            accepted: "Accepted",
-            rejected: "Declined",
-            cancelled: "Cancelled",
-        }[status] || status;
-    }
-
-    function emptyCard(title, text, actionLabel, onAction) {
-        const article = document.createElement("article");
-        article.className = "empty card";
-        const icon = document.createElement("div");
-        icon.className = "empty-icon";
-        icon.textContent = "✓";
-        const h2 = document.createElement("h2");
-        h2.textContent = title;
-        const p = document.createElement("p");
-        p.textContent = text;
-        article.append(icon, h2, p);
-        if (actionLabel && onAction) {
-            article.appendChild(makeButton(actionLabel, "small primary empty-action", onAction));
-        }
-        return article;
-    }
-
-    /* Request card: real rows from GET /api/requests */
-    function buildCard(request) {
-        const otherUser = request.direction === "received"
-            ? request.sender
-            : request.receiver;
-        const name = otherUser ? otherUser.name : "SkillShare user";
-
-        const article = document.createElement("article");
-        article.className = "card request";
-        article.dataset.requestId = request.id;
-
-        const img = document.createElement("img");
-        img.className = "req-avatar";
-        img.src = (otherUser && otherUser.avatar) || "assets/avatar1.svg";
-        img.alt = name;
-        img.onerror = () => { img.src = "assets/avatar1.svg"; };
-        article.appendChild(img);
-
-        const info = document.createElement("div");
-        info.className = "req-info";
-
-        const heading = document.createElement("h2");
-        heading.textContent = request.direction === "received"
-            ? `${name} wants to connect`
-            : `Request sent to ${name}`;
-        info.appendChild(heading);
-
-        const idLine = document.createElement("p");
-        idLine.className = "req-user-id";
-        idLine.textContent = publicIdText(otherUser);
-        info.appendChild(idLine);
-
-        /* Skill chips: request skill + the other user's real DB skills */
-        const chipsData = [];
-        if (request.skill) chipsData.push(request.skill);
-        skillList(otherUser).forEach(skill => chipsData.push(skill));
-        if (chipsData.length) {
-            const chips = document.createElement("div");
-            chips.className = "req-chips";
-            chipsData.forEach(chipText => {
-                const chip = document.createElement("span");
-                chip.className = "req-chip";
-                chip.textContent = chipText;
-                chips.appendChild(chip);
-            });
-            info.appendChild(chips);
-        }
-
-        const quoteParts = [];
-        if (request.message) quoteParts.push("“" + request.message + "”");
-        if (otherUser && otherUser.bio) quoteParts.push(otherUser.bio);
-        if (quoteParts.length) {
-            const message = document.createElement("p");
-            message.className = "req-quote";
-            message.textContent = quoteParts.join(" — ");
-            info.appendChild(message);
-        }
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = `Requested ${timeAgo(request.created_at)}`;
-        info.appendChild(meta);
-
-        article.appendChild(info);
-
-        if (request.status === "pending" && request.direction === "received") {
-            const actions = document.createElement("div");
-            actions.className = "request-actions";
-            actions.appendChild(makeButton("Accept", "small primary accept-btn", () => handleAccept(request.id)));
-            actions.appendChild(makeButton("Decline", "small outline decline-btn", () => handleReject(request.id)));
-            article.appendChild(actions);
-        } else if (request.status === "pending" && request.direction === "sent") {
-            const actions = document.createElement("div");
-            actions.className = "request-actions";
-            actions.appendChild(makeButton("Cancel", "small outline cancel-btn", () => handleCancel(request.id)));
-            article.appendChild(actions);
-
-            const status = document.createElement("span");
-            status.className = "status";
-            status.textContent = "Pending";
-            article.appendChild(status);
+        if (rel.relationship === "self") {
+            pill = '<span class="rel-pill self">This is you</span>';
+            actions = '<button type="button" class="btn btn-ghost" disabled>This is you</button>';
+        } else if (rel.relationship === "connected") {
+            pill = '<span class="rel-pill connected">Connected &#10003;</span>';
+            actions =
+                '<button type="button" class="btn btn-ghost" data-act="profile" data-user-id="' +
+                user.id + '">View Profile</button>' +
+                '<a class="btn btn-primary" href="messages.html?user=' + user.id + '">Message</a>';
+        } else if (rel.relationship === "pending") {
+            pill = '<span class="rel-pill pending">Pending</span>';
+            if (rel.direction === "sent") {
+                actions =
+                    '<button type="button" class="btn btn-success" disabled>Request Sent &#10003;</button>' +
+                    '<button type="button" class="btn btn-danger" data-act="cancel" data-request-id="' +
+                    rel.request_id + '">Cancel</button>';
+            } else {
+                actions =
+                    '<button type="button" class="btn btn-success" data-act="accept" data-request-id="' +
+                    rel.request_id + '">Accept</button>' +
+                    '<button type="button" class="btn btn-danger" data-act="decline" data-request-id="' +
+                    rel.request_id + '">Decline</button>';
+            }
         } else {
-            const status = document.createElement("span");
-            status.className = "status";
-            status.textContent = statusLabel(request.status);
-            article.appendChild(status);
+            pill = '<span class="rel-pill none">Not connected</span>';
+            actions = '<button type="button" class="btn btn-primary" data-act="connect" ' +
+                'data-user-id="' + user.id + '">Connect</button>' + profileBtnHtml(user.id);
         }
 
-        return article;
+        return '<article class="card" data-user-card="' + user.id + '">' +
+            '<div class="card-top">' + avatarHtml(user) +
+            '<div style="min-width:0">' +
+            '<h3 class="card-name"><span>' + escapeHtml(user.name) + "</span>" + pill + "</h3>" +
+            '<span class="card-sub">ID: <span class="card-idcode">' +
+            escapeHtml(String(user.public_id || "").replace(/^SC-?/i, "")) +
+            "</span></span></div></div>" +
+            (user.bio ? '<p class="card-bio">' + escapeHtml(user.bio) + "</p>" : "") +
+            chipsHtml(user.skills) +
+            '<div class="card-actions">' + actions + "</div></article>";
     }
 
-    /* Connection card: real accepted connections from PostgreSQL */
-    function buildConnectionCard(connection) {
-        const user = connection.user || {};
-        const name = user.name || "SkillShare user";
+    function requestCard(req, kind) {
+        const other = kind === "incoming" ? req.sender : req.receiver;
+        const date = formatDate(req.created_at);
+        let badge = "";
+        let actions = "";
 
-        const article = document.createElement("article");
-        article.className = "card request";
-
-        const img = document.createElement("img");
-        img.className = "req-avatar";
-        img.src = user.avatar || "assets/avatar1.svg";
-        img.alt = name;
-        img.onerror = () => { img.src = "assets/avatar1.svg"; };
-        article.appendChild(img);
-
-        const info = document.createElement("div");
-        info.className = "req-info";
-
-        const heading = document.createElement("h2");
-        heading.textContent = name;
-        info.appendChild(heading);
-
-        const idLine = document.createElement("p");
-        idLine.className = "req-user-id";
-        idLine.textContent = publicIdText(user);
-        info.appendChild(idLine);
-
-        const skills = skillList(user);
-        if (skills.length) {
-            const chips = document.createElement("div");
-            chips.className = "req-chips";
-            skills.forEach(skillText => {
-                const chip = document.createElement("span");
-                chip.className = "req-chip";
-                chip.textContent = skillText;
-                chips.appendChild(chip);
-            });
-            info.appendChild(chips);
-        }
-
-        if (user.bio) {
-            const bio = document.createElement("p");
-            bio.className = "req-quote";
-            bio.textContent = user.bio;
-            info.appendChild(bio);
-        }
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = connection.connected_since
-            ? `Connected ${timeAgo(connection.connected_since)}`
-            : "Connected";
-        info.appendChild(meta);
-
-        article.appendChild(info);
-
-        const actions = document.createElement("div");
-        actions.className = "request-actions";
-
-        const messageBtn = makeButton("Message", "small primary message-btn", () => {
-            window.location.href = `messages.html?user=${user.id}`;
-        });
-        messageBtn.disabled = !connection.conversation_id;
-        actions.appendChild(messageBtn);
-
-        const profileBtn = makeButton("View Profile", "small outline profile-btn", () => {
-            window.location.href = `profile.html?id=${user.id}`;
-        });
-        actions.appendChild(profileBtn);
-
-        article.appendChild(actions);
-        return article;
-    }
-
-    /* Person card for the Find People tab (real DB users) */
-    function buildPersonCard(user, relationship) {
-        const name = user.name || "SkillShare user";
-        const rel = relationship || {};
-
-        const article = document.createElement("article");
-        article.className = "card request";
-        article.dataset.userId = user.id;
-
-        const img = document.createElement("img");
-        img.className = "req-avatar";
-        img.src = user.avatar || "assets/avatar1.svg";
-        img.alt = name;
-        img.onerror = () => { img.src = "assets/avatar1.svg"; };
-        article.appendChild(img);
-
-        const info = document.createElement("div");
-        info.className = "req-info";
-
-        const headingRow = document.createElement("div");
-        headingRow.className = "req-name-row";
-        const heading = document.createElement("h2");
-        heading.textContent = name;
-        headingRow.appendChild(heading);
-
-        if (rel.connected) {
-            const pill = document.createElement("span");
-            pill.className = "req-pill connected";
-            pill.textContent = "✓ Connected";
-            headingRow.appendChild(pill);
-        } else if (rel.pending_direction) {
-            const pill = document.createElement("span");
-            pill.className = "req-pill pending";
-            pill.textContent = rel.pending_direction === "sent"
-                ? "Request Pending"
-                : "Sent you a request";
-            headingRow.appendChild(pill);
-        }
-        info.appendChild(headingRow);
-
-        const idLine = document.createElement("p");
-        idLine.className = "req-user-id";
-        idLine.textContent = publicIdText(user);
-        info.appendChild(idLine);
-
-        const skills = skillList(user);
-        if (skills.length) {
-            const chips = document.createElement("div");
-            chips.className = "req-chips";
-            skills.forEach(skillText => {
-                const chip = document.createElement("span");
-                chip.className = "req-chip";
-                chip.textContent = skillText;
-                chips.appendChild(chip);
-            });
-            info.appendChild(chips);
-        }
-
-        if (user.bio) {
-            const bio = document.createElement("p");
-            bio.className = "req-quote";
-            bio.textContent = user.bio;
-            info.appendChild(bio);
-        }
-
-        article.appendChild(info);
-
-        const actions = document.createElement("div");
-        actions.className = "request-actions";
-
-        if (rel.connected) {
-            const messageBtn = makeButton("Message", "small primary", () => {
-                window.location.href = `messages.html?user=${user.id}`;
-            });
-            actions.appendChild(messageBtn);
-        } else if (rel.pending_direction === "sent") {
-            const pending = makeButton("Pending...", "small outline");
-            pending.disabled = true;
-            actions.appendChild(pending);
-        } else if (rel.pending_direction === "received") {
-            const respond = makeButton("Respond in Received", "small outline", () => switchTab("incoming"));
-            actions.appendChild(respond);
+        if (kind === "incoming") {
+            actions =
+                '<button type="button" class="btn btn-success" data-act="accept" data-request-id="' +
+                req.id + '">Accept</button>' +
+                '<button type="button" class="btn btn-danger" data-act="decline" data-request-id="' +
+                req.id + '">Decline</button>' +
+                profileBtnHtml(other ? other.id : "");
         } else {
-            actions.appendChild(
-                makeButton("Send Request", "small primary send-request-btn", event => handleSendRequest(user, event.currentTarget))
-            );
+            badge = '<span class="status-badge ' + escapeHtml(req.status) + '">' +
+                escapeHtml(req.status) + "</span>";
+            if (req.status === "pending") {
+                actions = '<button type="button" class="btn btn-danger" data-act="cancel" ' +
+                    'data-request-id="' + req.id + '">Cancel Request</button>' +
+                    profileBtnHtml(other ? other.id : "");
+            } else {
+                actions = profileBtnHtml(other ? other.id : "");
+            }
         }
 
-        const profileBtn = makeButton("View Profile", "small outline profile-btn", () => {
-            window.location.href = `profile.html?id=${user.id}`;
-        });
-        actions.appendChild(profileBtn);
+        return '<article class="card">' +
+            '<div class="card-top">' + avatarHtml(other || {}) +
+            '<div style="min-width:0">' +
+            '<h3 class="card-name"><span>' + escapeHtml(other ? other.name : "Unknown user") +
+            "</span>" + (badge || pillForIncoming(req.status)) + "</h3>" +
+            '<span class="card-sub">ID: <span class="card-idcode">' +
+            escapeHtml(String((other && other.public_id) || "").replace(/^SC-?/i, "")) +
+            "</span></span></div></div>" +
+            (other && other.bio ? '<p class="card-bio">' + escapeHtml(other.bio) + "</p>" : "") +
+            chipsHtml(other && other.skills) +
+            (req.message ? '<p class="req-message">&ldquo;' + escapeHtml(req.message) + '&rdquo;</p>' : "") +
+            '<div class="card-meta"><span>' + (kind === "incoming" ? "Received" : "Sent") +
+            " " + escapeHtml(date) + "</span></div>" +
+            '<div class="card-actions">' + actions + "</div></article>";
+    }
 
-        article.appendChild(actions);
-        return article;
+    function pillForIncoming(status) {
+        return status === "pending"
+            ? '<span class="status-badge pending">pending</span>'
+            : '<span class="status-badge ' + escapeHtml(status) + '">' +
+              escapeHtml(status) + "</span>";
+    }
+
+    function connectionCard(conn) {
+        const u = conn.user || {};
+        const convId = conn.conversation_id;
+        return '<article class="card">' +
+            '<div class="card-top">' + avatarHtml(u) +
+            '<div style="min-width:0">' +
+            '<h3 class="card-name"><span>' + escapeHtml(u.name || "Unknown") + "</span>" +
+            '<span class="rel-pill connected">Connected &#10003;</span></h3>' +
+            '<span class="card-sub">ID: <span class="card-idcode">' +
+            escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")) +
+            "</span></span></div></div>" +
+            (u.bio ? '<p class="card-bio">' + escapeHtml(u.bio) + "</p>" : "") +
+            chipsHtml(u.skills) +
+            (conn.connected_since
+                ? '<div class="card-meta">Connected since ' +
+                  escapeHtml(formatDate(conn.connected_since)) + "</div>"
+                : "") +
+            '<div class="card-actions">' +
+            profileBtnHtml(u.id) +
+            '<a class="btn btn-primary" href="messages.html' +
+            (convId ? "?user=" + u.id : "") + '">Message</a>' +
+            "</div></article>";
     }
 
     /* =====================================================
        PANEL RENDERING
     ===================================================== */
 
-    function showLoading(panel, label) {
-        if (!panel) return;
-        panel.innerHTML = "";
-        const loading = document.createElement("div");
-        loading.className = "req-loading";
-        loading.textContent = label || "Loading...";
-        panel.appendChild(loading);
+    function renderIncoming() {
+        const rows = state.requests.filter(
+            r => r.direction === "received" && r.status === "pending"
+        );
+        grids.incoming.innerHTML = rows.length
+            ? rows.map(r => requestCard(r, "incoming")).join("")
+            : emptyState("&#128230;", "You're all caught up",
+                "No incoming connection requests right now. When someone sends you a request it will appear here.");
     }
 
-    function renderPanels() {
-        const incoming = incomingRequests();
-        const outgoing = outgoingRequests();
-        const past = pastRequests();
-
-        if (incomingPanel) {
-            incomingPanel.innerHTML = "";
-            if (incoming.length) {
-                incoming.forEach(r => incomingPanel.appendChild(buildCard(r)));
-            } else {
-                incomingPanel.appendChild(
-                    emptyCard("No incoming requests",
-                        "When someone sends you a request it will appear here.",
-                        "Invite someone →", () => switchTab("discover"))
-                );
-            }
-        }
-
-        if (outgoingPanel) {
-            outgoingPanel.innerHTML = "";
-            if (outgoing.length) {
-                outgoing.forEach(r => outgoingPanel.appendChild(buildCard(r)));
-            } else {
-                outgoingPanel.appendChild(
-                    emptyCard("No sent requests",
-                        "Find someone below and send your first request.",
-                        "＋ Find People", () => switchTab("discover"))
-                );
-            }
-        }
-
-        if (connectionsPanel) {
-            connectionsPanel.innerHTML = "";
-            if (allConnections.length) {
-                allConnections.forEach(c => connectionsPanel.appendChild(buildConnectionCard(c)));
-            } else {
-                connectionsPanel.appendChild(
-                    emptyCard("No connections yet",
-                        "Accept a request to build your first connection — or invite someone yourself.",
-                        "＋ Find People", () => switchTab("discover"))
-                );
-            }
-        }
-
-        updateCounters();
-        syncBellCount();
+    function renderSent() {
+        const rows = state.requests.filter(r => r.direction === "sent")
+            .filter(r => state.sentFilter === "all" || r.status === state.sentFilter);
+        grids.sent.innerHTML = rows.length
+            ? rows.map(r => requestCard(r, "sent")).join("")
+            : emptyState("&#128140;", state.sentFilter === "all"
+                ? "You're all caught up"
+                : "No " + state.sentFilter + " requests",
+                state.sentFilter === "all"
+                    ? "You haven't sent any connection requests yet. Use the search above to find people."
+                    : "No requests with this status. Switch filters to see more.");
     }
 
-    function updateCounters() {
-        tabs.forEach(tab => {
-            const span = tab.querySelector("span");
-            if (!span) return;
-            if (tab.dataset.tab === "incoming") span.textContent = incomingRequests().length;
-            if (tab.dataset.tab === "outgoing") span.textContent = outgoingRequests().length;
-            if (tab.dataset.tab === "connections") span.textContent = allConnections.length;
+    function renderConnections() {
+        grids.connections.innerHTML = state.connections.length
+            ? state.connections.map(connectionCard).join("")
+            : emptyState("&#129309;", "You're all caught up",
+                "No connections yet. Accept a request or send one to start building your network.");
+    }
+
+    /* Real status filtering (on DB-fetched data, never fake). */
+    function buildSentFilters() {
+        const wrap = document.createElement("div");
+        wrap.className = "filter-chips";
+        wrap.setAttribute("role", "group");
+        wrap.setAttribute("aria-label", "Filter sent requests by status");
+        const options = ["all", "pending", "accepted", "rejected", "cancelled"];
+        wrap.innerHTML = options.map(o =>
+            '<button type="button" class="filter-chip" data-filter="' + o + '">' +
+            (o === "all" ? "All" : o.charAt(0).toUpperCase() + o.slice(1)) +
+            "</button>").join("");
+        sentPanelHead.appendChild(wrap);
+        wrap.addEventListener("click", (e) => {
+            const chip = e.target.closest(".filter-chip");
+            if (!chip) return;
+            state.sentFilter = chip.dataset.filter;
+            wrap.querySelectorAll(".filter-chip").forEach(c =>
+                c.classList.toggle("active", c === chip));
+            renderSent();
         });
+        wrap.querySelector('[data-filter="all"]').classList.add("active");
     }
 
     /* =====================================================
-       LOAD DATA FROM API (PostgreSQL)
+       ACTIONS (event delegation on every grid)
     ===================================================== */
 
-    async function loadRequests() {
-        showLoading(incomingPanel);
-        try {
-            const data = await window.SkillShareAPI.listRequests();
-            allRequests = (data && data.requests) || [];
-            renderPanels();
-        } catch (error) {
-            if (error && error.status === 401) {
-                showToast("Your session has expired. Please log in again.");
-                setTimeout(() => { window.location.href = "login.html"; }, 1200);
-                return;
+    async function handleAction(btn) {
+        const act = btn.dataset.act;
+        if (btn.classList.contains("loading") || btn.disabled) return;
+
+        /* --- Connect: sender is derived from the JWT server-side;
+           the frontend only ever sends the receiver id. --- */
+        if (act === "connect") {
+            const userId = btn.dataset.userId;
+            const toName = nameOf(btn);
+            setBtnLoading(btn, true);
+            try {
+                await API.sendRequest(userId);
+                btn.outerHTML =
+                    '<button type="button" class="btn btn-success" disabled>Request Sent &#10003;</button>';
+                toast("success", "Request sent", "Connection request sent" + toName + ".");
+                await loadData(false);
+            } catch (err) {
+                setBtnLoading(btn, false);
+                if (err.status !== 401) {
+                    toast("error", "Couldn't send request", friendlyError(err));
+                }
             }
-            showToast(error && error.detail
-                ? error.detail
-                : "Unable to load requests. Please try again.");
-            if (incomingPanel) {
-                incomingPanel.innerHTML = "";
-                incomingPanel.appendChild(
-                    emptyCard("Could not load requests", "Please try again later.")
-                );
-            }
-        }
-    }
-
-    async function loadConnections() {
-        try {
-            const data = await window.SkillShareAPI.getConnections();
-            allConnections = (data && data.connections) || [];
-            renderPanels();
-        } catch (error) {
-            if (error && error.status === 401) return;
-            if (connectionsPanel) {
-                connectionsPanel.innerHTML = "";
-                connectionsPanel.appendChild(
-                    emptyCard("Could not load connections", "Please try again later.")
-                );
-            }
-        }
-    }
-
-    /* Real notification badge: received pending requests + unread messages. */
-    async function syncBellCount() {
-        try {
-            const [convData] = await Promise.all([
-                window.SkillShareAPI.getConversations(),
-            ]);
-            const unread = ((convData && convData.conversations) || [])
-                .reduce((sum, c) => sum + (c.unread_count || 0), 0);
-            const bell = document.getElementById("bellCount");
-            if (bell) {
-                bell.textContent = incomingRequests().length + unread;
-                bell.style.display = (incomingRequests().length + unread) ? "" : "none";
-            }
-        } catch (error) {
-            /* Keep the badge hidden if the backend is unreachable. */
-        }
-    }
-
-    /* =====================================================
-       FIND PEOPLE — server-side search with live suggestions
-    ===================================================== */
-
-    const suggestionsEl = document.getElementById("peopleSuggestions");
-    const clearBtn = document.getElementById("peopleSearchClear");
-    let activeSuggestion = -1;
-
-    function hideSuggestions() {
-        if (suggestionsEl) suggestionsEl.classList.remove("show");
-        activeSuggestion = -1;
-    }
-
-    function updateRelationshipSets() {
-        connectedIds = new Set(allConnections.map(c => c.user && String(c.user.id)));
-        pendingSentIds = new Set(
-            allRequests
-                .filter(r => r.status === "pending" && r.direction === "sent")
-                .map(r => r.receiver && String(r.receiver.id))
-        );
-        pendingReceivedIds = new Set(
-            allRequests
-                .filter(r => r.status === "pending" && r.direction === "received")
-                .map(r => r.sender && String(r.sender.id))
-        );
-    }
-
-    function relationshipForUser(user) {
-        const id = String(user.id);
-        return {
-            connected: connectedIds.has(id),
-            pending_direction: pendingSentIds.has(id)
-                ? "sent"
-                : pendingReceivedIds.has(id) ? "received" : null,
-        };
-    }
-
-    /* Dropdown of matching people under the search box. */
-    function renderSuggestions(users) {
-        if (!suggestionsEl) return;
-        suggestionsEl.innerHTML = "";
-
-        if (!users.length) {
-            suggestionsEl.classList.remove("show");
             return;
         }
 
-        users.slice(0, 8).forEach((user, index) => {
-            const rel = relationshipForUser(user);
-            const item = document.createElement("button");
-            item.type = "button";
-            item.className = "suggestion-item" + (index === activeSuggestion ? " active" : "");
-            item.dataset.index = String(index);
-
-            const img = document.createElement("img");
-            img.className = "suggestion-avatar";
-            img.src = user.avatar || "assets/avatar1.svg";
-            img.alt = user.name || "";
-            img.onerror = () => { img.src = "assets/avatar1.svg"; };
-
-            const info = document.createElement("span");
-            info.className = "suggestion-info";
-            const name = document.createElement("strong");
-            name.textContent = user.name || "SkillShare user";
-            const skills = document.createElement("small");
-            const skillParts = skillList(user).join(" · ");
-            skills.textContent = [
-                skillParts || "Member",
-                user.public_id ? `ID: ${user.public_id}` : null,
-            ].filter(Boolean).join(" · ");
-            info.append(name, skills);
-
-            const action = document.createElement("span");
-            action.className = "suggestion-action";
-
-            if (rel.connected) {
-                action.className = "suggestion-action pill connected";
-                action.textContent = "✓ Connected";
-            } else if (rel.pending_direction === "sent") {
-                action.className = "suggestion-action pill pending";
-                action.textContent = "Pending";
-            } else if (rel.pending_direction === "received") {
-                action.className = "suggestion-action pill received";
-                action.textContent = "Sent you one";
-            } else {
-                const send = document.createElement("button");
-                send.type = "button";
-                send.className = "suggestion-send";
-                send.textContent = "＋ Request";
-                send.addEventListener("click", (event) => {
-                    event.stopPropagation();
-                    handleSendRequest(user, send);
-                });
-                action.appendChild(send);
+        if (act === "accept") {
+            setBtnLoading(btn, true);
+            try {
+                const res = await API.acceptRequest(btn.dataset.requestId);
+                const other = res && res.request && res.request.sender;
+                toast("success", "Request accepted",
+                    (other && other.name ? other.name + " is now" : "You're now") +
+                    " connected with you.");
+                await loadData(false);
+            } catch (err) {
+                setBtnLoading(btn, false);
+                if (err.status !== 401) {
+                    toast("error", "Couldn't accept request", friendlyError(err));
+                }
             }
+            return;
+        }
 
-            item.append(img, info, action);
+        if (act === "decline") {
+            setBtnLoading(btn, true);
+            try {
+                await API.rejectRequest(btn.dataset.requestId);
+                toast("info", "Request declined", "The request was removed from your list.");
+                await loadData(false);
+            } catch (err) {
+                setBtnLoading(btn, false);
+                if (err.status !== 401) {
+                    toast("error", "Couldn't decline request", friendlyError(err));
+                }
+            }
+            return;
+        }
 
-            /* Clicking the row selects the person and shows their card. */
-            item.addEventListener("click", () => {
-                if (peopleSearch) peopleSearch.value = user.name || "";
-                hideSuggestions();
-                loadPeople(true);
+        if (act === "cancel") {
+            const ok = await confirmDialog({
+                title: "Cancel this request?",
+                text: "The other person will no longer see your pending request.",
+                okLabel: "Cancel Request",
             });
-
-            suggestionsEl.appendChild(item);
-        });
-
-        suggestionsEl.classList.add("show");
-    }
-
-    async function loadPeople(showLoadingState) {
-        if (!peopleResults) return;
-        if (showLoadingState) showLoading(peopleResults, "Loading people...");
-        try {
-            const term = peopleSearch ? peopleSearch.value.trim() : "";
-            const data = term
-                ? await window.SkillShareAPI.searchUsers(term)
-                : await window.SkillShareAPI.listUsers();
-            const users = (data && data.users) || [];
-
-            updateRelationshipSets();
-            renderSuggestions(users);
-            if (clearBtn) clearBtn.style.display = term ? "" : "none";
-
-            peopleResults.innerHTML = "";
-            if (!users.length) {
-                peopleResults.appendChild(
-                    emptyCard("No people found", term
-                        ? `Nobody matches that name or skill. Try another search.`
-                        : "No other members have signed up yet.")
-                );
-                return;
+            if (!ok) return;
+            setBtnLoading(btn, true);
+            try {
+                await API.cancelRequest(btn.dataset.requestId);
+                toast("success", "Request cancelled", "The pending request was withdrawn.");
+                await loadData(false);
+            } catch (err) {
+                setBtnLoading(btn, false);
+                if (err.status !== 401) {
+                    toast("error", "Couldn't cancel request", friendlyError(err));
+                }
             }
+            return;
+        }
 
-            users.forEach(user => {
-                peopleResults.appendChild(buildPersonCard(user, relationshipForUser(user)));
-            });
-        } catch (error) {
-            if (error && error.status === 401) {
-                showToast("Your session has expired. Please log in again.");
-                setTimeout(() => { window.location.href = "login.html"; }, 1200);
-                return;
-            }
-            if (peopleResults) {
-                peopleResults.innerHTML = "";
-                peopleResults.appendChild(
-                    emptyCard("Could not load people", "Please make sure the backend is running.")
-                );
-            }
-            console.error("Find People error:", error);
+        if (act === "profile") {
+            openProfile(btn.dataset.userId);
         }
     }
 
-    function runPeopleSearch() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => loadPeople(true), 180);
+    function nameOf(btn) {
+        const card = btn.closest(".card");
+        const nameEl = card && card.querySelector(".card-name span");
+        return nameEl ? " to " + nameEl.textContent : "";
     }
 
-    if (peopleSearch) {
-        peopleSearch.addEventListener("input", runPeopleSearch);
-
-        /* Keyboard navigation for the suggestions dropdown. */
-        peopleSearch.addEventListener("keydown", (event) => {
-            const items = suggestionsEl ? suggestionsEl.querySelectorAll(".suggestion-item") : [];
-            if (!items.length) return;
-
-            if (event.key === "ArrowDown") {
-                event.preventDefault();
-                activeSuggestion = (activeSuggestion + 1) % items.length;
-            } else if (event.key === "ArrowUp") {
-                event.preventDefault();
-                activeSuggestion = (activeSuggestion - 1 + items.length) % items.length;
-            } else if (event.key === "Enter" && activeSuggestion >= 0) {
-                event.preventDefault();
-                items[activeSuggestion].click();
-                return;
-            } else if (event.key === "Escape") {
-                hideSuggestions();
-                return;
-            } else {
-                return;
-            }
-
-            items.forEach((item, index) => {
-                item.classList.toggle("active", index === activeSuggestion);
-            });
+    [grids.all, grids.incoming, grids.sent, grids.connections].forEach(grid => {
+        grid.addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-act]");
+            if (btn && !btn.disabled && btn.tagName === "BUTTON") handleAction(btn);
         });
-
-        peopleSearch.addEventListener("blur", () => {
-            setTimeout(hideSuggestions, 150);
-        });
-        peopleSearch.addEventListener("focus", () => {
-            if (suggestionsEl && suggestionsEl.children.length) {
-                suggestionsEl.classList.add("show");
-            }
-        });
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener("click", () => {
-            if (peopleSearch) peopleSearch.value = "";
-            hideSuggestions();
-            loadPeople(true);
-            peopleSearch.focus();
-        });
-    }
-
-    /* Header quick actions: Find People + Refresh */
-    const findPeopleBtn = document.getElementById("findPeopleBtn");
-    if (findPeopleBtn) {
-        findPeopleBtn.addEventListener("click", () => switchTab("discover"));
-    }
-
-    const refreshBtn = document.getElementById("refreshBtn");
-    if (refreshBtn) {
-        refreshBtn.addEventListener("click", async () => {
-            refreshBtn.disabled = true;
-            refreshBtn.textContent = "Refreshing...";
-            await Promise.all([loadRequests(), loadConnections()]);
-            refreshBtn.disabled = false;
-            refreshBtn.textContent = "⟳ Refresh";
-            showToast("Up to date.");
-        });
-    }
-
-    /* =====================================================
-       ACTIONS
-    ===================================================== */
-
-    function setBusy(card, busy, label) {
-        if (!card) return;
-        const actions = card.querySelector(".request-actions");
-        if (!actions) return;
-        actions.querySelectorAll("button").forEach(button => {
-            button.disabled = busy;
-            if (busy && button.classList.contains("accept-btn")) {
-                button.textContent = label;
-            }
-        });
-    }
-
-    async function handleAccept(id) {
-        const card = document.querySelector(`[data-request-id="${id}"]`);
-        setBusy(card, true, "Accepting...");
-        try {
-            const result = await window.SkillShareAPI.acceptRequest(id);
-            const who = result && result.request && result.request.sender
-                ? result.request.sender.name
-                : "them";
-            showToast(`You're now connected with ${who}! You can start chatting in Messages.`);
-            await Promise.all([loadRequests(), loadConnections()]);
-        } catch (error) {
-            setBusy(card, false, "Accept");
-            showToast(error && error.detail
-                ? error.detail
-                : "Unable to accept the request. Please try again.");
-        }
-    }
-
-    async function handleReject(id) {
-        const card = document.querySelector(`[data-request-id="${id}"]`);
-        setBusy(card, true, "Declining...");
-        try {
-            await window.SkillShareAPI.rejectRequest(id);
-            showToast("Request declined.");
-            await loadRequests();
-        } catch (error) {
-            setBusy(card, false, "Decline");
-            showToast(error && error.detail
-                ? error.detail
-                : "Unable to decline the request. Please try again.");
-        }
-    }
-
-    async function handleCancel(id) {
-        const card = document.querySelector(`[data-request-id="${id}"]`);
-        setBusy(card, true, "Cancelling...");
-        try {
-            await window.SkillShareAPI.cancelRequest(id);
-            showToast("Request cancelled.");
-            await loadRequests();
-        } catch (error) {
-            setBusy(card, false, "Cancel");
-            showToast(error && error.detail
-                ? error.detail
-                : "Unable to cancel the request. Please try again.");
-        }
-    }
-
-    async function handleSendRequest(user, button) {
-        if (!button) return;
-        button.disabled = true;
-        button.textContent = "Sending...";
-        try {
-            await window.SkillShareAPI.sendRequest(
-                user.id,
-                "I'd love to connect and learn together!",
-                null,
-                null
-            );
-            button.classList.add("sent");
-            button.textContent = "Request Sent ✓";
-            showToast(`Request sent to ${user.name || "them"}. They will see it in their Received tab.`);
-            /* Refresh the Sent tab in the background. The Find People
-               cards are not re-rendered, so button state is kept. */
-            await loadRequests();
-        } catch (error) {
-            button.disabled = false;
-            button.textContent = "Send Request";
-            showToast(error && error.detail
-                ? error.detail
-                : "Unable to send the request. Please try again.");
-        }
-    }
-
-    /* =====================================================
-       AUTH EXPIRED GLOBAL
-    ===================================================== */
-
-    document.addEventListener("skillshare:auth-expired", () => {
-        showToast("Your session has expired. Please log in again.");
-        setTimeout(() => { window.location.href = "login.html"; }, 1200);
     });
 
     /* =====================================================
-       INITIALIZE
+       SEARCH (debounced, against PostgreSQL via /api/users/search)
     ===================================================== */
 
-    loadRequests();
-    loadConnections();
+    function searchItemHtml(u) {
+        const rel = (u && u.relationship) || { relationship: "none" };
+        let pill = '<span class="rel-pill none">Not connected</span>';
+        if (rel.relationship === "self") pill = '<span class="rel-pill self">This is you</span>';
+        else if (rel.relationship === "connected") {
+            pill = '<span class="rel-pill connected">Connected</span>';
+        } else if (rel.relationship === "pending") {
+            pill = '<span class="rel-pill pending">' +
+                (rel.direction === "sent" ? "Request sent" : "Wants to connect") + "</span>";
+        }
+        const skills = String(u.skills || "").split(",").map(s => s.trim())
+            .filter(Boolean).slice(0, 2).join(" &#8226; ");
+        return '<button type="button" class="search-item" data-act="profile" ' +
+            'data-user-id="' + u.id + '">' +
+            avatarHtml(u) +
+            '<div class="search-item-main">' +
+            '<div class="search-item-name"><span>' + escapeHtml(u.name) + "</span>" + pill + "</div>" +
+            '<div class="search-item-meta">ID: ' +
+            escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")) +
+            (skills ? " &nbsp;&#8226;&nbsp; " + skills : "") + "</div>" +
+            "</div></button>";
+    }
+
+    function renderSearchResults(users, query) {
+        if (!users.length) {
+            searchResults.innerHTML =
+                '<div class="search-empty">No people found for "' +
+                escapeHtml(query) + '". Try a different name, skill or ID.</div>';
+            return;
+        }
+        searchResults.innerHTML = users.map(searchItemHtml).join("");
+    }
+
+    async function runSearch(query) {
+        const seq = ++state.searchSeq;
+        searchSpinner.hidden = false;
+        try {
+            const res = await API.searchUsers(query);
+            if (seq !== state.searchSeq) return; // stale response, drop it
+            renderSearchResults((res && res.users) || [], query);
+        } catch (err) {
+            if (seq === state.searchSeq && err.status !== 401) {
+                searchResults.innerHTML =
+                    '<div class="search-empty">' + escapeHtml(friendlyError(err)) + "</div>";
+            }
+        } finally {
+            if (seq === state.searchSeq) searchSpinner.hidden = true;
+        }
+    }
+
+    function closeSearch() {
+        searchResults.hidden = true;
+        searchResults.innerHTML = "";
+    }
+
+    peopleSearch.addEventListener("input", () => {
+        const value = peopleSearch.value.trim();
+        searchClear.hidden = value.length === 0;
+        clearTimeout(runSearch._t);
+        if (value.length < 2) {
+            closeSearch();
+            return;
+        }
+        runSearch._t = setTimeout(() => {
+            searchResults.hidden = false;
+            runSearch(value);
+        }, 300); // debounce
+    });
+
+    searchClear.addEventListener("click", () => {
+        peopleSearch.value = "";
+        searchClear.hidden = true;
+        closeSearch();
+        peopleSearch.focus();
+    });
+
+    peopleSearch.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { closeSearch(); peopleSearch.blur(); }
+        if (e.key === "Enter") {
+            e.preventDefault();
+            const first = searchResults.querySelector(".search-item");
+            if (first && !searchResults.hidden) first.click();
+        }
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search-wrap")) closeSearch();
+    });
+
+    /* Search result actions (delegated): open the profile modal. */
+    searchResults.addEventListener("click", (e) => {
+        const item = e.target.closest(".search-item");
+        if (item) {
+            closeSearch();
+            openProfile(item.dataset.userId);
+        }
+    });
+
+    /* =====================================================
+       DISCOVER (All tab) - real users from the database
+    ===================================================== */
+
+    async function loadDiscover(silent) {
+        const seq = ++state.discoverSeq;
+        if (!silent && !grids.all.children.length) {
+            grids.all.innerHTML = skeletons(6);
+        }
+        try {
+            const res = await API.searchUsers("");
+            if (seq !== state.discoverSeq) return;
+            state.discover = (res && res.users) || [];
+            grids.all.innerHTML = state.discover.length
+                ? state.discover.map(personCard).join("")
+                : emptyState("&#128100;", "No people yet",
+                    "No other registered users were found. Invite people to join SkillShare!");
+        } catch (err) {
+            if (seq === state.discoverSeq && err.status !== 401) {
+                grids.all.innerHTML = emptyState("&#9888;", "Couldn't load people",
+                    friendlyError(err));
+            }
+        }
+    }
+
+    /* =====================================================
+       PROFILE MODAL (real data from GET /api/users/{id})
+    ===================================================== */
+
+    function relLine(rel) {
+        if (rel.connected) return '<span class="rel-pill connected">Connected &#10003;</span>';
+        if (rel.pending_request_id) {
+            return '<span class="rel-pill pending">' +
+                (rel.pending_direction === "sent"
+                    ? "Request sent" : "Sent you a request") + "</span>";
+        }
+        return '<span class="rel-pill none">Not connected</span>';
+    }
+
+    async function openProfile(userId) {
+        if (!userId) return;
+        modalBody.innerHTML = skeletons(1);
+        profileModal.hidden = false;
+        modalClose.focus();
+        try {
+            const res = await API.getUserProfile(userId);
+            const u = res.user || {};
+            const rel = res.relationship || {};
+            let actions = "";
+
+            if (rel.connected) {
+                actions = '<a class="btn btn-primary" href="messages.html' +
+                    (rel.conversation_id ? "?user=" + u.id : "") + '">Message</a>';
+            } else if (rel.pending_request_id) {
+                actions = '<button type="button" class="btn btn-success" disabled>Request ' +
+                    (rel.pending_direction === "sent" ? "Sent &#10003;" : "Received") + "</button>";
+            } else {
+                actions = '<button type="button" class="btn btn-primary" data-act="connect" ' +
+                    'data-user-id="' + u.id + '">Connect</button>';
+            }
+
+            modalBody.innerHTML =
+                '<div class="p-head">' + avatarHtml(u) +
+                '<div><h3 class="p-name" id="modalName">' + escapeHtml(u.name) + "</h3>" +
+                '<span class="p-id">ID: ' +
+                escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")) + "</span> " +
+                relLine(rel) + "</div></div>" +
+                (u.bio ? '<p class="p-bio">' + escapeHtml(u.bio) + "</p>" : "") +
+                (u.skills
+                    ? '<div class="p-section"><p class="p-label">Skills</p>' +
+                      chipsHtml(u.skills, 8) + "</div>"
+                    : "") +
+                (u.interests
+                    ? '<div class="p-section"><p class="p-label">Learning interests</p>' +
+                      chipsHtml(u.interests, 8) + "</div>"
+                    : "") +
+                '<div class="p-actions">' + actions + "</div>";
+
+            modalBody.querySelector('[data-act="connect"]')
+                .addEventListener("click", (e) => handleAction(e.currentTarget));
+        } catch (err) {
+            profileModal.hidden = true;
+            if (err.status !== 401) {
+                toast("error", "Couldn't load profile", friendlyError(err));
+            }
+        }
+    }
+
+    function closeProfile() {
+        profileModal.hidden = true;
+        modalBody.innerHTML = "";
+        peopleSearch.focus();
+    }
+
+    modalClose.addEventListener("click", closeProfile);
+    profileModal.addEventListener("click", (e) => {
+        if (e.target === profileModal) closeProfile();
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (!confirmModal.hidden) { settleConfirm(false); return; }
+        if (!profileModal.hidden) closeProfile();
+    });
+
+    /* =====================================================
+       INIT
+    ===================================================== */
+
+    buildSentFilters();
+    loadMe();
+    loadData(true);
 });

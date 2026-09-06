@@ -1330,7 +1330,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .addEventListener("click", () => {
 
             window.location.href =
-                "skill-analyzer.html";
+                "analyze-skill.html";
 
         });
 
@@ -1449,7 +1449,7 @@ Learn. Share. Get Hired.
     window.openSettings = function() {
 
         window.location.href =
-            "settings.html";
+            "setting.html";
 
     };
 

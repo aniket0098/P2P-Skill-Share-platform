@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const MATCHING_DURATION = 4000;
 
-    const REDIRECT_URL = "live-room.html";
+    const REDIRECT_URL = "session-room.html";
 
     const BACK_URL = "live-learning.html";
 

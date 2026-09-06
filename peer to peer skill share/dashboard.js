@@ -354,7 +354,7 @@ function renderSidebar() {
                 {
                     name: "Teams",
                     icon: "👥",
-                    url: "teams.html"
+                    url: "community.html"
                 }
             ]
         },

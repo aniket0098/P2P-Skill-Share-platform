@@ -856,6 +856,47 @@ def list_api_users(
     return {"users": [user_summary(u) for u in users]}
 
 
+def _user_relationship(db, me, user_id):
+    """Return the relationship between the authenticated user (me) and user_id.
+
+    Used by search results so the frontend can render the correct button
+    state (Connect / Pending / Connected) for every result without a
+    second round-trip per user.
+    """
+    if me == user_id:
+        return {"relationship": "self"}
+
+    connection = get_pair_connection(db, me, user_id)
+    pending = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.status == "pending",
+            or_(
+                and_(
+                    ConnectionRequest.sender_id == me,
+                    ConnectionRequest.receiver_id == user_id,
+                ),
+                and_(
+                    ConnectionRequest.sender_id == user_id,
+                    ConnectionRequest.receiver_id == me,
+                ),
+            ),
+        )
+        .first()
+    )
+
+    if pending:
+        direction = "sent" if pending.sender_id == me else "received"
+        return {
+            "relationship": "pending",
+            "direction": direction,
+            "request_id": pending.id,
+        }
+    if connection:
+        return {"relationship": "connected", "connection_id": connection.id}
+    return {"relationship": "none"}
+
+
 @app.get("/api/users/search")
 def search_users(
     q: str = "",
@@ -864,9 +905,14 @@ def search_users(
     db: Session = Depends(get_db),
 ):
     """Search real registered users by name, email, bio, skills or
-    interests. The search runs in PostgreSQL, not in the frontend."""
+    interests. The search runs in PostgreSQL, not in the frontend.
+
+    Each result includes a ``relationship`` field describing how the
+    authenticated user is related to that user, so the frontend can
+    render the correct action button without additional API calls."""
     term = (q or "").strip()
-    query = db.query(User).filter(User.id != current_user["id"])
+    me = current_user["id"]
+    query = db.query(User).filter(User.id != me)
 
     if term:
         pattern = f"%{term}%"
@@ -885,7 +931,13 @@ def search_users(
         )
 
     rows = query.order_by(User.name).limit(min(max(limit, 1), 50)).all()
-    return {"users": [user_summary(u) for u in rows], "query": term}
+    return {
+        "users": [
+            {**user_summary(u), "relationship": _user_relationship(db, me, u.id)}
+            for u in rows
+        ],
+        "query": term,
+    }
 
 
 @app.get("/api/users/{user_id}")

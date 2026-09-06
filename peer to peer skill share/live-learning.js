@@ -1477,7 +1477,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 setTimeout(() => {
 
                     window.location.href =
-                        `live-session.html?mentor=${person.id}`;
+                        "match-waiting.html";
 
                 }, 1200);
 
@@ -1526,7 +1526,7 @@ document.addEventListener("DOMContentLoaded", () => {
             () => {
 
                 window.location.href =
-                    "settings.html";
+                    "setting.html";
 
             }
         );
