@@ -209,7 +209,10 @@ print("24. DATABASE VERIFICATION (direct PostgreSQL check)")
 print("=" * 62)
 try:
     import psycopg2
-    conn = psycopg2.connect("postgresql://postgres:aniketd@localhost:5433/skillshare")
+    import config
+    # Use the SAME database the backend is configured with (.env locally,
+    # Render env var in production) — no hardcoded credentials here.
+    conn = psycopg2.connect(config.DATABASE_URL)
     cur = conn.cursor()
     cur.execute("select status from connection_requests where id=%s", (request_id,))
     check("Request persisted as accepted in PostgreSQL", cur.fetchone()[0] == "accepted")
