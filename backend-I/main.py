@@ -1,4 +1,4 @@
-﻿import re
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -6,11 +6,15 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from database import Base, engine, SessionLocal
 from models import (
     User,
+    Project,
+    LearningRecord,
+    LearningResource,
+    Activity,
     ConnectionRequest,
     Connection,
     Conversation,
@@ -67,11 +71,14 @@ def _run_startup_migrations():
     from sqlalchemy import text
 
     statements = [
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS skills VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS interests VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS public_id VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS website VARCHAR",
     ]
     with engine.begin() as connection:
         for statement in statements:
@@ -142,6 +149,34 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class UpdateProfileSchema(BaseModel):
+    """Editable fields for the authenticated user's own profile.
+    The current user is derived from the JWT only — the frontend
+    never supplies an owner/user_id. Optional fields are applied
+    only when present (partial update / PATCH semantics)."""
+    name: str | None = None
+    username: str | None = None
+    bio: str | None = None
+    skills: list | None = None
+    interests: list | None = None
+    location: str | None = None
+    website: str | None = None
+    avatar_url: str | None = None
+
+    @field_validator("skills", "interests", mode="before")
+    @classmethod
+    def _coerce_tag_list(cls, value):
+        """Accept either a JSON array or a comma-separated string
+        (the frontend sends e.g. "Python, FastAPI")."""
+        if isinstance(value, str):
+            value = value.strip()
+            return [part.strip() for part in value.split(",") if part.strip()] or None
+        return value
+
+
+USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_]{3,24}$")
+
+
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
@@ -183,6 +218,7 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
         name=data.name.strip(),
         email=email,
         public_id=allocate_public_id(db),
+        created_at=func.now(),
         # Password is stored as a bcrypt hash using the existing auth module
         password_hash=auth.hash_password(data.password),
     )
@@ -305,12 +341,15 @@ def serialize_current_user(user: User) -> dict:
     return {
         "id": user.id,
         "public_id": user.public_id,
+        "username": user.username,
         "name": user.name,
         "email": user.email,
         "bio": user.bio,
         "skills": user.skills,
         "interests": user.interests,
         "avatar_url": user.avatar_url,
+        "location": user.location,
+        "website": user.website,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
@@ -325,6 +364,104 @@ def me(current_user: User = Depends(get_current_user_model)):
     always reflects the live database row for the JWT subject.
     """
     return {"user": serialize_current_user(current_user)}
+
+
+
+@app.patch("/users/me")
+@app.patch("/api/users/me")
+def update_current_user(
+    data: UpdateProfileSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_model),
+):
+    """Update the authenticated user's own profile record.
+
+    The target user is derived from the JWT only (get_current_user_model).
+    There is no user_id in the request body, so it is impossible to
+    edit another user's profile by manipulating the frontend.
+    """
+    update: dict = {}
+
+    if data.name is not None:
+        clean_name = data.name.strip()
+        if len(clean_name) < 2:
+            raise HTTPException(
+                status_code=400, detail="Name must be at least 2 characters"
+            )
+        current_user.name = clean_name
+
+    if data.username is not None:
+        # Strip a leading "@" so "@aniket_dev" and "aniket_dev" are equal.
+        clean_username = data.username.strip().lstrip("@")
+        if clean_username == "":
+            current_user.username = None
+        else:
+            if not USERNAME_PATTERN.match(clean_username):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Username must be 3-24 characters (letters, numbers, underscores only)",
+                )
+            existing = (
+                db.query(User)
+                .filter(
+                    User.username == clean_username,
+                    User.id != current_user.id,
+                )
+                .first()
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail="That username is already taken",
+                )
+            current_user.username = clean_username
+
+    if data.bio is not None:
+        current_user.bio = data.bio.strip() or None
+
+    if data.location is not None:
+        current_user.location = data.location.strip() or None
+
+    if data.website is not None:
+        current_user.website = data.website.strip() or None
+
+    if data.avatar_url is not None:
+        current_user.avatar_url = data.avatar_url.strip() or None
+
+    if data.skills is not None:
+        # Accept either a CSV string or a list of skill names.
+        if isinstance(data.skills, str):
+            skills_list = [s.strip() for s in data.skills.split(",") if s.strip()]
+        else:
+            skills_list = [s.strip() for s in data.skills if str(s).strip()]
+        if len(skills_list) > 40:
+            raise HTTPException(
+                status_code=400, detail="Too many skills (max 40)"
+            )
+        current_user.skills = ", ".join(skills_list) if skills_list else None
+
+    if data.interests is not None:
+        if isinstance(data.interests, str):
+            ints_list = [s.strip() for s in data.interests.split(",") if s.strip()]
+        else:
+            ints_list = [s.strip() for s in data.interests if str(s).strip()]
+        current_user.interests = ", ".join(ints_list) if ints_list else None
+
+    # Record persistent activity in PostgreSQL
+    db.add(
+        Activity(
+            user_id=current_user.id,
+            activity_type="profile_updated",
+            title="Updated profile",
+            description="Updated profile information.",
+            icon="✓",
+        )
+    )
+
+    db.commit()
+    db.refresh(current_user)
+    return {"success": True, "user": serialize_current_user(current_user)}
+
 
 
 # ==========================================
@@ -666,6 +803,16 @@ def add_my_skill(
 
     updated = existing + [skill_name]
     current_user.skills = ", ".join(updated)
+
+    db.add(
+        Activity(
+            user_id=current_user.id,
+            activity_type="skill_added",
+            title=f"Added a new skill: {skill_name}",
+            description=f"Added {skill_name} to teaching skills.",
+            icon="✓",
+        )
+    )
 
     db.commit()
     db.refresh(current_user)
@@ -1378,3 +1525,474 @@ def send_message(
         "success": True,
         "message": serialize_message(db, message),
     }
+
+
+# =========================================================
+# PROJECTS API (PostgreSQL backed, single source of truth)
+# =========================================================
+
+def serialize_project(db: Session, project: Project) -> dict:
+    owner = db.get(User, project.owner_id)
+    tech_list = _split_csv(project.technologies)
+    return {
+        "id": project.id,
+        "owner_id": project.owner_id,
+        "title": project.title,
+        "description": project.description,
+        "technologies": tech_list,
+        "image_url": project.image_url,
+        "status": project.status or "in_progress",
+        "github_url": project.github_url,
+        "demo_url": project.demo_url,
+        "created_at": project.created_at.isoformat() if project.created_at else None,
+        "owner": user_summary(owner),
+    }
+
+
+class CreateProjectSchema(BaseModel):
+    title: str
+    description: str | None = None
+    technologies: str | list[str] | None = None
+    image_url: str | None = None
+    status: str | None = "in_progress"
+    github_url: str | None = None
+    demo_url: str | None = None
+
+
+@app.get("/api/users/me/projects")
+def get_my_projects(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Return projects created by the authenticated user from PostgreSQL."""
+    projects = (
+        db.query(Project)
+        .filter(Project.owner_id == current_user.id)
+        .order_by(Project.created_at.desc())
+        .all()
+    )
+    return {"projects": [serialize_project(db, p) for p in projects]}
+
+
+@app.get("/api/users/{user_id}/projects")
+def get_user_projects(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    """Return public projects created by a specific user from PostgreSQL."""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    projects = (
+        db.query(Project)
+        .filter(Project.owner_id == user_id)
+        .order_by(Project.created_at.desc())
+        .all()
+    )
+    return {"projects": [serialize_project(db, p) for p in projects]}
+
+
+@app.get("/api/projects")
+def list_projects(
+    owner_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    """List shared projects from PostgreSQL, optionally filtered by owner."""
+    q = db.query(Project)
+    if owner_id is not None:
+        q = q.filter(Project.owner_id == owner_id)
+    projects = q.order_by(Project.created_at.desc()).all()
+    return {"projects": [serialize_project(db, p) for p in projects]}
+
+
+@app.post("/api/projects")
+def create_project(
+    data: CreateProjectSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Create a new project associated with the authenticated user in PostgreSQL."""
+    clean_title = (data.title or "").strip()
+    if not clean_title:
+        raise HTTPException(status_code=400, detail="Project title is required")
+
+    tech_str = None
+    if data.technologies:
+        if isinstance(data.technologies, str):
+            tech_str = ", ".join(_split_csv(data.technologies))
+        elif isinstance(data.technologies, list):
+            tech_str = ", ".join(
+                [str(t).strip() for t in data.technologies if str(t).strip()]
+            )
+
+    project = Project(
+        owner_id=current_user.id,
+        title=clean_title,
+        description=(data.description or "").strip() or None,
+        technologies=tech_str,
+        image_url=(data.image_url or "").strip() or None,
+        status=(data.status or "in_progress").strip(),
+        github_url=(data.github_url or "").strip() or None,
+        demo_url=(data.demo_url or "").strip() or None,
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+    return {"success": True, "project": serialize_project(db, project)}
+
+
+# =========================================================
+# ACTIVITY API (PostgreSQL database events only)
+# =========================================================
+
+def _gather_user_activity(db: Session, target_user: User) -> list[dict]:
+    """Compile genuine chronological user activity from PostgreSQL."""
+    activities = []
+
+    # 1. Activities logged in PostgreSQL Activity table
+    stored_acts = (
+        db.query(Activity)
+        .filter(Activity.user_id == target_user.id)
+        .order_by(Activity.created_at.desc())
+        .limit(25)
+        .all()
+    )
+    for a in stored_acts:
+        activities.append({
+            "id": f"act-db-{a.id}",
+            "type": a.activity_type or "community",
+            "title": a.title,
+            "description": a.description,
+            "icon": a.icon or "✓",
+            "timestamp": a.created_at.isoformat() if a.created_at else None,
+        })
+
+    # 2. Account Creation (if not already logged)
+    has_join = any("Joined SkillShare" in a["title"] for a in activities)
+    if not has_join and target_user.created_at:
+        activities.append({
+            "id": f"act-join-{target_user.id}",
+            "type": "community",
+            "title": "Joined SkillShare",
+            "description": "Created account and joined the peer learning community.",
+            "icon": "🚀",
+            "timestamp": target_user.created_at.isoformat(),
+        })
+
+    # 3. Fallback for past skills if not already logged in activities
+    skills = _split_csv(target_user.skills)
+    for idx, skill in enumerate(skills):
+        skill_title = f"Added a new skill: {skill}"
+        if not any(skill_title in a["title"] for a in activities):
+            activities.append({
+                "id": f"act-skill-{target_user.id}-{idx}",
+                "type": "teaching",
+                "title": skill_title,
+                "description": f"Shared {skill} as a skill available to teach.",
+                "icon": "⚡",
+                "timestamp": target_user.created_at.isoformat() if target_user.created_at else None,
+            })
+
+    # 4. Fallback for past projects if not in activities
+    projects = (
+        db.query(Project)
+        .filter(Project.owner_id == target_user.id)
+        .order_by(Project.created_at.desc())
+        .all()
+    )
+    for p in projects:
+        proj_title = f"Shared project: {p.title}"
+        if not any(proj_title in a["title"] for a in activities):
+            activities.append({
+                "id": f"act-proj-{p.id}",
+                "type": "project",
+                "title": proj_title,
+                "description": p.description or f"Added {p.title} to platform showcase.",
+                "icon": "💻",
+                "timestamp": p.created_at.isoformat() if p.created_at else None,
+            })
+
+    # 5. Fallback for connections if not in activities
+    connections = (
+        db.query(Connection)
+        .filter(
+            or_(
+                Connection.user_one_id == target_user.id,
+                Connection.user_two_id == target_user.id,
+            ),
+            Connection.status == "active",
+        )
+        .order_by(Connection.created_at.desc())
+        .all()
+    )
+    for conn in connections:
+        other_id = conn.user_two_id if conn.user_one_id == target_user.id else conn.user_one_id
+        other_user = db.get(User, other_id)
+        other_name = other_user.name if other_user else "a peer"
+        conn_title = f"Connected with {other_name}"
+        if not any(conn_title in a["title"] for a in activities):
+            activities.append({
+                "id": f"act-conn-{conn.id}",
+                "type": "community",
+                "title": conn_title,
+                "description": f"Established learning connection with {other_name}.",
+                "icon": "🤝",
+                "timestamp": conn.created_at.isoformat() if conn.created_at else None,
+            })
+
+    # Sort descending by timestamp (nulls at the end)
+    activities.sort(
+        key=lambda a: a["timestamp"] or "",
+        reverse=True,
+    )
+    return activities
+
+
+@app.get("/api/users/me/activity")
+def get_my_activity(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Return real database activity for the authenticated user."""
+    return {"activities": _gather_user_activity(db, current_user)}
+
+
+@app.get("/api/users/{user_id}/activity")
+def get_user_activity(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    """Return real database activity for a specific user."""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"activities": _gather_user_activity(db, user)}
+
+
+# =========================================================
+# LEARNING PROGRESS API (Ground truth from PostgreSQL)
+# =========================================================
+
+def _gather_user_learning(db: Session, target_user: User) -> dict:
+    records = (
+        db.query(LearningRecord)
+        .filter(LearningRecord.user_id == target_user.id)
+        .order_by(LearningRecord.updated_at.desc())
+        .all()
+    )
+    if not records:
+        return {
+            "overall_progress": 0,
+            "skills": [],
+            "recent_learning": [],
+            "has_activity": False,
+            "message": "Start learning from Explore Skills to build your learning activity.",
+        }
+
+    overall_pct = round(sum(r.progress_percentage for r in records) / len(records))
+    skills = [
+        {"name": r.skill_name, "progress": r.progress_percentage}
+        for r in records
+    ]
+    recent = [
+        {
+            "skill": r.skill_name,
+            "resource": r.resource_title or "Course",
+            "progress": r.progress_percentage,
+            "status": r.status,
+            "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+        }
+        for r in records[:5]
+    ]
+    return {
+        "overall_progress": overall_pct,
+        "skills": skills,
+        "recent_learning": recent,
+        "has_activity": True,
+        "message": "Learning records loaded.",
+    }
+
+
+@app.get("/api/users/me/learning")
+def get_my_learning(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Return real learning progress from PostgreSQL."""
+    return _gather_user_learning(db, current_user)
+
+
+@app.get("/api/users/{user_id}/learning")
+def get_user_learning(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return _gather_user_learning(db, user)
+
+
+class AddLearningRecordSchema(BaseModel):
+    skill_name: str
+    resource_title: str | None = None
+    resource_type: str | None = "course"
+    progress_percentage: int = 0
+    status: str | None = "in_progress"
+
+
+@app.post("/api/users/me/learning")
+def add_or_update_learning(
+    data: AddLearningRecordSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Enroll or update learning progress in PostgreSQL."""
+    clean_skill = (data.skill_name or "").strip()
+    if not clean_skill:
+        raise HTTPException(status_code=400, detail="Skill name is required")
+
+    record = (
+        db.query(LearningRecord)
+        .filter(
+            LearningRecord.user_id == current_user.id,
+            func.lower(LearningRecord.skill_name) == clean_skill.lower(),
+        )
+        .first()
+    )
+    is_new = False
+    pct = max(0, min(100, data.progress_percentage))
+    status_val = "completed" if pct >= 100 else (data.status or "in_progress")
+
+    if not record:
+        is_new = True
+        record = LearningRecord(
+            user_id=current_user.id,
+            skill_name=clean_skill,
+            resource_title=(data.resource_title or "Course").strip(),
+            resource_type=(data.resource_type or "course").strip(),
+            progress_percentage=pct,
+            status=status_val,
+        )
+        db.add(record)
+    else:
+        if data.resource_title:
+            record.resource_title = data.resource_title.strip()
+        record.progress_percentage = pct
+        record.status = status_val
+        record.updated_at = func.now()
+
+    # Log in activities
+    act_title = (
+        f"Started learning {clean_skill}"
+        if is_new
+        else (f"Completed course: {clean_skill}" if pct >= 100 else f"Progressed in {clean_skill}: {pct}%")
+    )
+    db.add(
+        Activity(
+            user_id=current_user.id,
+            activity_type="learning_completed" if pct >= 100 else "learning_started",
+            title=act_title,
+            description=f"{record.resource_title or 'Learning resource'} — {pct}% progress",
+            icon="✓",
+        )
+    )
+
+    db.commit()
+    return _gather_user_learning(db, current_user)
+
+
+# =========================================================
+# LEARNING RESOURCES API (Curated real learning content)
+# =========================================================
+
+def serialize_learning_resource(resource: LearningResource) -> dict:
+    """Serialize a LearningResource for the frontend."""
+    return {
+        "id": resource.id,
+        "title": resource.title,
+        "description": resource.description,
+        "provider": resource.provider,
+        "resource_type": resource.resource_type,
+        "skill": resource.skill,
+        "topic": resource.topic,
+        "url": resource.url,
+        "thumbnail_url": resource.thumbnail_url,
+        "difficulty": resource.difficulty,
+        "estimated_duration": resource.estimated_duration,
+        "source_platform": resource.source_platform,
+        "published_date": resource.published_date,
+        "created_at": resource.created_at.isoformat() if resource.created_at else None,
+    }
+
+
+@app.get("/api/learning-resources")
+def list_learning_resources(
+    skill: str | None = None,
+    resource_type: str | None = None,
+    difficulty: str | None = None,
+    provider: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """List curated learning resources with optional filters."""
+    q = db.query(LearningResource)
+
+    if skill:
+        q = q.filter(func.lower(LearningResource.skill) == skill.lower())
+    if resource_type:
+        q = q.filter(func.lower(LearningResource.resource_type) == resource_type.lower())
+    if difficulty:
+        q = q.filter(func.lower(LearningResource.difficulty) == difficulty.lower())
+    if provider:
+        q = q.filter(func.lower(LearningResource.provider) == provider.lower())
+    if search:
+        search_term = f"%{search.lower()}%"
+        q = q.filter(
+            func.lower(LearningResource.title).like(search_term)
+            | func.lower(LearningResource.description).like(search_term)
+            | func.lower(LearningResource.topic).like(search_term)
+        )
+
+    resources = q.order_by(LearningResource.provider, LearningResource.title).all()
+    return {
+        "resources": [serialize_learning_resource(r) for r in resources],
+        "count": len(resources),
+    }
+
+
+@app.get("/api/learning-resources/skills")
+def list_learning_skills(db: Session = Depends(get_db)):
+    """Return all distinct skills that have learning resources."""
+    skills = (
+        db.query(LearningResource.skill)
+        .distinct()
+        .order_by(LearningResource.skill)
+        .all()
+    )
+    return {"skills": [s[0] for s in skills]}
+
+
+@app.get("/api/learning-resources/providers")
+def list_learning_providers(db: Session = Depends(get_db)):
+    """Return all distinct providers that have learning resources."""
+    providers = (
+        db.query(LearningResource.provider)
+        .distinct()
+        .order_by(LearningResource.provider)
+        .all()
+    )
+    return {"providers": [p[0] for p in providers]}
+
+
+@app.get("/api/learning-resources/{resource_id}")
+def get_learning_resource(
+    resource_id: int,
+    db: Session = Depends(get_db),
+):
+    """Return a specific learning resource by ID."""
+    resource = db.get(LearningResource, resource_id)
+    if not resource:
+        raise HTTPException(status_code=404, detail="Learning resource not found")
+    return {"resource": serialize_learning_resource(resource)}
+

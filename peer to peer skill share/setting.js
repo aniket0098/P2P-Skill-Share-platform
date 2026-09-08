@@ -14,18 +14,15 @@ const DEFAULT_SETTINGS = {
         firstName: "",
         lastName: "",
         username: "",
-        bio: "Learning, teaching and building something new every day.",
+        bio: "",
         location: "",
         website: "",
         avatar: ""
     },
 
-    skills: [
-        "HTML",
-        "CSS",
-        "JavaScript",
-        "UI/UX"
-    ],
+    skills: [],
+
+    interests: [],
 
     privacy: {
         publicProfile: true,
@@ -68,6 +65,140 @@ const DEFAULT_SETTINGS = {
    ========================================================= */
 
 let settings = loadSettings();
+/* =========================================================
+   CURRENT USER (PostgreSQL source of truth)
+   ========================================================= */
+
+let currentUser = null;
+let currentUserPromise = null;
+
+
+async function ensureCurrentUser(force) {
+
+    if (currentUser && !force) {
+
+        return currentUser;
+
+    }
+
+    if (currentUserPromise) {
+
+        return currentUserPromise;
+
+    }
+
+    currentUserPromise = (async () => {
+
+        try {
+
+            const res =
+
+                await window.SkillShareAPI.getMe();
+
+            currentUser =
+
+                (res && res.user) || res || null;
+
+        } catch (err) {
+
+            // 401 is handled by the API client (session cleared + redirect).
+            // For transient errors fall back to the cached session user.
+            if (err && err.status !== 401) {
+
+                currentUser =
+
+                    window.SkillShareAPI.getUser?.() || null;
+
+            }
+
+        } finally {
+
+            currentUserPromise = null;
+
+        }
+
+        return currentUser;
+
+    })();
+
+    return currentUserPromise;
+
+}
+
+
+/* =========================================================
+   SAVE PROFILE TO SERVER
+   (PostgreSQL is the source of truth; JWT identifies the user)
+   ========================================================= */
+
+async function saveProfileToServer() {
+
+    const profile =
+
+        settings.profile;
+
+    const displayName =
+
+        [
+            profile.firstName,
+            profile.lastName
+        ]
+
+            .filter(Boolean)
+
+            .join(" ")
+
+            .trim();
+
+    const payload = {
+
+        name: displayName || undefined,
+
+        username: profile.username || "",
+
+        bio: profile.bio || "",
+
+        location: profile.location || "",
+
+        website: profile.website || "",
+
+        avatar_url: profile.avatar || "",
+
+        /* An empty ARRAY (not null) must be sent when the user removed
+           every tag, otherwise the backend keeps the old CSV value and
+           the removal never persists to PostgreSQL. */
+
+        skills: (settings.skills && settings.skills.length)
+
+            ? settings.skills.join(", ")
+
+            : [],
+
+        interests: (settings.interests && settings.interests.length)
+
+            ? settings.interests.join(", ")
+
+            : []
+
+    };
+
+    const res =
+
+        await window.SkillShareAPI.updateMyProfile(payload);
+
+    const updated =
+
+        (res && res.user) || res || null;
+
+    if (updated) {
+
+        currentUser = updated;
+
+    }
+
+    return updated;
+
+}
 
 
 function loadSettings() {
@@ -150,12 +281,11 @@ function saveSettings(showMessage = false) {
             JSON.stringify(settings)
         );
 
+        // When the user explicitly clicks Save, ALSO persist the
+        // profile fields + skills to PostgreSQL (source of truth).
         if (showMessage) {
 
-            showToast(
-                "Changes saved successfully",
-                "success"
-            );
+            return saveProfileToServer();
 
         }
 
@@ -172,6 +302,8 @@ function saveSettings(showMessage = false) {
         );
 
     }
+
+    return Promise.resolve(null);
 
 }
 
@@ -198,6 +330,8 @@ function initializeSettings() {
     initializeProfile();
 
     initializeSkills();
+
+    initializeInterests();
 
     initializeSwitches();
 
@@ -238,15 +372,91 @@ function initializeSettings() {
 
 function loadSettingsIntoInterface() {
 
-    loadProfile();
+    // Load the authenticated user's database record FIRST so the
+    // form always reflects PostgreSQL (the single source of truth),
+    // then populate all panels from it.
+    syncFromServerUser().then(() => {
 
-    loadSkills();
+        loadProfile();
 
-    loadPrivacy();
+        loadSkills();
 
-    loadNotifications();
+        loadInterests();
 
-    loadAppearance();
+        loadPrivacy();
+
+        loadNotifications();
+
+        loadAppearance();
+
+    });
+
+}
+
+
+/* =========================================================
+   SYNC FROM SERVER USER (PostgreSQL source of truth)
+   ========================================================= */
+
+function parseListField(value) {
+
+    if (Array.isArray(value)) {
+
+        return value.map(item => String(item).trim()).filter(Boolean);
+
+    }
+
+    if (typeof value !== "string") {
+
+        return [];
+
+    }
+
+    return value
+        .split(",")
+        .map(item => item.trim())
+        .filter(Boolean);
+
+}
+
+
+async function syncFromServerUser() {
+
+    const user = await ensureCurrentUser();
+
+    if (!user) return;
+
+    currentUser = user;
+
+    // Split the full display name into first/last for the form.
+    const displayName = (user.name || "").trim();
+
+    if (displayName) {
+
+        const parts = displayName.split(/\s+/);
+
+        settings.profile.firstName = parts.shift() || "";
+
+        settings.profile.lastName = parts.join(" ");
+
+    }
+
+    settings.profile.username = user.username || "";
+
+    settings.profile.bio = user.bio || "";
+
+    settings.profile.location = user.location || "";
+
+    settings.profile.website = user.website || "";
+
+    settings.profile.avatar = user.avatar_url || "";
+
+    settings.skills = parseListField(user.skills);
+
+    settings.interests = parseListField(user.interests);
+
+    // Keep the local cache aligned with the database record.
+    saveSettings();
 
 }
 
@@ -569,7 +779,7 @@ function loadProfile() {
     if (avatar) {
 
         avatar.src =
-            profile.avatar;
+            profile.avatar || "assets/avatar1.svg";
 
     }
 
@@ -672,7 +882,7 @@ function handleAvatarUpload(event) {
         new FileReader();
 
 
-    reader.onload = function () {
+    reader.onload = async function () {
 
         const image =
             reader.result;
@@ -696,12 +906,56 @@ function handleAvatarUpload(event) {
         }
 
 
-        saveSettings();
+        /* Persist immediately: PATCH /api/users/me (the backend
+           derives the user from the JWT and updates PostgreSQL). */
 
-        showToast(
-            "Profile photo updated.",
-            "success"
-        );
+        try {
+
+            const res =
+                await window.SkillShareAPI.updateMyProfile(
+                    { avatar_url: image }
+                );
+
+            const updated =
+                (res && res.user) || res || null;
+
+            if (updated) {
+
+                currentUser = updated;
+
+                updateSessionUserCache(updated);
+
+            }
+
+            saveSettings();
+
+            showToast(
+                "Profile photo updated.",
+                "success"
+            );
+
+        } catch (error) {
+
+            /* Revert the preview when the server rejects it. */
+
+            settings.profile.avatar = "";
+
+            if (avatar) {
+
+                avatar.src =
+                    "assets/avatar1.svg";
+
+            }
+
+            saveSettings();
+
+            showToast(
+                error?.detail ||
+                "Could not save your photo. Please try again.",
+                "error"
+            );
+
+        }
 
     };
 
@@ -715,14 +969,14 @@ function handleAvatarUpload(event) {
    REMOVE AVATAR
    ========================================================= */
 
-function removeAvatarImage() {
+async function removeAvatarImage() {
 
-    const defaultAvatar =
-        "";
+    const previousAvatar =
+        settings.profile.avatar;
 
 
     settings.profile.avatar =
-        defaultAvatar;
+        "";
 
 
     const avatar =
@@ -734,18 +988,61 @@ function removeAvatarImage() {
     if (avatar) {
 
         avatar.src =
-            defaultAvatar;
+            "assets/avatar1.svg";
 
     }
 
 
-    saveSettings();
+    /* Persist immediately (empty string clears the column). */
 
+    try {
 
-    showToast(
-        "Profile photo removed.",
-        "success"
-    );
+        const res =
+            await window.SkillShareAPI.updateMyProfile(
+                { avatar_url: "" }
+            );
+
+        const updated =
+            (res && res.user) || res || null;
+
+        if (updated) {
+
+            currentUser = updated;
+
+            updateSessionUserCache(updated);
+
+        }
+
+        saveSettings();
+
+        showToast(
+            "Profile photo removed.",
+            "success"
+        );
+
+    } catch (error) {
+
+        /* Revert the preview when the server rejects it. */
+
+        settings.profile.avatar =
+            previousAvatar;
+
+        if (avatar && previousAvatar) {
+
+            avatar.src =
+                previousAvatar;
+
+        }
+
+        saveSettings();
+
+        showToast(
+            error?.detail ||
+            "Could not remove your photo. Please try again.",
+            "error"
+        );
+
+    }
 
 }
 
@@ -878,6 +1175,27 @@ function initializeSkills() {
                 remove.closest(
                     ".skill-tag"
                 );
+
+
+            /* Interest tags share the tag styling but
+               belong to the interests list. */
+
+            if (
+                tag?.classList.contains(
+                    "interest-tag"
+                )
+            ) {
+
+                removeInterest(
+                    tag.dataset.interest ||
+                        tag.textContent
+                            .replace("×", "")
+                            .trim()
+                );
+
+                return;
+
+            }
 
 
             const skill =
@@ -1098,6 +1416,298 @@ function removeSkill(
 
     showToast(
         `${skill} removed.`,
+        "success"
+    );
+
+}
+
+
+/* =========================================================
+   INTERESTS (mirrors the skills editor)
+   ========================================================= */
+
+function initializeInterests() {
+
+    const addButton =
+        document.getElementById(
+            "addInterest"
+        );
+
+    const showInput =
+        document.getElementById(
+            "showInterestInput"
+        );
+
+    const input =
+        document.getElementById(
+            "newInterest"
+        );
+
+
+    if (showInput) {
+
+        showInput.addEventListener(
+            "click",
+            () => {
+
+                const row =
+                    document.getElementById(
+                        "interestAddRow"
+                    );
+
+                if (!row) return;
+
+
+                row.hidden =
+                    !row.hidden;
+
+
+                if (!row.hidden) {
+
+                    input?.focus();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (addButton) {
+
+        addButton.addEventListener(
+            "click",
+            addInterest
+        );
+
+    }
+
+
+    if (input) {
+
+        input.addEventListener(
+            "keydown",
+            event => {
+
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
+                    event.preventDefault();
+
+                    addInterest();
+
+                }
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   GENERIC TAG ELEMENT (skills & interests share this)
+   ========================================================= */
+
+function createTagElement(
+    editorId,
+    value
+) {
+
+    const editor =
+        document.getElementById(
+            editorId
+        );
+
+
+    if (!editor) return;
+
+
+    const tag =
+        document.createElement(
+            "span"
+        );
+
+
+    tag.className =
+        "skill-tag interest-tag";
+
+
+    tag.dataset.interest =
+        value;
+
+
+    tag.innerHTML = `
+
+        <span>
+            ${escapeHTML(value)}
+        </span>
+
+        <button
+            class="tag-remove skill-remove"
+            type="button"
+            aria-label="Remove ${escapeHTML(value)}"
+        >
+            ×
+        </button>
+
+    `;
+
+
+    editor.appendChild(
+        tag
+    );
+
+}
+
+
+/* =========================================================
+   LOAD INTERESTS
+   ========================================================= */
+
+function loadInterests() {
+
+    const editor =
+        document.getElementById(
+            "interestEditor"
+        );
+
+
+    if (!editor) return;
+
+
+    editor.innerHTML = "";
+
+
+    settings.interests.forEach(
+        interest => {
+
+            createTagElement(
+                "interestEditor",
+                interest
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ADD / REMOVE INTEREST
+   ========================================================= */
+
+function addInterest() {
+
+    const input =
+        document.getElementById(
+            "newInterest"
+        );
+
+
+    if (!input) return;
+
+
+    const interest =
+        input.value.trim();
+
+
+    if (!interest) {
+
+        showToast(
+            "Enter an interest first.",
+            "error"
+        );
+
+        input.focus();
+
+        return;
+
+    }
+
+
+    if (
+        settings.interests.some(
+            item =>
+                item.toLowerCase() ===
+                interest.toLowerCase()
+        )
+    ) {
+
+        showToast(
+            "That interest is already added.",
+            "error"
+        );
+
+        input.focus();
+
+        return;
+
+    }
+
+
+    if (settings.interests.length >= 15) {
+
+        showToast(
+            "You can add up to 15 interests.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    settings.interests.push(
+        interest
+    );
+
+
+    input.value = "";
+
+
+    loadInterests();
+
+    saveSettings();
+
+
+    showToast(
+        `${interest} added to your interests.`,
+        "success"
+    );
+
+
+    input.focus();
+
+}
+
+
+function removeInterest(
+    interest
+) {
+
+    if (!interest) return;
+
+
+    settings.interests =
+        settings.interests.filter(
+            item =>
+                item.toLowerCase() !==
+                interest.toLowerCase()
+        );
+
+
+    loadInterests();
+
+    saveSettings();
+
+
+    showToast(
+        `${interest} removed.`,
         "success"
     );
 
@@ -3275,13 +3885,7 @@ function initializeGlobalButtons() {
         "click",
         () => {
 
-            updateProfileFromUI();
-
-            saveSettings(
-                true
-            );
-
-            animateSaveButton(
+            handleProfileSave(
                 saveButton
             );
 
@@ -3304,41 +3908,157 @@ function initializeGlobalButtons() {
 
 
 /* =========================================================
-   SAVE BUTTON ANIMATION
+   PROFILE SAVE (server round-trip)
+   Shows a saving state on the button, awaits the FastAPI
+   PATCH, refreshes the cached session user, and reports
+   success or the real server error via a toast.
    ========================================================= */
 
-function animateSaveButton(
-    button
+let profileSaveInFlight = false;
+
+
+function updateSessionUserCache(user) {
+
+    /* Keep the localStorage session cache (token + user) in
+       sync so other pages' headers show the saved values.
+       localStorage is ONLY the auth session — never the
+       profile database. */
+
+    if (!user || !window.SkillShareAPI?.setSession) {
+
+        return;
+
+    }
+
+
+    const token =
+        window.SkillShareAPI.getToken();
+
+    const cached =
+        window.SkillShareAPI.getUser() || {};
+
+
+    window.SkillShareAPI.setSession(
+        token,
+        Object.assign({}, cached, {
+            id: user.id ?? cached.id,
+            public_id: user.public_id ?? cached.public_id,
+            name: user.name ?? cached.name,
+            email: user.email ?? cached.email,
+            username: user.username ?? cached.username,
+            avatar_url: user.avatar_url ?? cached.avatar_url
+        })
+    );
+
+}
+
+
+async function handleProfileSave(
+    saveButton
 ) {
 
+    if (profileSaveInFlight) {
+
+        return;
+
+    }
+
+    profileSaveInFlight = true;
+
+
+    updateProfileFromUI();
+
+
     const original =
-        button.innerHTML;
+        saveButton
+            ? saveButton.innerHTML
+            : "";
 
 
-    button.innerHTML = `
-        <i class="fa-solid fa-check"></i>
-        Saved
-    `;
+    if (saveButton) {
+
+        saveButton.disabled = true;
+
+        saveButton.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Saving…
+        `;
+
+    }
 
 
-    button.classList.add(
-        "saved"
-    );
+    try {
+
+        const updated =
+            await saveSettings(true);
 
 
-    setTimeout(
-        () => {
+        if (updated) {
 
-            button.innerHTML =
-                original;
+            currentUser = updated;
 
-            button.classList.remove(
-                "saved"
+            updateSessionUserCache(updated);
+
+        }
+
+
+        showToast(
+            "Profile saved to your account.",
+            "success"
+        );
+
+
+        if (saveButton) {
+
+            saveButton.innerHTML = `
+                <i class="fa-solid fa-check"></i>
+                Saved
+            `;
+
+            saveButton.classList.add("saved");
+
+            setTimeout(
+                () => {
+
+                    saveButton.innerHTML =
+                        original;
+
+                    saveButton.classList.remove(
+                        "saved"
+                    );
+
+                    saveButton.disabled = false;
+
+                },
+                1800
             );
 
-        },
-        1800
-    );
+        }
+
+    } catch (error) {
+
+        showToast(
+            error?.detail ||
+            error?.message ||
+            "Could not save your profile. Please try again.",
+            "error"
+        );
+
+
+        if (saveButton) {
+
+            saveButton.innerHTML =
+                original;
+
+            saveButton.disabled = false;
+
+        }
+
+    } finally {
+
+        profileSaveInFlight = false;
+
+    }
 
 }
 

@@ -27,6 +27,10 @@ class User(Base):
     # the internal integer primary key.
     public_id = Column(String, unique=True, index=True, nullable=True)
 
+    # Optional username handle (e.g. "aniket_dev"). Stored in PostgreSQL
+    # so it is the source of truth across Profile, Settings and search.
+    username = Column(String, unique=True, index=True, nullable=True)
+
     # Matches the existing PostgreSQL column "password_hash"
     # (stores the bcrypt hash produced by auth.hash_password)
     password_hash = Column(String, nullable=False)
@@ -34,12 +38,52 @@ class User(Base):
     # Matches the existing PostgreSQL column "created_at"
     created_at = Column(DateTime, nullable=True)
 
-    # Public profile fields (safe to expose, never include secrets).
+            # Public profile fields (safe to expose, never include secrets).
     # Added for the Request/Message people-discovery experience.
     bio = Column(String, nullable=True)
     skills = Column(String, nullable=True)      # comma-separated: what they can teach
     interests = Column(String, nullable=True)   # comma-separated: what they want to learn
     avatar_url = Column(String, nullable=True)
+    # Profile extras surfaced by the Settings → Profile form.
+    location = Column(String, nullable=True)
+    website = Column(String, nullable=True)
+
+
+class Project(Base):
+    """A project shared by a user on the platform.
+
+    This is the SINGLE project store for the app — the frontend
+    Project Gallery and the Profile page both read from this
+    PostgreSQL table (never from localStorage).
+    """
+
+    __tablename__ = "projects"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Owner resolved server-side from the JWT — never trusted
+    # from the request body.
+    owner_id = Column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
+
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+
+    # Comma-separated technologies/skills used in the project
+    # (same CSV convention as User.skills / User.interests).
+    technologies = Column(String, nullable=True)
+
+    # Optional project image (URL or data URL).
+    image_url = Column(String, nullable=True)
+
+    # e.g. "in_progress" | "completed" | "planning"
+    status = Column(String, nullable=True, default="in_progress")
+
+    github_url = Column(String, nullable=True)
+    demo_url = Column(String, nullable=True)
+
+    created_at = Column(DateTime, default=func.now(), nullable=False)
 
 
 class ConnectionRequest(Base):
@@ -135,3 +179,65 @@ class Message(Base):
             f"<Message id={self.id} conv={self.conversation_id} "
             f"sender={self.sender_id} read={self.is_read}>"
         )
+
+
+class LearningRecord(Base):
+    """User learning records tracking course progress in PostgreSQL."""
+
+    __tablename__ = "learning_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    skill_name = Column(String, nullable=False)
+    resource_title = Column(String, nullable=True)
+    resource_type = Column(String, nullable=True)  # course, video, docs, practice
+    progress_percentage = Column(Integer, default=0, nullable=False)  # 0 to 100
+    status = Column(String, default="in_progress", nullable=False)  # in_progress, completed
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class Activity(Base):
+    """Persistent user activity log stored in PostgreSQL."""
+
+    __tablename__ = "activities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    activity_type = Column(String, nullable=False)  # profile_updated, skill_added, project_shared, connected, learning_started, learning_completed, joined
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    icon = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+
+class LearningResource(Base):
+    """Curated learning resources from trusted providers.
+
+    Each resource is a real publicly available course or video from
+    providers like Google, Microsoft, IBM, AWS, Cisco, NVIDIA, Meta,
+    or reputable educational YouTube channels.
+    """
+
+    __tablename__ = "learning_resources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    provider = Column(String, nullable=False)  # Google, Microsoft, IBM, AWS, Cisco, NVIDIA, Meta, YouTube
+    resource_type = Column(String, nullable=False)  # video, course
+    skill = Column(String, nullable=False, index=True)  # Python, JavaScript, AI, Machine Learning, FastAPI, Cloud, Data Science
+    topic = Column(String, nullable=True)  # Specific topic within the skill
+    url = Column(String, nullable=False)  # Real public URL
+    thumbnail_url = Column(String, nullable=True)
+    difficulty = Column(String, nullable=False)  # beginner, intermediate, advanced
+    estimated_duration = Column(String, nullable=True)  # e.g., "10 hours", "6 weeks"
+    source_platform = Column(String, nullable=True)  # YouTube, Coursera, edX, Udacity, Pluralsight, etc.
+    published_date = Column(String, nullable=True)  # Year or date published
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<LearningResource id={self.id} title={self.title!r} provider={self.provider!r}>"
+

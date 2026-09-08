@@ -1,0 +1,117 @@
+[1mdiff --git a/backend-I/main.py b/backend-I/main.py[m
+[1mindex 2600faf..9f6365f 100644[m
+[1m--- a/backend-I/main.py[m
+[1m+++ b/backend-I/main.py[m
+[36m@@ -67,11 +67,13 @@[m [mdef _run_startup_migrations():[m
+     from sqlalchemy import text[m
+ [m
+     statements = [[m
+[31m-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR",[m
+[32m+[m[32m                "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR",[m
+         "ALTER TABLE users ADD COLUMN IF NOT EXISTS skills VARCHAR",[m
+         "ALTER TABLE users ADD COLUMN IF NOT EXISTS interests VARCHAR",[m
+         "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR",[m
+         "ALTER TABLE users ADD COLUMN IF NOT EXISTS public_id VARCHAR",[m
+[32m+[m[32m        "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR",[m
+[32m+[m[32m        "ALTER TABLE users ADD COLUMN IF NOT EXISTS website VARCHAR",[m
+     ][m
+     with engine.begin() as connection:[m
+         for statement in statements:[m
+[36m@@ -142,6 +144,20 @@[m [mclass LoginRequest(BaseModel):[m
+     password: str[m
+ [m
+ [m
+[32m+[m[32mclass UpdateProfileSchema(BaseModel):[m
+[32m+[m[32m    """Editable fields for the authenticated user's own profile.[m
+[32m+[m[32m    The current user is derived from the JWT only — the frontend[m
+[32m+[m[32m    never supplies an owner/user_id. Optional fields are applied[m
+[32m+[m[32m    only when present (partial update / PATCH semantics)."""[m
+[32m+[m[32m    name: str | None = None[m
+[32m+[m[32m    bio: str | None = None[m
+[32m+[m[32m    skills: list | None = None[m
+[32m+[m[32m    interests: list | None = None[m
+[32m+[m[32m    location: str | None = None[m
+[32m+[m[32m    website: str | None = None[m
+[32m+[m[32m    avatar_url: str | None = None[m
+[32m+[m
+[32m+[m
+ EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")[m
+ [m
+ [m
+[36m@@ -311,6 +327,8 @@[m [mdef serialize_current_user(user: User) -> dict:[m
+         "skills": user.skills,[m
+         "interests": user.interests,[m
+         "avatar_url": user.avatar_url,[m
+[32m+[m[32m        "location": user.location,[m
+[32m+[m[32m        "website": user.website,[m
+         "created_at": user.created_at.isoformat() if user.created_at else None,[m
+     }[m
+ [m
+[36m@@ -327,6 +345,67 @@[m [mdef me(current_user: User = Depends(get_current_user_model)):[m
+     return {"user": serialize_current_user(current_user)}[m
+ [m
+ [m
+[32m+[m
+[32m+[m[32m@app.patch("/users/me")[m
+[32m+[m[32m@app.patch("/api/users/me")[m
+[32m+[m[32mdef update_current_user([m
+[32m+[m[32m    data: UpdateProfileSchema,[m
+[32m+[m[32m    db: Session = Depends(get_db),[m
+[32m+[m[32m    current_user: User = Depends(get_current_user_model),[m
+[32m+[m[32m):[m
+[32m+[m[32m    """Update the authenticated user's own profile record.[m
+[32m+[m
+[32m+[m[32m    The target user is derived from the JWT only (get_current_user_model).[m
+[32m+[m[32m    There is no user_id in the request body, so it is impossible to[m
+[32m+[m[32m    edit another user's profile by manipulating the frontend.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    update: dict = {}[m
+[32m+[m
+[32m+[m[32m    if data.name is not None:[m
+[32m+[m[32m        clean_name = data.name.strip()[m
+[32m+[m[32m        if len(clean_name) < 2:[m
+[32m+[m[32m            raise HTTPException([m
+[32m+[m[32m                status_code=400, detail="Name must be at least 2 characters"[m
+[32m+[m[32m            )[m
+[32m+[m[32m        current_user.name = clean_name[m
+[32m+[m
+[32m+[m[32m    if data.bio is not None:[m
+[32m+[m[32m        current_user.bio = data.bio.strip() or None[m
+[32m+[m
+[32m+[m[32m    if data.location is not None:[m
+[32m+[m[32m        current_user.location = data.location.strip() or None[m
+[32m+[m
+[32m+[m[32m    if data.website is not None:[m
+[32m+[m[32m        current_user.website = data.website.strip() or None[m
+[32m+[m
+[32m+[m[32m    if data.avatar_url is not None:[m
+[32m+[m[32m        current_user.avatar_url = data.avatar_url.strip() or None[m
+[32m+[m
+[32m+[m[32m    if data.skills is not None:[m
+[32m+[m[32m        # Accept either a CSV string or a list of skill names.[m
+[32m+[m[32m        if isinstance(data.skills, str):[m
+[32m+[m[32m            skills_list = [s.strip() for s in data.skills.split(",") if s.strip()][m
+[32m+[m[32m        else:[m
+[32m+[m[32m            skills_list = [s.strip() for s in data.skills if str(s).strip()][m
+[32m+[m[32m        if len(skills_list) > 40:[m
+[32m+[m[32m            raise HTTPException([m
+[32m+[m[32m                status_code=400, detail="Too many skills (max 40)"[m
+[32m+[m[32m            )[m
+[32m+[m[32m        current_user.skills = ", ".join(skills_list) if skills_list else None[m
+[32m+[m
+[32m+[m[32m    if data.interests is not None:[m
+[32m+[m[32m        if isinstance(data.interests, str):[m
+[32m+[m[32m            ints_list = [s.strip() for s in data.interests.split(",") if s.strip()][m
+[32m+[m[32m        else:[m
+[32m+[m[32m            ints_list = [s.strip() for s in data.interests if str(s).strip()][m
+[32m+[m[32m        current_user.interests = ", ".join(ints_list) if ints_list else None[m
+[32m+[m
+[32m+[m[32m    db.commit()[m
+[32m+[m[32m    db.refresh(current_user)[m
+[32m+[m[32m    return {"success": True, "user": serialize_current_user(current_user)}[m
+[32m+[m
+[32m+[m
+[32m+[m
+ # ==========================================[m
+ # DASHBOARD AGGREGATE (PROTECTED)[m
+ #[m

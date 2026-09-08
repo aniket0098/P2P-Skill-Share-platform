@@ -3,1040 +3,610 @@
 
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Profile | SkillShare</title>
 
-    <link rel="stylesheet" href="profile.css?v=2">
+    <!-- Google Font & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <link rel="stylesheet" href="profile.css?v=4">
 
     <script src="config.js"></script>
     <script src="api-client.js"></script>
-    <script src="profile.js?v=2" defer></script>
+    <script src="profile.js?v=4" defer></script>
 </head>
-
 
 <body>
 
     <!-- =====================================================
          TOP NAVIGATION
     ====================================================== -->
-
     <header class="topbar">
-
         <!-- BRAND -->
-
         <a href="dashboard.html" class="brand" aria-label="SkillShare Dashboard">
-
-            <div class="brand-mark">
-                ✦
-            </div>
-
+            <div class="brand-mark">✦</div>
             <div>
                 <strong>SkillShare</strong>
                 <span>Learn • Share • Grow</span>
             </div>
-
         </a>
 
-
         <!-- NAVIGATION -->
-
         <nav>
-
-            <a href="dashboard.html">
-                Dashboard
-            </a>
-
-            <a href="explore.html">
-                Explore
-            </a>
-
-            <a href="messages.html">
-                Messages
-            </a>
-
-            <a href="community.html">
-                Community
-            </a>
-
+            <a href="dashboard.html">Dashboard</a>
+            <a href="explore.html">Explore</a>
+            <a href="projects.html">Projects</a>
+            <a href="messages.html">Messages</a>
+            <a href="community.html">Community</a>
         </nav>
 
-
         <!-- TOP RIGHT -->
-
         <div class="top-actions">
-
             <button class="icon-btn" type="button" title="Notifications" id="notificationBtn">
-
                 🔔
-
             </button>
 
-
             <!-- DIRECT PROFILE LINK -->
-
             <a href="profile.html" class="mini-profile active-profile" id="openProfile">
-
-                <span class="mini-avatar">
-                    —
-                </span>
-
-                <span>
-                    member
-                </span>
-
-                <span class="profile-arrow">
-                    ▾
-                </span>
-
+                <span class="mini-avatar" id="topNavAvatar">—</span>
+                <span id="topNavName">member</span>
+                <span class="profile-arrow">▾</span>
             </a>
-
         </div>
-
     </header>
-
 
 
     <!-- =====================================================
          MAIN PROFILE PAGE
     ====================================================== -->
-
     <main class="profile-page">
 
-
         <!-- =================================================
-             PROFILE HERO
+             1. PROFILE HEADER
         ================================================== -->
-
         <section class="profile-hero">
-
             <div class="cover-pattern"></div>
 
-
             <!-- BACK BUTTON -->
-
             <a href="dashboard.html" class="back-button">
-
                 ← Back to Dashboard
-
             </a>
 
-
             <!-- PROFILE MAIN -->
-
             <div class="hero-main">
-
-
-                <!-- AVATAR -->
-
+                <!-- Profile Image -->
                 <div class="avatar-wrap">
-
-                    <div class="avatar">
-
+                    <div class="avatar" id="profileAvatar">
                         —
-
                     </div>
-
                     <span class="online-dot"></span>
-
                 </div>
 
-
-
-                <!-- IDENTITY -->
-
+                <!-- Identity: First Name, Last Name, Username, Location, Bio -->
                 <div class="identity">
-
                     <div class="name-row">
-
-                        <h1>
-                            member
+                        <h1 id="heroName">
+                            Loading Profile...
                         </h1>
-
-                        <span class="verified">
-                            ✓
-                        </span>
-
+                        <span class="verified" title="Verified Member">✓</span>
                     </div>
 
-
-                    <p class="role">
-
-                        Role information will sync from your account.
-
+                    <p class="role" id="profileUsername">
+                        @username
                     </p>
 
-
-                    <p class="location">
-
-                        Location not set.
-
+                    <p class="location" id="heroLocation">
+                        📍 Location not set
                     </p>
-
 
                     <p class="public-id" id="profilePublicId">
-
                         User ID: —
-
                     </p>
-
-
-                    <!-- PROFILE TAGS -->
-
-                    <div class="chips">
-
-                        <span>
-                            Available to teach
-                        </span>
-
-                        <span>
-                            Open to learning
-                        </span>
-
-                        <span>
-                            Top Mentor
-                        </span>
-
-                    </div>
-
                 </div>
-
             </div>
 
+            <!-- Bio -->
+            <p class="bio" id="heroBio">
+                Loading bio...
+            </p>
 
-
-            <!-- BIO -->
-
-            <p class="bio">
-
-                Your bio will appear here once your profile is connected to the backend.
-</p>
-
-
-
-            <!-- ACTIONS -->
-
+            <!-- Action Buttons -->
             <div class="hero-actions">
-
-                <button class="primary-btn" id="messageBtn" type="button">
-
+                <!-- Shown when viewing another user's profile -->
+                <button class="primary-btn" id="messageBtn" type="button" style="display: none;">
                     💬 Message
-
                 </button>
 
-
-                <button class="secondary-btn" id="followBtn" type="button">
-
-                    + Follow
-
+                <button class="secondary-btn" id="followBtn" type="button" style="display: none;">
+                    + Send Request
                 </button>
-
 
                 <button class="secondary-btn" id="shareBtn" type="button">
-
                     ↗ Share
-
                 </button>
 
-
-                <button class="secondary-btn" id="editBtn" type="button">
-
+                <!-- Edit Profile Button (Opens 3-field editor) -->
+                <button class="primary-btn" id="editBtn" type="button">
                     ✎ Edit Profile
-
                 </button>
-
             </div>
-
         </section>
 
 
-
         <!-- =================================================
-             QUICK STATS
+             14. PROFILE STATISTICS (Real PostgreSQL values)
         ================================================== -->
-
         <section class="quick-stats">
-
             <div>
-
-                <strong data-count="0">
-                    0
-                </strong>
-
-                <span>
-                    Skills Shared
-                </span>
-
+                <strong data-count="0" id="statProjects">0</strong>
+                <span>Projects Shared</span>
             </div>
-
-
             <div>
-
-                <strong data-count="0">
-                    0
-                </strong>
-
-                <span>
-                    Sessions
-                </span>
-
+                <strong data-count="0" id="statConnections">0</strong>
+                <span>Connections</span>
             </div>
-
-
             <div>
-
-                <strong data-count="0">
-                    0
-                </strong>
-
-                <span>
-                    Followers
-                </span>
-
+                <strong data-count="0" id="statSkills">0</strong>
+                <span>Skills</span>
             </div>
-
-
             <div>
-
-                <strong data-count="0">
-                    0
-                </strong>
-
-                <span>
-                    Rating
-                </span>
-
+                <strong data-count="0" id="statDaysMember">0</strong>
+                <span>Days as Member</span>
             </div>
-
+            <div>
+                <strong data-count="0" id="statLearning">0%</strong>
+                <span>Learning Progress</span>
+            </div>
         </section>
 
 
-
         <!-- =================================================
-             PROFILE TABS
+             PROFILE CONTENT (Structured Sections)
         ================================================== -->
-
-        <div class="profile-tabs">
-
-            <button class="tab active" data-tab="overview" type="button">
-
-                Overview
-
-            </button>
-
-
-            <button class="tab" data-tab="skills" type="button">
-
-                Skills
-
-            </button>
-
-
-            <button class="tab" data-tab="sessions" type="button">
-
-                Sessions
-
-            </button>
-
-
-            <button class="tab" data-tab="activity" type="button">
-
-                Activity
-
-            </button>
-
-        </div>
-
-
-
-        <!-- =================================================
-             TAB CONTENT
-        ================================================== -->
-
         <div class="profile-content">
+            <div class="profile-layout-grid">
 
+                <!-- =========================================
+                     MAIN LEFT COLUMN
+                ========================================== -->
+                <div class="layout-main-col">
 
-            <!-- =============================================
-                 OVERVIEW
-            ============================================== -->
-
-            <section class="tab-panel active" id="overview">
-
-
-                <div class="two-col">
-
-
-                    <!-- ABOUT -->
-
-                    <div class="panel-card">
-
+                    <!-- =====================================
+                         2 & 4. ABOUT & EDIT PROFILE (3 FIELDS ONLY)
+                         Directly editable: First Name, Last Name, Bio
+                    ====================================== -->
+                    <div class="panel-card" id="aboutSectionCard">
                         <div class="card-heading">
-
-                            <h2>
-                                About member
-                            </h2>
-
-                            <button class="text-btn" id="aboutEdit" type="button">
-
-                                Edit
-
+                            <h2>About</h2>
+                            <button class="text-btn" id="triggerEditSection" type="button">
+                                ✎ Edit Profile
                             </button>
-
                         </div>
 
+                        <!-- DISPLAY MODE (Normal View) -->
+                        <div id="aboutDisplayMode">
+                            <div class="field-display-row">
+                                <div class="field-label-group">
+                                    <span class="field-title">First Name</span>
+                                    <b class="field-val" id="dispFirstName">—</b>
+                                </div>
+                                <button class="inline-edit-btn" id="editFirstNameBtn" type="button">Edit</button>
+                            </div>
 
-                        <p id="aboutText">
+                            <div class="field-display-row">
+                                <div class="field-label-group">
+                                    <span class="field-title">Last Name</span>
+                                    <b class="field-val" id="dispLastName">—</b>
+                                </div>
+                                <button class="inline-edit-btn" id="editLastNameBtn" type="button">Edit</button>
+                            </div>
 
-                            I build useful products, simplify
-                            complex technology and help people
-                            turn ideas into real-world skills.
+                            <div class="field-display-row full-bio-row">
+                                <div class="field-label-group">
+                                    <span class="field-title">Bio</span>
+                                    <p class="field-val-bio" id="aboutText">No bio added yet.</p>
+                                </div>
+                                <button class="inline-edit-btn" id="editBioBtn" type="button">Edit</button>
+                            </div>
+                        </div>
 
-                            I enjoy helping developers understand
-                            modern web development and building
-                            practical projects together.
+                        <!-- INTERACTIVE EDIT MODE (Only First Name, Last Name, Bio) -->
+                        <div id="aboutEditMode" style="display: none;">
+                            <div class="inline-edit-box">
+                                <div class="field-grid">
+                                    <label class="field">
+                                        <span>First Name</span>
+                                        <input type="text" id="inlineFirstName" maxlength="40" placeholder="First Name">
+                                    </label>
 
+                                    <label class="field">
+                                        <span>Last Name</span>
+                                        <input type="text" id="inlineLastName" maxlength="40" placeholder="Last Name">
+                                    </label>
+                                </div>
+
+                                <label class="field" style="margin-top: 12px;">
+                                    <span>Bio (Directly editable here)</span>
+                                    <textarea id="inlineBio" maxlength="300" placeholder="Tell the community about yourself..."></textarea>
+                                </label>
+
+                                <div class="edit-guidance-note">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <span>
+                                        Username, location, skills & interests are managed in
+                                        <a href="setting.html">Settings → Profile</a>.
+                                    </span>
+                                </div>
+
+                                <div class="inline-edit-actions">
+                                    <button class="secondary-btn" id="cancelEditBtn" type="button">Cancel</button>
+                                    <button class="primary-btn" id="saveEditBtn" type="button">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- =====================================
+                         8. SHARED PROJECTS (MY PROJECTS)
+                         Shows ONLY projects shared by this user
+                    ====================================== -->
+                    <div class="panel-card" id="myProjectsCard">
+                        <div class="card-heading">
+                            <div class="heading-with-badge">
+                                <h2>MY PROJECTS</h2>
+                                <span class="count-badge" id="projectCountBadge">0</span>
+                            </div>
+                            <a href="projects.html" class="action-link-btn" id="viewAllProjectsLink">
+                                [View All My Projects] →
+                            </a>
+                        </div>
+
+                        <p class="section-subtitle">
+                            Projects actually shared and created by this user.
                         </p>
 
+                        <!-- Real project cards from PostgreSQL table 'projects' -->
+                        <div class="profile-projects-grid" id="myProjectsGrid">
+                            <!-- Populated dynamically by profile.js -->
+                        </div>
+
+                        <!-- Empty state -->
+                        <div class="empty-state-box" id="projectsEmptyState" style="display: none;">
+                            <div class="empty-state-icon">📁</div>
+                            <h4>No projects shared yet.</h4>
+                            <p>Share projects you've built to showcase your skills to peers.</p>
+                            <a href="projects.html" class="primary-btn mini-btn">
+                                Explore Project Gallery
+                            </a>
+                        </div>
                     </div>
 
 
-
-                    <!-- DETAILS -->
-
-                    <div class="panel-card">
-
+                    <!-- =====================================
+                         11. LEARNING PROGRESS
+                         Based on user's REAL learning activity
+                    ====================================== -->
+                    <div class="panel-card" id="learningProgressCard">
                         <div class="card-heading">
-
-                            <h2>
-                                Profile Details
-                            </h2>
-
+                            <h2>LEARNING PROGRESS</h2>
+                            <a href="explore.html" class="action-link-btn">
+                                Explore Skills →
+                            </a>
                         </div>
 
+                        <p class="section-subtitle">
+                            Overall learning progress and progress across tracked skills.
+                        </p>
+
+                        <!-- Overall Progress Bar UI -->
+                        <div class="overall-progress-card">
+                            <div class="progress-meta">
+                                <span>Overall Learning Progress</span>
+                                <strong id="learningOverallPct">0%</strong>
+                            </div>
+                            <div class="progress-track-bg">
+                                <div class="progress-fill-bar" id="learningOverallBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Top Learning Skills (Real database progress only) -->
+                        <div class="learning-skills-section" id="learningSkillsSection" style="display: none;">
+                            <h3 class="subsection-title">Top Learning Skills</h3>
+                            <div class="learning-skills-list" id="learningSkillsList">
+                                <!-- Populated dynamically if real tracking exists -->
+                            </div>
+                        </div>
+
+                        <!-- Empty state when no learning tracking exists in DB -->
+                        <div class="empty-state-box" id="learningEmptyState">
+                            <div class="empty-state-icon">🎓</div>
+                            <h4>Start learning from Explore Skills to build your learning activity.</h4>
+                            <p>Discover peer mentors, join live sessions, and track your learning progress here.</p>
+                            <a href="explore.html" class="primary-btn mini-btn">
+                                Explore Skills
+                            </a>
+                        </div>
+                    </div>
+
+
+                    <!-- =====================================
+                         12. RECENT LEARNING
+                         User's actual recent learning activity
+                    ====================================== -->
+                    <div class="panel-card" id="recentLearningCard">
+                        <div class="card-heading">
+                            <h2>RECENT LEARNING</h2>
+                            <a href="my-learning.html" class="action-link-btn">
+                                My Learning →
+                            </a>
+                        </div>
+
+                        <p class="section-subtitle">
+                            Actual courses, videos, and learning materials recently practiced.
+                        </p>
+
+                        <div class="recent-learning-list" id="recentLearningList">
+                            <!-- Populated from PostgreSQL LearningRecord table -->
+                        </div>
+
+                        <!-- Empty state -->
+                        <div class="empty-state-box" id="recentLearningEmptyState">
+                            <div class="empty-state-icon">📖</div>
+                            <h4>Start learning from Explore Skills to build your learning activity.</h4>
+                            <p>Pick a topic to start your peer learning journey.</p>
+                            <a href="explore.html" class="primary-btn mini-btn">
+                                Browse Topics
+                            </a>
+                        </div>
+                    </div>
+
+
+                    <!-- =====================================
+                         13. RECENT ACTIVITY
+                         Actual activities performed by the user
+                    ====================================== -->
+                    <div class="panel-card" id="recentActivityCard">
+                        <div class="card-heading">
+                            <h2>RECENT ACTIVITY</h2>
+                            <select id="activityFilter" class="activity-select">
+                                <option value="all">All Activity</option>
+                                <option value="project">Projects</option>
+                                <option value="teaching">Skills</option>
+                                <option value="community">Community</option>
+                                <option value="learning">Learning</option>
+                            </select>
+                        </div>
+
+                        <p class="section-subtitle">
+                            Authentic timeline of actions recorded in PostgreSQL.
+                        </p>
+
+                        <!-- Activity timeline -->
+                        <div class="activity-timeline" id="activityList">
+                            <!-- Populated dynamically from PostgreSQL events -->
+                        </div>
+
+                        <!-- Empty state -->
+                        <div class="empty-state-box" id="activityEmptyState" style="display: none;">
+                            <div class="empty-state-icon">⏱️</div>
+                            <h4>Start learning from Explore Skills to build your learning activity.</h4>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- =========================================
+                     SIDEBAR RIGHT COLUMN
+                ========================================== -->
+                <div class="layout-side-col">
+
+                    <!-- =====================================
+                         5. PROFILE FIELDS MANAGED IN SETTINGS
+                         Username, Location, Skills, Interests
+                    ====================================== -->
+                    <div class="panel-card" id="managedFieldsCard">
+                        <div class="card-heading">
+                            <h2>Managed in Settings</h2>
+                        </div>
+                        <p class="section-subtitle">
+                            These fields cannot be edited directly on Profile.
+                        </p>
+
+                        <div class="managed-field-item">
+                            <div class="managed-field-head">
+                                <span class="managed-field-label">Username</span>
+                                <a href="setting.html" class="manage-in-settings-badge">
+                                    Manage in Settings →
+                                </a>
+                            </div>
+                            <b class="managed-field-value" id="sideUsername">@username</b>
+                        </div>
+
+                        <div class="managed-field-item">
+                            <div class="managed-field-head">
+                                <span class="managed-field-label">Location</span>
+                                <a href="setting.html" class="manage-in-settings-badge">
+                                    Manage in Settings →
+                                </a>
+                            </div>
+                            <b class="managed-field-value" id="sideLocation">Location not set</b>
+                        </div>
+
+                        <div class="managed-field-item">
+                            <div class="managed-field-head">
+                                <span class="managed-field-label">Skills</span>
+                                <a href="setting.html" class="manage-in-settings-badge">
+                                    Manage in Settings →
+                                </a>
+                            </div>
+                            <span class="managed-field-summary" id="sideSkillsSummary">No skills added yet</span>
+                        </div>
+
+                        <div class="managed-field-item">
+                            <div class="managed-field-head">
+                                <span class="managed-field-label">Interests</span>
+                                <a href="setting.html" class="manage-in-settings-badge">
+                                    Manage in Settings →
+                                </a>
+                            </div>
+                            <span class="managed-field-summary" id="sideInterestsSummary">No interests added yet</span>
+                        </div>
+                    </div>
+
+
+                    <!-- =====================================
+                         7. WORKING SKILLS
+                         Shows real saved skills as interactive cards/tags
+                    ====================================== -->
+                    <div class="panel-card" id="workingSkillsCard">
+                        <div class="card-heading">
+                            <h2>WORKING SKILLS</h2>
+                            <a href="setting.html" class="action-link-btn" title="Manage through Settings → Profile">
+                                [Manage Skills] →
+                            </a>
+                        </div>
+                        <p class="section-subtitle">
+                            Real skills saved in your database record.
+                        </p>
+
+                        <div class="interactive-chips" id="workingSkillChips">
+                            <!-- Real saved skills rendered here -->
+                        </div>
+
+                        <div class="empty-chip-state" id="skillsEmptyState" style="display: none;">
+                            No skills added yet.
+                        </div>
+                    </div>
+
+
+                    <!-- =====================================
+                         3. INTERESTS
+                         Real interests from the database
+                    ====================================== -->
+                    <div class="panel-card" id="interestsCard">
+                        <div class="card-heading">
+                            <h2>INTERESTS</h2>
+                            <a href="setting.html" class="action-link-btn" title="Manage through Settings → Profile">
+                                [Manage Interests] →
+                            </a>
+                        </div>
+                        <p class="section-subtitle">
+                            Skills and subjects you want to learn.
+                        </p>
+
+                        <div class="interactive-chips interests-color" id="interestChips">
+                            <!-- Real saved interests rendered here -->
+                        </div>
+
+                        <div class="empty-chip-state" id="interestsEmptyState" style="display: none;">
+                            No interests added yet.
+                        </div>
+                    </div>
+
+
+                    <!-- =====================================
+                         9 & 10. CONNECTIONS & MEMBERSHIP DETAILS
+                    ====================================== -->
+                    <div class="panel-card" id="detailsCard">
+                        <div class="card-heading">
+                            <h2>CONNECTIONS & ACCOUNT</h2>
+                        </div>
 
                         <div class="detail-list">
-
-
                             <div>
-
-                                <span>💼</span>
-
-                                <b>
-                                    Full Stack Developer
-                                </b>
-
-                                <small>
-                                    Professional Role
-                                </small>
-
+                                <span>🤝</span>
+                                <b id="detailConnectionsCount">0</b>
+                                <small>Active Connections</small>
                             </div>
-
-
                             <div>
-
-                                <span>🎓</span>
-
-                                <b>
-                                    Computer Science
-                                </b>
-
-                                <small>
-                                    Education
-                                </small>
-
-                            </div>
-
-
-                            <div>
-
-                                <span>🌐</span>
-
-                                <b>
-                                    English • Hindi
-                                </b>
-
-                                <small>
-                                    Languages
-                                </small>
-
-                            </div>
-
-
-                            <div>
-
                                 <span>📅</span>
-
-                                <b>
-                                    Joined SkillShare
-                                </b>
-
-                                <small>
-                                    January 2026
-                                </small>
-
+                                <b id="detailMemberSince">—</b>
+                                <small>Member Since</small>
                             </div>
-
+                            <div>
+                                <span>⏳</span>
+                                <b id="detailDaysMember">0 days</b>
+                                <small>Days as Member</small>
+                            </div>
+                            <div>
+                                <span>📧</span>
+                                <b id="detailEmail">—</b>
+                                <small>Account Email</small>
+                            </div>
                         </div>
 
-                    </div>
-
-                </div>
-
-
-
-                <!-- =========================================
-                     SKILL LEVELS
-                ========================================== -->
-
-                <div class="panel-card">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Top Skills
-                        </h2>
-
-                        <button class="text-btn" data-tab-jump="skills" type="button">
-
-                            View All
-
-                        </button>
-
-                    </div>
-
-
-                    <div class="skill-row">
-
-                        <span>
-                            JavaScript
-                        </span>
-
-                        <div>
-                            <i style="width: 94%"></i>
-                        </div>
-
-                        <b>
-                            94%
-                        </b>
-
-                    </div>
-
-
-                    <div class="skill-row">
-
-                        <span>
-                            React
-                        </span>
-
-                        <div>
-                            <i style="width: 89%"></i>
-                        </div>
-
-                        <b>
-                            89%
-                        </b>
-
-                    </div>
-
-
-                    <div class="skill-row">
-
-                        <span>
-                            Node.js
-                        </span>
-
-                        <div>
-                            <i style="width: 86%"></i>
-                        </div>
-
-                        <b>
-                            86%
-                        </b>
-
-                    </div>
-
-
-                    <div class="skill-row">
-
-                        <span>
-                            UI/UX
-                        </span>
-
-                        <div>
-                            <i style="width: 81%"></i>
-                        </div>
-
-                        <b>
-                            81%
-                        </b>
-
-                    </div>
-
-                </div>
-
-
-
-                <!-- =========================================
-                     ACHIEVEMENTS
-                ========================================== -->
-
-                <div class="panel-card">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Achievements
-                        </h2>
-
-                        <button class="text-btn" id="achievementsBtn" type="button">
-
-                            View All
-
-                        </button>
-
-                    </div>
-
-
-                    <div class="achievement-grid">
-
-
-                        <button class="achievement" data-achievement="Top Mentor" type="button">
-
-                            <span>
-                                🏆
+                        <div class="settings-hint">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>Settings & Account security:
+                                <a href="setting.html">Settings → Profile</a>
                             </span>
-
-                            <b>
-                                Top Mentor
-                            </b>
-
-                            <small>
-                                50+ sessions
-                            </small>
-
-                        </button>
-
-
-                        <button class="achievement" data-achievement="Skill Master" type="button">
-
-                            <span>
-                                ⚡
-                            </span>
-
-                            <b>
-                                Skill Master
-                            </b>
-
-                            <small>
-                                10 skills
-                            </small>
-
-                        </button>
-
-
-                        <button class="achievement" data-achievement="Community Star" type="button">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <b>
-                                Community Star
-                            </b>
-
-                            <small>
-                                100 likes
-                            </small>
-
-                        </button>
-
-
-                        <button class="achievement" data-achievement="Early Member" type="button">
-
-                            <span>
-                                🚀
-                            </span>
-
-                            <b>
-                                Early Member
-                            </b>
-
-                            <small>
-                                2026 member
-                            </small>
-
-                        </button>
-
-
+                        </div>
                     </div>
 
                 </div>
-
-            </section>
-
-
-
-            <!-- =============================================
-                 SKILLS TAB
-            ============================================== -->
-
-            <section class="tab-panel" id="skills">
-
-
-                <div class="panel-card">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            member's Skills
-                        </h2>
-
-                        <button class="text-btn" id="addSkillBtn" type="button">
-
-                            + Add Skill
-
-                        </button>
-
-                    </div>
-
-
-                    <div class="skill-tags" id="skillTags">
-
-
-                        <span>
-                            JavaScript
-                        </span>
-
-                        <span>
-                            React
-                        </span>
-
-                        <span>
-                            Node.js
-                        </span>
-
-                        <span>
-                            Python
-                        </span>
-
-                        <span>
-                            UI/UX Design
-                        </span>
-
-                        <span>
-                            Cloud Computing
-                        </span>
-
-                        <span>
-                            Git & GitHub
-                        </span>
-
-                        <span>
-                            REST APIs
-                        </span>
-
-                        <span>
-                            MongoDB
-                        </span>
-
-                        <span>
-                            TypeScript
-                        </span>
-
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =============================================
-                 SESSIONS TAB
-            ============================================== -->
-
-            <section class="tab-panel" id="sessions">
-
-
-                <div class="panel-card">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Upcoming Sessions
-                        </h2>
-
-                    </div>
-
-
-                    <div class="session">
-
-
-                        <div class="session-date">
-
-                            <b>
-                                24
-                            </b>
-
-                            <small>
-                                AUG
-                            </small>
-
-                        </div>
-
-
-                        <div>
-
-                            <b>
-                                Advanced React Architecture
-                            </b>
-
-                            <small>
-                                6:00 PM • 60 minutes
-                            </small>
-
-                        </div>
-
-
-                        <button class="join-btn" type="button">
-
-                            Join
-
-                        </button>
-
-                    </div>
-
-
-
-                    <div class="session">
-
-                        <div class="session-date">
-
-                            <b>
-                                27
-                            </b>
-
-                            <small>
-                                AUG
-                            </small>
-
-                        </div>
-
-
-                        <div>
-
-                            <b>
-                                Building REST APIs
-                            </b>
-
-                            <small>
-                                7:30 PM • 45 minutes
-                            </small>
-
-                        </div>
-
-
-                        <button class="join-btn" type="button">
-
-                            Join
-
-                        </button>
-
-                    </div>
-
-
-
-                    <div class="session">
-
-                        <div class="session-date">
-
-                            <b>
-                                30
-                            </b>
-
-                            <small>
-                                AUG
-                            </small>
-
-                        </div>
-
-
-                        <div>
-
-                            <b>
-                                Full Stack Project Review
-                            </b>
-
-                            <small>
-                                5:00 PM • 60 minutes
-                            </small>
-
-                        </div>
-
-
-                        <button class="join-btn" type="button">
-
-                            Join
-
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =============================================
-                 ACTIVITY TAB
-            ============================================== -->
-
-            <section class="tab-panel" id="activity">
-
-
-                <div class="panel-card">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Recent Activity
-                        </h2>
-
-
-                        <select id="activityFilter">
-
-                            <option value="all">
-                                All Activity
-                            </option>
-
-                            <option value="learning">
-                                Learning
-                            </option>
-
-                            <option value="teaching">
-                                Teaching
-                            </option>
-
-                            <option value="community">
-                                Community
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-
-                    <div class="activity-list">
-
-
-                        
-
-
-
-                        
-
-
-
-                        
-
-
-
-                        
-
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
+            </div>
         </div>
 
     </main>
 
 
-
     <!-- =====================================================
-         EDIT PROFILE MODAL
+         EDIT PROFILE MODAL (Alternative quick modal)
+         Directly editable: ONLY First Name, Last Name, Bio
     ====================================================== -->
-
     <div class="modal" id="editModal" aria-hidden="true">
-
-
         <div class="modal-box">
-
-
             <div class="modal-head">
-
-                <h2>
-                    Edit Profile
-                </h2>
-
-                <button class="close-modal" type="button">
-
-                    ×
-
-                </button>
-
+                <h2>Edit Profile</h2>
+                <button class="close-modal" type="button" aria-label="Close modal">×</button>
             </div>
 
+            <div class="field-grid">
+                <label>
+                    First Name
+                    <input type="text" id="modalFirstName" maxlength="40" placeholder="First name" required>
+                </label>
 
-            <label>
+                <label>
+                    Last Name
+                    <input type="text" id="modalLastName" maxlength="40" placeholder="Last name">
+                </label>
+            </div>
 
-                Name
+            <div class="modal-settings-notice">
+                <i class="fa-solid fa-circle-info"></i>
+                <div>
+                    Username, location, skills and interests are managed in
+                    <a href="setting.html">Settings → Profile</a>.
+                </div>
+            </div>
 
-                <input type="text" id="nameInput" value="member Deshmukh" maxlength="60">
-
-            </label>
-
-
-            <label>
-
+            <label style="margin-top: 14px;">
                 Bio
-
-                <textarea id="bioInput"
-                    maxlength="300">I build useful products, simplify complex technology and help people turn ideas into real-world skills.</textarea>
-
+                <textarea id="modalBio" maxlength="300" placeholder="Tell the community about yourself..."></textarea>
             </label>
-
 
             <div class="modal-actions">
-
                 <button class="secondary-btn close-modal" type="button">
-
                     Cancel
-
                 </button>
-
-
-                <button class="primary-btn" id="saveProfile" type="button">
-
+                <button class="primary-btn" id="modalSaveBtn" type="button">
                     Save Changes
-
                 </button>
-
             </div>
-
-
         </div>
-
     </div>
-
 
 
     <!-- =====================================================
-         TOAST
+         TOAST NOTIFICATION
     ====================================================== -->
-
-    <div class="toast" id="toast" role="status" aria-live="polite">
-
-    </div>
-
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 </body>
 

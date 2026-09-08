@@ -1,0 +1,20 @@
+GET /api/learning-resources/skills: 200
+  skills: ['AI', 'Cloud', 'Data Science', 'FastAPI', 'JavaScript', 'Machine Learning', 'Python']
+
+GET /api/learning-resources/providers: 200
+  providers: ['AWS', 'DeepLearning.AI', 'FastAPI', 'Frontend Masters', 'Google', 'IBM', 'JavaScript.info', 'Kaggle', 'MIT', 'Microsoft', 'Real Python', 'Stanford University', 'University of Helsinki', 'University of Michigan', 'YouTube', 'fast.ai', 'freeCodeCamp']
+
+GET /api/learning-resources (all): 200
+  count: 29
+  first resource: AWS Cloud Practitioner Essentials
+
+GET /api/learning-resources?skill=Python&resource_type=video: 200
+  count: 1
+  - [YouTube] Corey Schafer - Python Tutorials (https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU)
+
+GET /api/learning-resources?skill=FastAPI: 200
+  count: 4
+  - [course] FastAPI - Official Tutorial (https://fastapi.tiangolo.com/tutorial/)
+  - [course] FastAPI Documentation (https://fastapi.tiangolo.com/)
+  - [video] FastAPI - Full Course (freeCodeCamp) (https://www.youtube.com/watch?v=tLKKmouUams)
+  - [video] FastAPI - The Complete Guide (ArjanCodes) (https://www.youtube.com/watch?v=_y9qQZXE24A)

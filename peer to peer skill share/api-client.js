@@ -107,10 +107,22 @@ window.SkillShareAPI = (() => {
 
         // Append a skill to the AUTHENTICATED user's own
         // profile (backend derives the user from the JWT).
-        addMySkill: (name) =>
+                        addMySkill: (name) =>
             request("/api/users/me/skills", {
                 method: "PATCH",
                 body: JSON.stringify({ name }),
+            }),
+
+        // Fetch the authenticated user's live PostgreSQL record.
+        // The user is resolved server-side from the JWT "sub" claim.
+        getMe: () => request("/users/me"),
+
+        // Update the AUTHENTICATED user's own profile. The user is
+        // derived from the JWT server-side; no user_id is sent.
+        updateMyProfile: (data) =>
+            request("/api/users/me", {
+                method: "PATCH",
+                body: JSON.stringify(data || {}),
             }),
 
         // --- Users ---
@@ -150,5 +162,45 @@ window.SkillShareAPI = (() => {
                 method: "POST",
                 body: JSON.stringify({ content }),
             }),
+
+        // --- Projects (PostgreSQL backed) ---
+        getMyProjects: () => request("/api/users/me/projects"),
+        getUserProjects: (userId) => request(`/api/users/${userId}/projects`),
+        listProjects: (ownerId) =>
+            request("/api/projects" + (ownerId ? `?owner_id=${ownerId}` : "")),
+        createProject: (data) =>
+            request("/api/projects", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+
+        // --- Activity Timeline (PostgreSQL events) ---
+        getMyActivity: () => request("/api/users/me/activity"),
+        getUserActivity: (userId) => request(`/api/users/${userId}/activity`),
+
+                // --- Learning Progress (PostgreSQL) ---
+        getMyLearning: () => request("/api/users/me/learning"),
+        getUserLearning: (userId) => request(`/api/users/${userId}/learning`),
+        addOrUpdateLearning: (data) =>
+            request("/api/users/me/learning", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+
+        // --- Learning Resources (curated, from trusted providers) ---
+        getLearningSkills: () => request("/api/learning-resources/skills"),
+        getLearningProviders: () => request("/api/learning-resources/providers"),
+        getLearningResources: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.skill) query.set("skill", params.skill);
+            if (params.resource_type) query.set("resource_type", params.resource_type);
+            if (params.difficulty) query.set("difficulty", params.difficulty);
+            if (params.provider) query.set("provider", params.provider);
+            if (params.search) query.set("search", params.search);
+            const qs = query.toString();
+            return request("/api/learning-resources" + (qs ? `?${qs}` : ""));
+        },
+        getLearningResource: (id) => request(`/api/learning-resources/${id}`),
     };
 })();
+

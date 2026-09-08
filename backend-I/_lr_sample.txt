@@ -1,0 +1,5 @@
+id=1 skill=Python type=course provider=Google title=Google's Python Class
+id=2 skill=Python type=course provider=University of Michigan title=Python for Everybody (PY4E)
+id=3 skill=Python type=video provider=YouTube title=Corey Schafer - Python Tutorials
+id=4 skill=Python type=course provider=Real Python title=Real Python Tutorials
+id=5 skill=Python type=course provider=IBM title=Python for Data Science - IBM
