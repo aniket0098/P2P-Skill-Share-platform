@@ -1,0 +1,3 @@
+COUNT=29
+SKILLS=['Python', 'FastAPI', 'JavaScript', 'Machine Learning', 'AI', 'Data Science', 'Cloud']
+PROVIDERS=['Microsoft', 'FastAPI', 'Google', 'University of Helsinki', 'Kaggle', 'YouTube', 'MIT', 'IBM', 'Real Python', 'University of Michigan', 'DeepLearning.AI', 'fast.ai', 'freeCodeCamp', 'AWS', 'Frontend Masters', 'JavaScript.info', 'Stanford University']

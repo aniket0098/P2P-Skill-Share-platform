@@ -1,0 +1,16 @@
+[1] GET /api/learning-resources: 200 count=29
+[2] ?skill=Python: 200 count=6 all_python=True
+[3] ?difficulty=beginner: 200 count=18 all_beginner=True
+[4] GET /providers: 200 providers=['AWS', 'DeepLearning.AI', 'FastAPI', 'Frontend Masters', 'Google', 'IBM', 'JavaScript.info', 'Kaggle', 'MIT', 'Microsoft', 'Real Python', 'Stanford University', 'University of Helsinki', 'University of Michigan', 'YouTube', 'fast.ai', 'freeCodeCamp']
+    ?provider=AWS: 200 count=1 all_match=True
+[5] ?resource_type=video: 200 count=7 all_video=True
+[6] ?search=python: 200 count=9 (all mention python=True)
+[7] GET /skills: 200 skills=['AI', 'Cloud', 'Data Science', 'FastAPI', 'JavaScript', 'Machine Learning', 'Python']
+[8] GET /api/learning-resources/1: 200 title="Google's Python Class"
+[9] login: 200 token=YES
+    starting real resource: "Google's Python Class" (Google)
+    POST /api/users/me/learning: 200 overall=0 has_activity=True
+    LEARNING RECORD CREATED: YES
+[10] resource 1 url present: True starts_with_http=True
+
+=== LR E2E COMPLETE ===

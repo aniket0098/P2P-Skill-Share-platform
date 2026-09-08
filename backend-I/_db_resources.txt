@@ -1,0 +1,6 @@
+ERROR: (psycopg2.errors.UndefinedTable) relation "learning_resources" does not exist
+LINE 1: SELECT COUNT(*) FROM learning_resources
+                             ^
+
+[SQL: SELECT COUNT(*) FROM learning_resources]
+(Background on this error at: https://sqlalche.me/e/20/f405)

@@ -563,7 +563,9 @@
 
                                         <div class="big-avatar-wrap">
 
-                                            <span class="avatar">—</span>
+                                            <img id="profileAvatar"
+                                                src="assets/avatar1.svg"
+                                                alt="Your avatar">
 
                                             <span class="online-dot"></span>
 
@@ -792,6 +794,52 @@
                                     <i class="fa-solid fa-plus"></i>
 
                                     Add Skill
+
+                                </button>
+
+                            </div>
+
+
+                            <div class="card">
+
+                                <div class="card-header">
+
+                                    <div>
+
+                                        <h2>
+                                            Interests
+                                        </h2>
+
+                                        <p>
+                                            Topics you want to learn about.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="skill-editor" id="interestEditor"></div>
+
+
+                                <div class="skill-add-row" id="interestAddRow" hidden>
+
+                                    <input type="text" id="newInterest" placeholder="Enter an interest...">
+
+                                    <button class="primary-btn" id="addInterest" type="button">
+
+                                        Add
+
+                                    </button>
+
+                                </div>
+
+
+                                <button class="outline-btn" id="showInterestInput" type="button" style="margin-top: 15px;">
+
+                                    <i class="fa-solid fa-plus"></i>
+
+                                    Add Interest
 
                                 </button>
 
@@ -2638,6 +2686,18 @@
     <div class="toast-container" id="toastContainer"></div>
 
 
+
+    <!-- ENVIRONMENT CONFIG (API base URL) — must load BEFORE api-client.js -->
+
+    <script src="config.js"></script>
+
+    <!-- FRONTEND API CLIENT (JWT auth + FastAPI/PostgreSQL access) -->
+
+    <script src="api-client.js"></script>
+
+    <!-- AUTH GUARD (redirects to login when the session is missing/expired) -->
+
+    <script src="auth.js"></script>
 
     <!-- SETTINGS JAVASCRIPT -->
 

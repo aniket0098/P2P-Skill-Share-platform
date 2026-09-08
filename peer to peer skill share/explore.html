@@ -8,6 +8,8 @@
     <title>SkillShare - Explore Skills</title>
 
     <link rel="stylesheet" href="explore.css">
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
     <script src="explore.js"></script>
     <script src="profile-quick.js" defer></script>
 </head>
@@ -392,9 +394,7 @@
                     ================================================== -->
 
                     <div class="skill-grid" id="skillGrid">
-                            <div class="empty-state">Skills from the community will appear here once connected to the backend.</div>
-
-                            <div class="empty-state">Skills from the community will appear here once connected to the backend.</div>
+                            <div class="empty-state" id="skillsLoading">Loading skills…</div>
 
 
 
@@ -445,6 +445,56 @@
                         
 
                     </div>
+                    <!-- =================================================
+                         LEARNING RESOURCES
+                    ================================================== -->
+
+                    <div class="section-title learning-resources-title reveal" id="resourceSection" hidden>
+
+                        <h2>
+                            Learning Resources — <span id="resourceSkillName"></span>
+                        </h2>
+
+                        <button id="backToSkills" type="button">
+                            ← All Skills
+                        </button>
+
+                    </div>
+
+                    <section class="learning-resources reveal" id="learningResources" hidden>
+
+                        <!-- Skill overview -->
+                        <p class="resource-overview" id="resourceOverview">
+                            Select a skill to discover real videos and courses from trusted providers.
+                        </p>
+
+                        <!-- Difficulty tabs -->
+                        <div class="topic-tabs" id="difficultyTabs">
+
+                            <button class="topic-tab active" type="button" data-difficulty="all">All Levels</button>
+                            <button class="topic-tab" type="button" data-difficulty="beginner">Beginner</button>
+                            <button class="topic-tab" type="button" data-difficulty="intermediate">Intermediate</button>
+                            <button class="topic-tab" type="button" data-difficulty="advanced">Advanced</button>
+
+                        </div>
+
+                        <!-- Passive learning (videos) -->
+                        <h3 class="resource-group-title">
+                            ▶ Passive Learning
+                        </h3>
+
+                        <div class="resource-grid" id="videoGrid"></div>
+
+                        <!-- Structured courses -->
+                        <h3 class="resource-group-title">
+                            🎓 Structured Courses
+                        </h3>
+
+                        <div class="resource-grid" id="courseGrid"></div>
+
+                    </section>
+
+
 
 
 
@@ -593,6 +643,44 @@
                         </select>
 
 
+                        <!-- Resource Provider -->
+
+                        <label>
+                            Provider
+                        </label>
+
+                        <select id="providerFilter">
+
+                            <option value="all">
+                                All Providers
+                            </option>
+
+                        </select>
+
+
+                        <!-- Resource Type -->
+
+                        <label>
+                            Resource Type
+                        </label>
+
+                        <select id="typeFilter">
+
+                            <option value="all">
+                                Videos & Courses
+                            </option>
+
+                            <option value="video">
+                                Videos Only
+                            </option>
+
+                            <option value="course">
+                                Courses Only
+                            </option>
+
+                        </select>
+
+
                         <!-- Availability -->
 
                         <label>
@@ -649,16 +737,16 @@
 
                         <select id="sortSelect">
 
-                            <option value="popular">
-                                Most Popular
-                            </option>
-
-                            <option value="rating">
-                                Highest Rated
-                            </option>
-
                             <option value="az">
                                 A — Z
+                            </option>
+
+                            <option value="za">
+                                Z — A
+                            </option>
+
+                            <option value="provider">
+                                Provider (A — Z)
                             </option>
 
                         </select>
