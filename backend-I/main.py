@@ -79,6 +79,13 @@ def _run_startup_migrations():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS website VARCHAR",
+        # Explore Skills: learning_resources already created by
+        # Base.metadata.create_all(); the learning_records additions
+        # below prepare My Learning tracking (started/in_progress/
+        # completed + last accessed + time spent) without analytics.
+        "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS resource_id INTEGER",
+        "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS last_accessed TIMESTAMP",
+        "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS time_spent_seconds INTEGER DEFAULT 0",
     ]
     with engine.begin() as connection:
         for statement in statements:
@@ -1774,6 +1781,13 @@ def get_user_activity(
 # =========================================================
 
 def _gather_user_learning(db: Session, target_user: User) -> dict:
+    """Assemble real learning progress from PostgreSQL.
+
+    Includes the prepared ``resource_id`` / ``last_accessed`` /
+    ``time_spent_seconds`` fields so My Learning can later track
+    started → in_progress → completed per real resource. No
+    analytics are computed here yet (no fake percentages).
+    """
     records = (
         db.query(LearningRecord)
         .filter(LearningRecord.user_id == target_user.id)
@@ -1798,8 +1812,12 @@ def _gather_user_learning(db: Session, target_user: User) -> dict:
         {
             "skill": r.skill_name,
             "resource": r.resource_title or "Course",
+            "resource_id": r.resource_id,
+            "resource_url": (r.resource.url if r.resource else None),
             "progress": r.progress_percentage,
             "status": r.status,
+            "last_accessed": r.last_accessed.isoformat() if r.last_accessed else None,
+            "time_spent_seconds": r.time_spent_seconds or 0,
             "updated_at": r.updated_at.isoformat() if r.updated_at else None,
         }
         for r in records[:5]
@@ -1835,10 +1853,30 @@ def get_user_learning(
 
 class AddLearningRecordSchema(BaseModel):
     skill_name: str
+    resource_id: int | None = None
     resource_title: str | None = None
     resource_type: str | None = "course"
     progress_percentage: int = 0
+    # started | in_progress | completed (completed is derived from 100%)
     status: str | None = "in_progress"
+    last_accessed: datetime | None = None
+    time_spent_seconds: int | None = None
+
+    @field_validator("status")
+    @classmethod
+    def _validate_status(cls, value):
+        if value is None:
+            return value
+        cleaned = value.strip().lower()
+        allowed = {"started", "in_progress", "completed"}
+        if cleaned not in allowed:
+            raise ValueError("status must be one of: started, in_progress, completed")
+        return cleaned
+
+    @field_validator("progress_percentage")
+    @classmethod
+    def _validate_progress(cls, value):
+        return max(0, min(100, int(value or 0)))
 
 
 @app.post("/api/users/me/learning")
@@ -1847,39 +1885,95 @@ def add_or_update_learning(
     current_user: User = Depends(get_current_user_model),
     db: Session = Depends(get_db),
 ):
-    """Enroll or update learning progress in PostgreSQL."""
+    """Enroll or update learning progress in PostgreSQL.
+
+    Accepts an optional ``resource_id`` pointing at a curated
+    ``learning_resources`` row so a future My Learning view can track
+    started → in_progress → completed per real resource. When a valid
+    ``resource_id`` is supplied the skill/title/type fall back to the
+    curated row so callers only need to send the id + progress.
+    """
     clean_skill = (data.skill_name or "").strip()
+    linked_resource = None
+    if data.resource_id is not None:
+        linked_resource = db.get(LearningResource, data.resource_id)
+        if linked_resource is None:
+            raise HTTPException(status_code=404, detail="Learning resource not found")
+        # A resource always knows its own skill — prefer the curated value
+        # so the record can never drift from the resource it points to.
+        clean_skill = linked_resource.skill
     if not clean_skill:
         raise HTTPException(status_code=400, detail="Skill name is required")
 
-    record = (
-        db.query(LearningRecord)
-        .filter(
-            LearningRecord.user_id == current_user.id,
-            func.lower(LearningRecord.skill_name) == clean_skill.lower(),
+    record = None
+    if linked_resource is not None:
+        # One row per (user, resource): re-opening the same resource
+        # resumes it instead of creating duplicates.
+        record = (
+            db.query(LearningRecord)
+            .filter(
+                LearningRecord.user_id == current_user.id,
+                LearningRecord.resource_id == linked_resource.id,
+            )
+            .first()
         )
-        .first()
-    )
+    if record is None:
+        record = (
+            db.query(LearningRecord)
+            .filter(
+                LearningRecord.user_id == current_user.id,
+                func.lower(LearningRecord.skill_name) == clean_skill.lower(),
+                LearningRecord.resource_id.is_(None),
+            )
+            .first()
+        )
     is_new = False
-    pct = max(0, min(100, data.progress_percentage))
-    status_val = "completed" if pct >= 100 else (data.status or "in_progress")
+    pct = max(0, min(100, data.progress_percentage or 0))
+    if pct >= 100:
+        status_val = "completed"
+    elif pct > 0:
+        status_val = "in_progress" if not data.status or data.status == "completed" else data.status
+    else:
+        status_val = data.status or "started"
 
     if not record:
         is_new = True
         record = LearningRecord(
             user_id=current_user.id,
             skill_name=clean_skill,
-            resource_title=(data.resource_title or "Course").strip(),
-            resource_type=(data.resource_type or "course").strip(),
+            resource_id=linked_resource.id if linked_resource else None,
+            resource_title=(
+                (data.resource_title or "").strip()
+                or (linked_resource.title if linked_resource else "Course")
+            ),
+            resource_type=(
+                (data.resource_type or "").strip()
+                or (linked_resource.resource_type if linked_resource else "course")
+            ),
             progress_percentage=pct,
             status=status_val,
+            last_accessed=data.last_accessed,
+            time_spent_seconds=max(0, int(data.time_spent_seconds or 0)),
         )
         db.add(record)
     else:
-        if data.resource_title:
+        if linked_resource is not None:
+            record.resource_id = linked_resource.id
+            if not data.resource_title:
+                record.resource_title = linked_resource.title
+            if not data.resource_type:
+                record.resource_type = linked_resource.resource_type
+        elif data.resource_title:
             record.resource_title = data.resource_title.strip()
+        if data.resource_type:
+            record.resource_type = data.resource_type.strip()
+        record.skill_name = clean_skill
         record.progress_percentage = pct
         record.status = status_val
+        if data.last_accessed is not None:
+            record.last_accessed = data.last_accessed
+        if data.time_spent_seconds is not None:
+            record.time_spent_seconds = max(0, int(data.time_spent_seconds))
         record.updated_at = func.now()
 
     # Log in activities
@@ -1907,9 +2001,15 @@ def add_or_update_learning(
 # =========================================================
 
 def serialize_learning_resource(resource: LearningResource) -> dict:
-    """Serialize a LearningResource for the frontend."""
+    """Serialise one curated learning resource for Explore Skills.
+
+    Both ``id`` and ``resource_id`` are returned (same value) so the
+    exact requested schema field ``resource_id`` exists on every
+    payload while old clients reading ``id`` keep working.
+    """
     return {
         "id": resource.id,
+        "resource_id": resource.id,
         "title": resource.title,
         "description": resource.description,
         "provider": resource.provider,

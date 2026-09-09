@@ -11,6 +11,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.orm import relationship
 from database import Base
 
 
@@ -182,21 +183,40 @@ class Message(Base):
 
 
 class LearningRecord(Base):
-    """User learning records tracking course progress in PostgreSQL."""
+    """User learning records tracking course progress in PostgreSQL.
+
+    ``resource_id`` optionally links a row to a curated row in
+    ``learning_resources`` so My Learning can later show started /
+    in-progress / completed progress per real resource. It stays
+    nullable so legacy rows (skill-only entries) keep working.
+    ``last_accessed`` / ``time_spent_seconds`` are stored now but no
+    analytics are computed yet (prepared architecture only).
+    """
 
     __tablename__ = "learning_records"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     skill_name = Column(String, nullable=False)
+    resource_id = Column(
+        Integer, ForeignKey("learning_resources.id"), nullable=True, index=True
+    )
     resource_title = Column(String, nullable=True)
     resource_type = Column(String, nullable=True)  # course, video, docs, practice
     progress_percentage = Column(Integer, default=0, nullable=False)  # 0 to 100
-    status = Column(String, default="in_progress", nullable=False)  # in_progress, completed
+    status = Column(
+        String, default="in_progress", nullable=False
+    )  # started, in_progress, completed
+    last_accessed = Column(DateTime, nullable=True)
+    time_spent_seconds = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(
         DateTime, default=func.now(), onupdate=func.now(), nullable=False
     )
+
+    # ORM relationship to the curated resource (LEFT JOIN friendly:
+    # rows with resource_id NULL simply expose ``resource`` as None).
+    resource = relationship("LearningResource", lazy="joined")
 
 
 class Activity(Base):
@@ -216,9 +236,30 @@ class Activity(Base):
 class LearningResource(Base):
     """Curated learning resources from trusted providers.
 
-    Each resource is a real publicly available course or video from
-    providers like Google, Microsoft, IBM, AWS, Cisco, NVIDIA, Meta,
-    or reputable educational YouTube channels.
+    Field mapping for the requested schema:
+      resource_id        -> ``id`` (serialised as both ``id`` and
+                            ``resource_id`` by the API so the exact
+                            requested field name exists)
+      title              -> ``title``
+      description        -> ``description``
+      provider           -> ``provider`` (Google, Microsoft, IBM, AWS,
+                            freeCodeCamp, Kaggle, ...)
+      resource_type      -> ``resource_type`` (``video`` | ``course``)
+      skill              -> ``skill`` (Python, JavaScript, AI,
+                            Machine Learning, FastAPI, Cloud,
+                            Data Science)
+      topic              -> ``topic``
+      URL                -> ``url``
+      thumbnail          -> ``thumbnail_url``
+      difficulty         -> ``difficulty``
+      estimated_duration -> ``estimated_duration`` (only filled when
+                            the provider page itself states it)
+      source/platform    -> ``source_platform``
+      published date     -> ``published_date`` (only filled when known)
+      created_at         -> ``created_at``
+
+    Relationships: ``LearningRecord.resource_id`` optionally points
+    here (many learning rows -> one curated resource).
     """
 
     __tablename__ = "learning_resources"
