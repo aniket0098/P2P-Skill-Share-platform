@@ -6,6 +6,11 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
+       0. API CLIENT
+       ===================================================== */
+    const API = window.SkillShareAPI;
+
+    /* =====================================================
        1. SCROLL PROGRESS BAR
     ===================================================== */
 
@@ -910,7 +915,8 @@ document.addEventListener("DOMContentLoaded", () => {
             '<div class="lr-resource-actions">' +
             '<a class="lr-open-btn" href="' + lrEscape(r.url) + '" target="_blank" rel="noopener noreferrer">' +
             (isVideo ? "▶ Watch" : "Start Course") + '</a>' +
-            '<button class="lr-start-btn" type="button" data-id="' + r.id + '" data-skill="' + lrEscape(r.skill || "") +
+            '<button class="lr-start-btn" type="button" data-id="' + Number(r.id) + '" data-type="' + lrEscape(r.resource_type || "course") +
+            '" data-skill="' + lrEscape(r.skill || "") +
             '" data-title="' + lrEscape(r.title) + '">+ My Learning</button>' +
             '</div>' +
             '</div>' +
@@ -965,7 +971,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const learning = LR.myLearning;
             if (LR.skill && learning && Array.isArray(learning.skills)) {
                 const mine = learning.skills.find(
-                    (s) => (s.skill || "").toLowerCase() === LR.skill.toLowerCase()
+                    (s) => ((s.skill || s.name) || "").toLowerCase() === LR.skill.toLowerCase()
                 );
                 overview += mine
                     ? " Your progress: " + mine.progress + "%."
@@ -1024,6 +1030,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* -----------------------------------------------------
        "+ My Learning" — track a real resource (no fake progress)
+       Uses the real resource_id so My Learning can later show
+       started / in_progress / completed per resource.
     ----------------------------------------------------- */
     function wireStartButtons() {
         document.querySelectorAll(".lr-start-btn").forEach((btn) => {
@@ -1034,6 +1042,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 const skill = btn.dataset.skill;
                 const title = btn.dataset.title;
+                const resourceId = parseInt(btn.dataset.id || "", 10);
+                const resourceType = btn.dataset.type || "course";
                 if (!skill) return;
 
                 btn.disabled = true;
@@ -1041,10 +1051,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     LR.myLearning = await API.addOrUpdateLearning({
                         skill_name: skill,
+                        resource_id: Number.isFinite(resourceId) ? resourceId : undefined,
                         resource_title: title,
-                        resource_type: "course",
+                        resource_type: resourceType,
                         progress_percentage: 0,
-                        status: "in_progress",
+                        status: "started",
                     });
                     lrToast('"' + title + '" added to My Learning (0%).');
                     lrRenderResources(); // refresh the real progress line
