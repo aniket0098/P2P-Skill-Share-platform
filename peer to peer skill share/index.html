@@ -1,280 +1,1982 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkillShare — Learn. Share. Grow.</title>
+
+    <meta
+        name="description"
+        content="CareerBridge connects students, academia and industry through AI-powered skill mapping, internships, industry challenges and placement intelligence."
+    >
+
+    <meta name="theme-color" content="#050a1c">
+
+    <title>CareerBridge — Academia × Industry</title>
+
     <link rel="stylesheet" href="style.css">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 </head>
 
 <body>
 
-    <!-- NAVBAR -->
-    <header class="navbar">
+<!-- =========================================================
+     SCROLL PROGRESS
+========================================================= -->
 
-        <a href="#" class="brand">
-            <span class="brand-mark">
-                <span></span><span></span><span></span><span></span>
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- =========================================================
+     AMBIENT BACKGROUND
+========================================================= -->
+
+<div class="ambient ambient-one"></div>
+<div class="ambient ambient-two"></div>
+<div class="cursor-glow" id="cursorGlow"></div>
+
+
+<!-- =========================================================
+     NAVBAR
+========================================================= -->
+
+<header class="navbar">
+
+    <a href="#home" class="brand">
+
+        <div class="brand-mark">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="brand-copy">
+            <strong>CareerBridge</strong>
+            <small>Academia × Industry</small>
+        </div>
+
+    </a>
+
+
+    <nav class="nav-links" id="navLinks">
+
+        <a href="index.html" class="active">Home</a>
+
+        <a href="#platform">Platform</a>
+
+        <a href="#features">Features</a>
+
+        <a href="#how-it-works">How It Works</a>
+
+        <a href="about.html">About</a>
+
+    </nav>
+
+
+    <div class="nav-actions">
+
+        <!-- DO NOT CHANGE AUTH ROUTE -->
+        <a href="login.html" class="login-btn">
+            Login
+        </a>
+
+        <!-- DO NOT CHANGE AUTH ROUTE -->
+        <a href="signup.html" class="signup-btn">
+            Get Started
+        </a>
+
+    </div>
+
+
+    <button
+        class="menu-btn"
+        id="menuBtn"
+        aria-label="Open navigation"
+    >
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+</header>
+
+
+<main>
+
+<!-- =========================================================
+     HERO
+========================================================= -->
+
+<section class="hero" id="home">
+
+    <div class="hero-content reveal">
+
+        <div class="eyebrow">
+            <span class="eyebrow-icon">✦</span>
+            ACADEMIA × INDUSTRY COLLABORATION
+        </div>
+
+
+        <h1>
+            Bridging the gap between
+            <span>skills</span> and
+            <span>opportunity.</span>
+        </h1>
+
+
+        <p class="hero-description">
+
+            A unified career intelligence platform connecting
+            students, institutions and industry through intelligent
+            skill mapping, real-world challenges, internships
+            and placement opportunities.
+
+        </p>
+
+
+        <div class="hero-buttons">
+
+            <!-- DO NOT CHANGE AUTH ROUTE -->
+            <a href="signup.html" class="primary-btn ripple-btn">
+                Explore the Platform
+                <span>→</span>
+            </a>
+
+            <a
+                href="#how-it-works"
+                class="secondary-btn ripple-btn"
+            >
+                See How It Works
+                <span>↓</span>
+            </a>
+
+        </div>
+
+
+        <div class="hero-points">
+
+            <span>
+                <i>✓</i>
+                AI Skill Mapping
             </span>
 
             <span>
-                <strong>SkillShare</strong>
-                <small>Share Skills. Grow Together.</small>
+                <i>✓</i>
+                Industry Challenges
             </span>
-        </a>
 
-        <nav class="nav-links">
-            <a href="index.html" class="active">Home</a>
-            <a href="explore.html">Explore Skills</a>
-            <a href="how-it-works.html">How It Works</a>
-            <a href="about.html">About Us</a>
-            <a href="contact.html">Contact</a>
-        </nav>
+            <span>
+                <i>✓</i>
+                Internship Matching
+            </span>
 
-        <div class="nav-actions">
-            <a href="login.html" class="login-btn">Login</a>
-            <a href="signup.html" class="singup-btn">Sign Up</a>
+            <span>
+                <i>✓</i>
+                Placement Intelligence
+            </span>
+
         </div>
 
-        <button class="menu-btn">☰</button>
-
-    </header>
+    </div>
 
 
-    <!-- HERO SECTION -->
-    <main>
+    <!-- =====================================================
+         HERO PRODUCT VISUAL
+    ====================================================== -->
 
-        <section class="hero">
+    <div class="hero-visual reveal">
 
-            <div class="hero-content">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
 
-                <p class="eyebrow">
-                    <span class="eyebrow-icon">♧</span>
-                    PEER TO PEER SKILL SHARING
-                </p>
 
-                <h1>
-                    Learn a Skill.<br>
-                    <span>Share a Skill.</span>
-                </h1>
+        <div class="hero-dashboard">
 
-                <p class="hero-description">
-                    Connect with amazing people around you, exchange skills,
-                    and grow together. What you know can help someone,
-                    and what you want to learn is just a connection away.
-                </p>
+            <div class="dashboard-top">
 
-                <div class="hero-buttons">
+                <div>
+                    <span class="mini-label">
+                        STUDENT CAREER DASHBOARD
+                    </span>
 
-                    <a href="explore.html" class="primary-btn">
-                        Find a Skill <span>⌕</span>
-                    </a>
+                    <h3>Career Readiness</h3>
+                </div>
 
-                    <a href="signup.html" class="secondary-btn">
-                        Share Your Skill <span>↥</span>
-                    </a>
+                <span class="ai-badge">
+                    ✦ AI Powered
+                </span>
+
+            </div>
+
+
+            <div class="readiness-row">
+
+                <div class="readiness-ring">
+
+                    <div class="ring-center">
+                        <strong>87%</strong>
+                        <small>Ready</small>
+                    </div>
 
                 </div>
 
-                <div class="community">
 
-                    <div class="avatar-stack">
-                        <span>R</span>
-                        <span>A</span>
-                        <span>S</span>
-                        <span>P</span>
-                    </div>
+                <div class="readiness-info">
+
+                    <span>Skill Readiness</span>
+
+                    <strong>
+                        Strong alignment
+                    </strong>
 
                     <p>
-                        Join a growing community of learners<br>
-                        and skill sharers today!
+                        Matched with 12 industry roles
                     </p>
+
+                    <div class="tiny-progress">
+                        <span></span>
+                    </div>
 
                 </div>
 
             </div>
 
 
-            <!-- HERO IMAGE -->
-            <div class="hero-visual">
+            <div class="metric-grid">
 
-                <img src="assets/hero-collage.jpeg" alt="People sharing skills">
+                <div class="metric-card">
+
+                    <div class="metric-icon purple">
+                        ✦
+                    </div>
+
+                    <div>
+                        <strong>92%</strong>
+                        <span>AI Skill Match</span>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon cyan">
+                        ◇
+                    </div>
+
+                    <div>
+                        <strong>18</strong>
+                        <span>Opportunities</span>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon orange">
+                        !
+                    </div>
+
+                    <div>
+                        <strong>06</strong>
+                        <span>Skills to Improve</span>
+                    </div>
+
+                </div>
 
             </div>
 
-        </section>
 
+            <div class="career-chart">
 
-        <!-- TRUST + STATISTICS -->
-        <section class="trust-bar">
+                <div class="chart-header">
+                    <span>Career Progress</span>
+                    <small>Last 6 months</small>
+                </div>
 
-            <div class="trusted">
+                <div class="chart-bars">
 
-                <p>Trusted by learners and experts from</p>
+                    <span style="height:35%"></span>
+                    <span style="height:48%"></span>
+                    <span style="height:43%"></span>
+                    <span style="height:65%"></span>
+                    <span style="height:76%"></span>
+                    <span style="height:91%"></span>
 
-            </div>
-
-
-        </section>
-
-
-        <!-- HOW IT WORKS -->
-        <section class="how-it-works" id="how-it-works">
-
-            <div class="section-heading">
-
-                <h2>How It Works</h2>
-
-                <p>
-                    Learning and sharing made simple in 4 easy steps
-                </p>
+                </div>
 
             </div>
 
-
-            <div class="steps">
-
-                <article class="step">
-
-                    <div class="step-icon purple">
-                        ♙+
-                    </div>
-
-                    <div class="connector"></div>
-
-                    <h3>1. Create Profile</h3>
-
-                    <p>
-                        Sign up and add the skills you can teach
-                        and want to learn.
-                    </p>
-
-                </article>
+        </div>
 
 
-                <article class="step">
+        <div class="floating-card match-card">
 
-                    <div class="step-icon blue">
-                        ⌕
-                    </div>
-
-                    <div class="connector"></div>
-
-                    <h3>2. Find &amp; Connect</h3>
-
-                    <p>
-                        Browse skills and find people with
-                        matching interests.
-                    </p>
-
-                </article>
-
-
-                <article class="step">
-
-                    <div class="step-icon green">
-                        ♢
-                    </div>
-
-                    <div class="connector"></div>
-
-                    <h3>3. Share &amp; Learn</h3>
-
-                    <p>
-                        Connect and start exchanging skills
-                        with each other.
-                    </p>
-
-                </article>
-
-
-                <article class="step">
-
-                    <div class="step-icon yellow">
-                        ★
-                    </div>
-
-                    <h3>4. Grow Together</h3>
-
-                    <p>
-                        Rate, review and keep growing your
-                        skills and network.
-                    </p>
-
-                </article>
-
-            </div>
-
-        </section>
-
-
-        <!-- CTA -->
-        <section class="cta" id="about">
+            <div class="floating-icon">✦</div>
 
             <div>
+                <small>AI Skill Match</small>
+                <strong>92%</strong>
+            </div>
 
-                <p class="eyebrow">
-                    START LEARNING TODAY
-                </p>
+        </div>
 
-                <h2>
-                    What you know can change someone's journey.
-                </h2>
 
-                <p>
-                    Share your skills, discover new ones,
-                    and build meaningful connections.
-                </p>
+        <div class="floating-card opportunity-card">
+
+            <span class="live-dot"></span>
+
+            <div>
+                <small>Industry Opportunity</small>
+                <strong>LIVE CHALLENGE</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     IMPACT STRIP
+========================================================= -->
+
+<section class="impact-strip">
+
+    <div class="impact-intro">
+        <span>CAREER INTELLIGENCE</span>
+        <strong>One ecosystem.<br>Three connected worlds.</strong>
+    </div>
+
+
+    <div class="impact-item">
+        <strong>3</strong>
+        <span>Connected Ecosystems</span>
+    </div>
+
+
+    <div class="impact-item">
+        <strong>AI</strong>
+        <span>Skill Intelligence</span>
+    </div>
+
+
+    <div class="impact-item">
+        <strong>360°</strong>
+        <span>Career Journey</span>
+    </div>
+
+
+    <div class="impact-item">
+        <strong>∞</strong>
+        <span>Industry Connections</span>
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     PLATFORM ECOSYSTEM
+========================================================= -->
+
+<section class="section ecosystem" id="platform">
+
+    <div class="section-heading reveal">
+
+        <span class="section-label">
+            THE ECOSYSTEM
+        </span>
+
+        <h2>
+            Built for everyone shaping
+            <span>the future of careers.</span>
+        </h2>
+
+        <p>
+            CareerBridge creates one connected environment
+            where students, academia and industry move toward
+            the same goal — employability.
+        </p>
+
+    </div>
+
+
+    <div class="ecosystem-grid">
+
+
+        <!-- STUDENTS -->
+
+        <article class="ecosystem-card student-card reveal">
+
+            <div class="card-top">
+
+                <div class="ecosystem-icon">
+                    ◉
+                </div>
+
+                <span>01</span>
 
             </div>
 
-            <a href="signup.html" class="primary-btn">
-                Get Started →
+            <span class="card-label">
+                FOR STUDENTS
+            </span>
+
+            <h3>
+                Turn your skills into opportunities.
+            </h3>
+
+            <p>
+                Build a verified skill profile, understand your
+                gaps and discover internships, challenges and
+                career opportunities aligned with your abilities.
+            </p>
+
+            <ul>
+                <li>Skill profile & mapping</li>
+                <li>Skill gap analysis</li>
+                <li>Internship discovery</li>
+                <li>Placement preparation</li>
+            </ul>
+
+            <!-- AUTH ROUTE PRESERVED -->
+            <a href="signup.html" class="card-link">
+                Build Your Profile →
             </a>
 
-        </section>
-
-    </main>
+        </article>
 
 
-    <!-- FOOTER -->
-    <footer id="contact">
+        <!-- ACADEMIA -->
+
+        <article class="ecosystem-card academia-card reveal">
+
+            <div class="card-top">
+
+                <div class="ecosystem-icon">
+                    ◈
+                </div>
+
+                <span>02</span>
+
+            </div>
+
+            <span class="card-label">
+                FOR ACADEMIA
+            </span>
+
+            <h3>
+                Understand student employability.
+            </h3>
+
+            <p>
+                Give institutions a clear view of student
+                capabilities, industry demand and the skills
+                their curriculum needs to strengthen.
+            </p>
+
+            <ul>
+                <li>Student skill analytics</li>
+                <li>Employability tracking</li>
+                <li>Industry demand signals</li>
+                <li>Curriculum gap insights</li>
+            </ul>
+
+            <!-- AUTH ROUTE PRESERVED -->
+            <a href="signup.html" class="card-link">
+                Explore Academia →
+            </a>
+
+        </article>
+
+
+        <!-- INDUSTRY -->
+
+        <article class="ecosystem-card industry-card reveal">
+
+            <div class="card-top">
+
+                <div class="ecosystem-icon">
+                    ◇
+                </div>
+
+                <span>03</span>
+
+            </div>
+
+            <span class="card-label">
+                FOR INDUSTRY
+            </span>
+
+            <h3>
+                Discover emerging talent earlier.
+            </h3>
+
+            <p>
+                Connect with skilled students through challenges,
+                internships, projects and a smarter talent
+                discovery pipeline.
+            </p>
+
+            <ul>
+                <li>Talent discovery</li>
+                <li>Live company challenges</li>
+                <li>Internship pipeline</li>
+                <li>Hiring intelligence</li>
+            </ul>
+
+            <!-- AUTH ROUTE PRESERVED -->
+            <a href="signup.html" class="card-link">
+                Partner With Us →
+            </a>
+
+        </article>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     HOW IT WORKS
+========================================================= -->
+
+<section class="section workflow-section" id="how-it-works">
+
+    <div class="section-heading center reveal">
+
+        <span class="section-label">
+            THE CAREER JOURNEY
+        </span>
+
+        <h2>
+            From <span>learning</span> to opportunity.
+        </h2>
+
+        <p>
+            CareerBridge connects every stage of the journey
+            instead of treating education, experience and
+            employment as separate systems.
+        </p>
+
+    </div>
+
+
+    <div class="workflow-board reveal">
+
+        <div class="workflow-line"></div>
+
+
+        <div class="workflow-step active-step">
+
+            <div class="workflow-number">
+                01
+            </div>
+
+            <div class="workflow-icon">
+                ◉
+            </div>
+
+            <h3>Profile</h3>
+
+            <p>
+                Build your academic,
+                skills and project profile.
+            </p>
+
+        </div>
+
+
+        <div class="workflow-step">
+
+            <div class="workflow-number">
+                02
+            </div>
+
+            <div class="workflow-icon">
+                ✦
+            </div>
+
+            <h3>AI Skill Mapping</h3>
+
+            <p>
+                Map your capabilities
+                against industry skills.
+            </p>
+
+        </div>
+
+
+        <div class="workflow-step">
+
+            <div class="workflow-number">
+                03
+            </div>
+
+            <div class="workflow-icon">
+                ◇
+            </div>
+
+            <h3>Skill Gap</h3>
+
+            <p>
+                Identify what you need
+                to learn next.
+            </p>
+
+        </div>
+
+
+        <div class="workflow-step">
+
+            <div class="workflow-number">
+                04
+            </div>
+
+            <div class="workflow-icon">
+                ↗
+            </div>
+
+            <h3>Industry</h3>
+
+            <p>
+                Solve challenges and
+                access internships.
+            </p>
+
+        </div>
+
+
+        <div class="workflow-step">
+
+            <div class="workflow-number">
+                05
+            </div>
+
+            <div class="workflow-icon">
+                ★
+            </div>
+
+            <h3>Placement</h3>
+
+            <p>
+                Turn verified skills
+                into career opportunities.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="journey-dashboard reveal">
+
+        <div class="journey-left">
+
+            <span class="mini-label">
+                YOUR CAREER JOURNEY
+            </span>
+
+            <h3>
+                Skills become stronger
+                when they become evidence.
+            </h3>
+
+            <p>
+                Projects, challenges, assessments and
+                internships continuously strengthen your
+                career profile.
+            </p>
+
+            <div class="journey-progress">
+
+                <div class="progress-head">
+                    <span>Career Readiness</span>
+                    <strong>87%</strong>
+                </div>
+
+                <div class="large-progress">
+                    <span></span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="journey-right">
+
+            <div class="journey-stat">
+                <span>Skills mapped</span>
+                <strong>24</strong>
+            </div>
+
+            <div class="journey-stat">
+                <span>Projects verified</span>
+                <strong>08</strong>
+            </div>
+
+            <div class="journey-stat">
+                <span>Industry matches</span>
+                <strong>12</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     FEATURES
+========================================================= -->
+
+<section class="section features-section" id="features">
+
+    <div class="section-heading reveal">
+
+        <span class="section-label">
+            PLATFORM INTELLIGENCE
+        </span>
+
+        <h2>
+            Five tools built around
+            <span>real career outcomes.</span>
+        </h2>
+
+        <p>
+            Not another learning portal. CareerBridge combines
+            learning, industry exposure and career intelligence
+            into one platform.
+        </p>
+
+    </div>
+
+
+    <!-- =====================================================
+         FEATURE 1
+    ====================================================== -->
+
+    <article class="feature-row reveal">
+
+        <div class="feature-copy">
+
+            <span class="feature-number">
+                01
+            </span>
+
+            <span class="feature-label">
+                INDUSTRY SANDBOX
+            </span>
+
+            <h3>
+                Learn by solving
+                real company problems.
+            </h3>
+
+            <p>
+                Give students direct exposure to real-world
+                industry challenges. AI evaluates their work
+                and provides actionable feedback.
+            </p>
+
+            <div class="benefit-list">
+
+                <span>✓ Live company challenges</span>
+                <span>✓ AI submission review</span>
+                <span>✓ Skill evidence generation</span>
+                <span>✓ Actionable feedback</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="feature-visual sandbox-visual">
+
+            <div class="window-bar">
+
+                <span></span>
+                <span></span>
+                <span></span>
+
+                <small>Industry Sandbox</small>
+
+            </div>
+
+
+            <div class="challenge-content">
+
+                <div class="challenge-header">
+
+                    <div>
+                        <span>LIVE COMPANY CHALLENGE</span>
+
+                        <h4>
+                            Build a Smart Recommendation Engine
+                        </h4>
+                    </div>
+
+                    <b>LIVE</b>
+
+                </div>
+
+
+                <div class="challenge-progress">
+
+                    <div class="progress-title">
+                        <span>Submission progress</span>
+                        <strong>72%</strong>
+                    </div>
+
+                    <div class="progress-track">
+                        <span></span>
+                    </div>
+
+                </div>
+
+
+                <div class="reviewer-card">
+
+                    <div class="reviewer-head">
+
+                        <div class="ai-avatar">
+                            ✦
+                        </div>
+
+                        <div>
+                            <strong>AI Reviewer</strong>
+                            <small>Analysis complete</small>
+                        </div>
+
+                        <b>94%</b>
+
+                    </div>
+
+
+                    <div class="feedback">
+
+                        <p>
+                            <i>✓</i>
+                            Strong problem decomposition.
+                        </p>
+
+                        <p>
+                            <i>!</i>
+                            Improve edge-case handling.
+                        </p>
+
+                        <p>
+                            <i>!</i>
+                            Improve testing coverage.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="skill-tags">
+
+                    <span>Logic</span>
+                    <span>Code Quality</span>
+                    <span>Testing</span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         FEATURE 2
+    ====================================================== -->
+
+    <article class="feature-row reverse reveal">
+
+        <div class="feature-copy">
+
+            <span class="feature-number">
+                02
+            </span>
+
+            <span class="feature-label">
+                INDUSTRY INSIGHTS
+            </span>
+
+            <h3>
+                Know which skills
+                the market actually needs.
+            </h3>
+
+            <p>
+                Turn changing hiring signals into understandable
+                skill intelligence for students and institutions.
+            </p>
+
+            <div class="benefit-list">
+
+                <span>✓ Industry skill demand</span>
+                <span>✓ Hiring signals</span>
+                <span>✓ Emerging skills</span>
+                <span>✓ Future role intelligence</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="feature-visual insights-visual">
+
+            <div class="analytics-head">
+
+                <div>
+                    <span>MARKET OVERVIEW</span>
+                    <h4>Industry Skill Demand</h4>
+                </div>
+
+                <button>6 Months ▾</button>
+
+            </div>
+
+
+            <div class="trend-cards">
+
+                <div>
+                    <span>Python</span>
+                    <strong>+24%</strong>
+                    <small>↑ Growing</small>
+                </div>
+
+                <div>
+                    <span>AI / ML</span>
+                    <strong>+31%</strong>
+                    <small>↑ High demand</small>
+                </div>
+
+                <div>
+                    <span>Cloud</span>
+                    <strong>+18%</strong>
+                    <small>↑ Growing</small>
+                </div>
+
+            </div>
+
+
+            <div class="demand-chart">
+
+                <div class="chart-y">
+                    <span>100</span>
+                    <span>75</span>
+                    <span>50</span>
+                    <span>25</span>
+                    <span>0</span>
+                </div>
+
+                <div class="bars">
+
+                    <div>
+                        <span style="height:52%"></span>
+                        <small>Data</small>
+                    </div>
+
+                    <div>
+                        <span style="height:67%"></span>
+                        <small>Cloud</small>
+                    </div>
+
+                    <div>
+                        <span style="height:86%"></span>
+                        <small>AI</small>
+                    </div>
+
+                    <div>
+                        <span style="height:74%"></span>
+                        <small>Python</small>
+                    </div>
+
+                    <div>
+                        <span style="height:58%"></span>
+                        <small>DevOps</small>
+                    </div>
+
+                    <div>
+                        <span style="height:42%"></span>
+                        <small>Cyber</small>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         FEATURE 3
+    ====================================================== -->
+
+    <article class="feature-row reveal">
+
+        <div class="feature-copy">
+
+            <span class="feature-number">
+                03
+            </span>
+
+            <span class="feature-label">
+                AI CAREER COACH
+            </span>
+
+            <h3>
+                Your next career move,
+                made clearer.
+            </h3>
+
+            <p>
+                An intelligent career assistant that understands
+                your current skills and helps you decide what to
+                learn, build and pursue next.
+            </p>
+
+            <div class="benefit-list">
+
+                <span>✓ Identify skill gaps</span>
+                <span>✓ Recommend projects</span>
+                <span>✓ Discover opportunities</span>
+                <span>✓ Build career roadmaps</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="feature-visual coach-visual">
+
+            <div class="coach-header">
+
+                <div class="coach-avatar">
+                    ✦
+                </div>
+
+                <div>
+                    <strong>CareerBridge AI</strong>
+                    <span>Career Coach · Online</span>
+                </div>
+
+                <span class="online-dot"></span>
+
+            </div>
+
+
+            <div class="chat-area">
+
+                <div class="coach-message">
+                    Hi! I've analyzed your current
+                    career profile.
+                </div>
+
+
+                <div class="coach-message highlight">
+                    Your strongest opportunity is
+                    backend development.
+                </div>
+
+
+                <div class="user-message">
+                    What should I do next?
+                </div>
+
+
+                <div class="coach-recommendation">
+
+                    <span>✦ NEXT BEST ACTION</span>
+
+                    <strong>
+                        Strengthen SQL and build one
+                        database-driven project.
+                    </strong>
+
+                    <div class="recommendation-meta">
+                        <span>SQL</span>
+                        <span>PostgreSQL</span>
+                        <span>Project</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="chat-input">
+                Ask your career coach...
+                <button>↑</button>
+            </div>
+
+        </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         FEATURE 4
+    ====================================================== -->
+
+    <article class="feature-row reverse reveal">
+
+        <div class="feature-copy">
+
+            <span class="feature-number">
+                04
+            </span>
+
+            <span class="feature-label">
+                INNOVATION LAB
+            </span>
+
+            <h3>
+                Where students,
+                faculty and industry build together.
+            </h3>
+
+            <p>
+                Move ideas beyond classrooms through
+                cross-functional teams, industry mentorship
+                and prototype-driven collaboration.
+            </p>
+
+            <div class="benefit-list">
+
+                <span>✓ Student teams</span>
+                <span>✓ Faculty guidance</span>
+                <span>✓ Industry mentorship</span>
+                <span>✓ Prototype development</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="feature-visual innovation-visual">
+
+            <div class="innovation-core">
+
+                <div class="core-circle">
+                    <span>IDEA</span>
+                </div>
+
+                <div class="orbit-ring ring-a"></div>
+                <div class="orbit-ring ring-b"></div>
+
+                <div class="orbit-node node-student">
+                    <b>STUDENT</b>
+                    <span>Team</span>
+                </div>
+
+                <div class="orbit-node node-faculty">
+                    <b>FACULTY</b>
+                    <span>Guide</span>
+                </div>
+
+                <div class="orbit-node node-industry">
+                    <b>INDUSTRY</b>
+                    <span>Mentor</span>
+                </div>
+
+            </div>
+
+
+            <div class="innovation-flow">
+
+                <span>IDEA</span>
+                <b>→</b>
+                <span>TEAM</span>
+                <b>→</b>
+                <span>INDUSTRY</span>
+                <b>→</b>
+                <span>PROTOTYPE</span>
+
+            </div>
+
+        </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         FEATURE 5
+    ====================================================== -->
+
+    <article class="feature-row reveal">
+
+        <div class="feature-copy">
+
+            <span class="feature-number">
+                05
+            </span>
+
+            <span class="feature-label">
+                CAREERVERSE
+            </span>
+
+            <h3>
+                Explore where your
+                skills can take you.
+            </h3>
+
+            <p>
+                Visualize possible career paths, discover
+                alternative roles and understand which skills
+                unlock your next opportunity.
+            </p>
+
+            <div class="benefit-list">
+
+                <span>✓ Career paths</span>
+                <span>✓ Future roles</span>
+                <span>✓ Skills required</span>
+                <span>✓ Alternative opportunities</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="feature-visual career-visual">
+
+            <div class="career-map-head">
+
+                <span>CAREER MAP</span>
+
+                <button>Explore Paths</button>
+
+            </div>
+
+
+            <div class="career-map">
+
+                <div class="career-line line-one"></div>
+                <div class="career-line line-two"></div>
+                <div class="career-line line-three"></div>
+
+
+                <div class="career-node current-node">
+
+                    <span>YOU</span>
+
+                    <strong>Student</strong>
+
+                    <small>Current</small>
+
+                </div>
+
+
+                <div class="career-node backend-node">
+
+                    <span>ROLE</span>
+
+                    <strong>Backend Developer</strong>
+
+                    <small>8 skills</small>
+
+                </div>
+
+
+                <div class="career-node ai-node">
+
+                    <span>ROLE</span>
+
+                    <strong>AI Engineer</strong>
+
+                    <small>+4 skills</small>
+
+                </div>
+
+
+                <div class="career-node data-node">
+
+                    <span>ROLE</span>
+
+                    <strong>Data Engineer</strong>
+
+                    <small>+3 skills</small>
+
+                </div>
+
+            </div>
+
+
+            <div class="career-skills">
+
+                <span>Python</span>
+                <span>SQL</span>
+                <span>APIs</span>
+                <span>Machine Learning</span>
+
+            </div>
+
+        </div>
+
+    </article>
+
+</section>
+
+
+<!-- =========================================================
+     INTELLIGENCE LAYER
+========================================================= -->
+
+<section class="intelligence-section">
+
+    <div class="intelligence-inner">
+
+        <div class="intelligence-copy reveal">
+
+            <span class="section-label">
+                THE INTELLIGENCE LAYER
+            </span>
+
+            <h2>
+                One profile.
+                <span>Many possibilities.</span>
+            </h2>
+
+            <p>
+                Every project, challenge, assessment, internship
+                and achievement becomes evidence of what you can do.
+                CareerBridge connects that evidence with changing
+                industry demand.
+            </p>
+
+
+            <div class="intelligence-list">
+
+                <span>✓ Skills become measurable</span>
+                <span>✓ Projects become evidence</span>
+                <span>✓ Experience becomes discoverable</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="signal-grid reveal">
+
+            <div class="signal-card">
+
+                <span class="signal-icon">✦</span>
+
+                <small>SKILLS</small>
+
+                <strong>Mapped</strong>
+
+                <div class="signal-line">
+                    <span></span>
+                </div>
+
+            </div>
+
+
+            <div class="signal-card">
+
+                <span class="signal-icon">◇</span>
+
+                <small>PROJECTS</small>
+
+                <strong>Verified</strong>
+
+                <div class="signal-line">
+                    <span></span>
+                </div>
+
+            </div>
+
+
+            <div class="signal-card">
+
+                <span class="signal-icon">↗</span>
+
+                <small>DEMAND</small>
+
+                <strong>Updated</strong>
+
+                <div class="signal-line">
+                    <span></span>
+                </div>
+
+            </div>
+
+
+            <div class="signal-card">
+
+                <span class="signal-icon">◎</span>
+
+                <small>MATCH</small>
+
+                <strong>Intelligent</strong>
+
+                <div class="signal-line">
+                    <span></span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     ABOUT / TRUST
+========================================================= -->
+
+<section class="section about-section" id="about">
+
+    <div class="about-grid">
+
+        <div class="about-copy reveal">
+
+            <span class="section-label">
+                WHY CAREERBRIDGE
+            </span>
+
+            <h2>
+                Education shouldn't end
+                where industry begins.
+            </h2>
+
+            <p>
+                CareerBridge creates a shared language between
+                what students learn, what institutions teach and
+                what companies actually need.
+            </p>
+
+            <div class="trust-points">
+
+                <div>
+                    <strong>01</strong>
+                    <span>
+                        Connect academic learning with
+                        real industry requirements.
+                    </span>
+                </div>
+
+                <div>
+                    <strong>02</strong>
+                    <span>
+                        Give students measurable evidence
+                        of their capabilities.
+                    </span>
+                </div>
+
+                <div>
+                    <strong>03</strong>
+                    <span>
+                        Help industry discover emerging
+                        talent before graduation.
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="about-visual reveal">
+
+            <div class="connection-map">
+
+                <div class="connection-line cl-one"></div>
+                <div class="connection-line cl-two"></div>
+                <div class="connection-line cl-three"></div>
+
+                <div class="connection-node student">
+                    <span>STUDENT</span>
+                    <strong>Skills</strong>
+                </div>
+
+                <div class="connection-node academia">
+                    <span>ACADEMIA</span>
+                    <strong>Learning</strong>
+                </div>
+
+                <div class="connection-node industry">
+                    <span>INDUSTRY</span>
+                    <strong>Opportunity</strong>
+                </div>
+
+                <div class="connection-center">
+                    <span>✦</span>
+                    <strong>CareerBridge</strong>
+                    <small>Shared Skill Language</small>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     FINAL CTA
+========================================================= -->
+
+<section class="cta-section">
+
+    <div class="cta-card reveal">
+
+        <div class="cta-glow"></div>
+
+        <div class="cta-content">
+
+            <span class="section-label">
+                BUILD THE FUTURE OF EMPLOYABILITY
+            </span>
+
+            <h2>
+                Let's make academia and industry
+                speak the same <span>skill language.</span>
+            </h2>
+
+            <p>
+                Connect learning, real-world experience and
+                opportunity in one intelligent ecosystem.
+            </p>
+
+
+            <div class="cta-buttons">
+
+                <!-- DO NOT CHANGE AUTH ROUTE -->
+                <a
+                    href="signup.html"
+                    class="primary-btn ripple-btn"
+                >
+                    Get Started
+                    <span>→</span>
+                </a>
+
+                <!-- DO NOT CHANGE AUTH ROUTE -->
+                <a
+                    href="login.html"
+                    class="secondary-btn ripple-btn"
+                >
+                    Login
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="footer">
+
+    <div class="footer-main">
 
         <div class="footer-brand">
-            <strong style="font-size: 1.6rem;">SkillShare platform:</strong>
-            <p style="font-size: 1.5rem;">Developed by <br>
-                No bug's Team </p>
+
+            <a href="#home" class="brand">
+
+                <div class="brand-mark">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
+                <div class="brand-copy">
+                    <strong>CareerBridge</strong>
+                    <small>Academia × Industry</small>
+                </div>
+
+            </a>
+
+            <p>
+                Connecting skills, education and opportunity
+                through one intelligent career ecosystem.
+            </p>
+
         </div>
 
-        <div class="footer-links">
+
+        <div class="footer-column">
+
+            <h4>Platform</h4>
+
+            <a href="#platform">Ecosystem</a>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#about">About</a>
 
         </div>
 
-        <p style="font-size: 1.3rem;">Developer's:<br>
-            Aniket , Atharv , harshal , Humanshu, sahili ,<br>
-            akshata </p>
-        </p>
 
-        <p class="copyright">
-            © 2026 SkillShare. All rights reserved.
-        </p>
+        <div class="footer-column">
 
-    </footer>
+            <h4>Access</h4>
+
+            <!-- AUTH ROUTE PRESERVED -->
+            <a href="login.html">Login</a>
+
+            <!-- AUTH ROUTE PRESERVED -->
+            <a href="signup.html">Sign Up</a>
+
+        </div>
 
 
-    <!-- MOBILE MENU -->
-    <script>
+        <div class="footer-column">
 
-        const menuBtn = document.querySelector(".menu-btn");
-        const nav = document.querySelector(".nav-links");
+            <h4>Team</h4>
+
+            <span>No Bug's Team</span>
+            <span>SIH 2026</span>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer-bottom">
+
+        <span>
+            © 2026 CareerBridge. All rights reserved.
+        </span>
+
+        <span>
+            Academia × Industry Collaboration Platform
+        </span>
+
+    </div>
+
+</footer>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    /* =====================================================
+       MOBILE NAVIGATION
+    ===================================================== */
+
+    const menuBtn = document.getElementById("menuBtn");
+    const navLinks = document.getElementById("navLinks");
+
+    if (menuBtn && navLinks) {
 
         menuBtn.addEventListener("click", () => {
-            nav.classList.toggle("show");
+
+            menuBtn.classList.toggle("open");
+            navLinks.classList.toggle("show");
+
         });
 
-    </script>
+
+        navLinks.querySelectorAll("a").forEach(link => {
+
+            link.addEventListener("click", () => {
+
+                menuBtn.classList.remove("open");
+                navLinks.classList.remove("show");
+
+            });
+
+        });
+
+    }
+
+
+    /* =====================================================
+       SCROLL PROGRESS
+    ===================================================== */
+
+    const progress =
+        document.getElementById("scrollProgress");
+
+    const updateProgress = () => {
+
+        const scrollTop = window.scrollY;
+
+        const pageHeight =
+            document.documentElement.scrollHeight -
+            window.innerHeight;
+
+        const percentage =
+            pageHeight > 0
+                ? (scrollTop / pageHeight) * 100
+                : 0;
+
+        progress.style.width = `${percentage}%`;
+
+    };
+
+    window.addEventListener(
+        "scroll",
+        updateProgress,
+        { passive: true }
+    );
+
+    updateProgress();
+
+
+    /* =====================================================
+       SCROLL REVEAL
+    ===================================================== */
+
+    const revealElements =
+        document.querySelectorAll(".reveal");
+
+    const revealObserver =
+        new IntersectionObserver(
+            entries => {
+
+                entries.forEach(entry => {
+
+                    if (entry.isIntersecting) {
+
+                        entry.target.classList.add("visible");
+
+                        revealObserver.unobserve(
+                            entry.target
+                        );
+
+                    }
+
+                });
+
+            },
+            {
+                threshold: 0.12
+            }
+        );
+
+
+    revealElements.forEach(element => {
+
+        revealObserver.observe(element);
+
+    });
+
+
+    /* =====================================================
+       ACTIVE NAVIGATION
+    ===================================================== */
+
+    const sections =
+        document.querySelectorAll("section[id]");
+
+    const navItems =
+        document.querySelectorAll(
+            ".nav-links a"
+        );
+
+
+    const updateActiveNav = () => {
+
+        let current = "home";
+
+        sections.forEach(section => {
+
+            const sectionTop =
+                section.offsetTop - 180;
+
+            if (window.scrollY >= sectionTop) {
+                current = section.id;
+            }
+
+        });
+
+
+        navItems.forEach(link => {
+
+            link.classList.remove("active");
+
+            if (
+                link.getAttribute("href") ===
+                `#${current}`
+            ) {
+                link.classList.add("active");
+            }
+
+        });
+
+    };
+
+
+    window.addEventListener(
+        "scroll",
+        updateActiveNav,
+        { passive: true }
+    );
+
+
+    /* =====================================================
+       CURSOR GLOW
+    ===================================================== */
+
+    const cursorGlow =
+        document.getElementById("cursorGlow");
+
+    const supportsFinePointer =
+        window.matchMedia(
+            "(pointer: fine)"
+        ).matches;
+
+
+    if (cursorGlow && supportsFinePointer) {
+
+        window.addEventListener(
+            "pointermove",
+            event => {
+
+                cursorGlow.style.transform =
+                    `translate3d(
+                        ${event.clientX}px,
+                        ${event.clientY}px,
+                        0
+                    )`;
+
+            },
+            { passive: true }
+        );
+
+    }
+
+
+    /* =====================================================
+       RIPPLE BUTTON
+    ===================================================== */
+
+    document
+        .querySelectorAll(".ripple-btn")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                function(event) {
+
+                    const rect =
+                        this.getBoundingClientRect();
+
+                    const ripple =
+                        document.createElement("span");
+
+                    const size =
+                        Math.max(
+                            rect.width,
+                            rect.height
+                        );
+
+                    ripple.className = "ripple";
+
+                    ripple.style.width =
+                        `${size}px`;
+
+                    ripple.style.height =
+                        `${size}px`;
+
+                    ripple.style.left =
+                        `${event.clientX -
+                            rect.left -
+                            size / 2}px`;
+
+                    ripple.style.top =
+                        `${event.clientY -
+                            rect.top -
+                            size / 2}px`;
+
+                    this.appendChild(ripple);
+
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 650);
+
+                }
+            );
+
+        });
+
+
+    /* =====================================================
+       SMOOTH ANCHOR SCROLL
+    ===================================================== */
+
+    document
+        .querySelectorAll('a[href^="#"]')
+        .forEach(anchor => {
+
+            anchor.addEventListener(
+                "click",
+                function(event) {
+
+                    const targetId =
+                        this.getAttribute("href");
+
+                    if (
+                        !targetId ||
+                        targetId === "#"
+                    ) {
+                        return;
+                    }
+
+                    const target =
+                        document.querySelector(
+                            targetId
+                        );
+
+                    if (!target) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+
+                }
+            );
+
+        });
+
+});
+
+</script>
 
 </body>
-
 </html>
