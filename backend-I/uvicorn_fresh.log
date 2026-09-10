@@ -1,0 +1,82 @@
+INFO:     127.0.0.1:53528 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60949 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62637 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62662 - "POST /signup HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62668 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62671 - "POST /signup HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62674 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62675 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62681 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62689 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62699 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62705 - "PATCH /users/me HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:62714 - "PATCH /users/me HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:62720 - "PATCH /users/me HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:62726 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62728 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62743 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62744 - "PATCH /users/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:62745 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64198 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64215 - "POST /signup HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64217 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61878 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53811 - "OPTIONS /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61442 - "OPTIONS /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63948 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61442 - "OPTIONS /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63948 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50592 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50600 - "POST /signup HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:64629 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53504 - "POST /signup HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:62353 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62354 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62355 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62360 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62373 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62374 - "PATCH /users/me HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:62375 - "PATCH /users/me HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:62377 - "PATCH /users/me HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:62380 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62381 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62383 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62389 - "PATCH /users/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:62390 - "PATCH /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62393 - "GET /users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65469 - "OPTIONS /api/users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53330 - "PATCH /api/users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63219 - "PATCH /api/users/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56919 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65350 - "OPTIONS /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56919 - "GET /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56919 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61386 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51304 - "OPTIONS /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56913 - "OPTIONS /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63735 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63880 - "OPTIONS /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55531 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55531 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57424 - "OPTIONS /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50621 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55531 - "GET /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55531 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60169 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60169 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62696 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60169 - "GET /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55663 - "OPTIONS /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59803 - "OPTIONS /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54106 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65227 - "OPTIONS /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62393 - "GET /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63364 - "OPTIONS /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50163 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57553 - "OPTIONS /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59247 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59247 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62905 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60036 - "GET /me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49806 - "GET /api/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65183 - "GET /api/projects HTTP/1.1" 404 Not Found
