@@ -8,11 +8,21 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Boolean,
+    Text,
     UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import relationship
 from database import Base
+
+
+# Role vocabularies for Phase 1 role-based signup.
+# Public signup may ONLY create student/recruiter/mentor.
+# "admin" and legacy "tpo"/"college" values are never accepted
+# from public signup; existing rows are preserved untouched.
+PUBLIC_SIGNUP_ROLES = ("student", "recruiter", "mentor")
+ALL_BACKEND_ROLES = ("student", "recruiter", "mentor", "admin")
+LEGACY_ROLES = ("tpo", "college", "college_placement", "faculty", "learner")
 
 
 class User(Base):
@@ -39,6 +49,14 @@ class User(Base):
     # Matches the existing PostgreSQL column "created_at"
     created_at = Column(DateTime, nullable=True)
 
+    # Phase 1 role-based access. Nullable so existing rows keep working;
+    # new public signups always set student/recruiter/mentor. "admin"
+    # is only ever set server-side (init script / approval flow).
+    role = Column(String, nullable=True, index=True)
+    phone = Column(String, nullable=True)
+    account_status = Column(String, nullable=False, default="active")
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=True)
+
             # Public profile fields (safe to expose, never include secrets).
     # Added for the Request/Message people-discovery experience.
     bio = Column(String, nullable=True)
@@ -48,6 +66,113 @@ class User(Base):
     # Profile extras surfaced by the Settings → Profile form.
     location = Column(String, nullable=True)
     website = Column(String, nullable=True)
+
+    student_profile = relationship(
+        "StudentProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+    recruiter_profile = relationship(
+        "RecruiterProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+    mentor_profile = relationship(
+        "MentorProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+
+
+class StudentProfile(Base):
+    """Extended academic/career data for student accounts."""
+
+    __tablename__ = "student_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    college = Column(String, nullable=True)
+    degree = Column(String, nullable=True)
+    branch = Column(String, nullable=True)
+    graduation_year = Column(Integer, nullable=True)
+    semester = Column(String, nullable=True)
+    cgpa = Column(Float, nullable=True)
+    top_skills = Column(Text, nullable=True)
+    programming_languages = Column(Text, nullable=True)
+    technologies = Column(Text, nullable=True)
+    target_job_role = Column(String, nullable=True)
+    preferred_industry = Column(String, nullable=True)
+    looking_for = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    user = relationship("User", back_populates="student_profile")
+
+
+class RecruiterProfile(Base):
+    """Company + hiring data for recruiter accounts."""
+
+    __tablename__ = "recruiter_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    job_title = Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
+    company_website = Column(String, nullable=True)
+    industry = Column(String, nullable=True)
+    company_size = Column(String, nullable=True)
+    company_location = Column(String, nullable=True)
+    company_registration = Column(String, nullable=True)
+    hiring_for = Column(Text, nullable=True)
+    job_roles = Column(Text, nullable=True)
+    required_skills = Column(Text, nullable=True)
+    internship_availability = Column(String, nullable=True)
+    verification_status = Column(String, nullable=False, default="pending")
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    user = relationship("User", back_populates="recruiter_profile")
+
+
+class MentorProfile(Base):
+    """Professional + mentorship data for mentor accounts."""
+
+    __tablename__ = "mentor_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    job_title = Column(String, nullable=True)
+    company = Column(String, nullable=True)
+    industry = Column(String, nullable=True)
+    years_experience = Column(Float, nullable=True)
+    skills = Column(Text, nullable=True)
+    expertise_areas = Column(Text, nullable=True)
+    linkedin_url = Column(String, nullable=True)
+    portfolio_url = Column(String, nullable=True)
+    github_url = Column(String, nullable=True)
+    available_days = Column(String, nullable=True)
+    available_hours = Column(String, nullable=True)
+    mentorship_topics = Column(Text, nullable=True)
+    mentorship_types = Column(String, nullable=True)
+    bio = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    user = relationship("User", back_populates="mentor_profile")
+
+
+class AdminAccessRequest(Base):
+    """Admin access request workflow. Never creates an admin directly."""
+
+    __tablename__ = "admin_access_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String, nullable=False)
+    email = Column(String, nullable=False, index=True)
+    phone = Column(String, nullable=True)
+    organization = Column(String, nullable=True)
+    current_role = Column(String, nullable=True)
+    reason = Column(Text, nullable=False)
+    status = Column(String, nullable=False, default="pending", index=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
 
 
 class Project(Base):

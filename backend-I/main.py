@@ -10,6 +10,11 @@ from pydantic import BaseModel, field_validator
 
 from database import Base, engine, SessionLocal
 from models import (
+    PUBLIC_SIGNUP_ROLES,
+    AdminAccessRequest,
+    MentorProfile,
+    RecruiterProfile,
+    StudentProfile,
     User,
     Project,
     LearningRecord,
@@ -25,6 +30,7 @@ from models import (
 from sqlalchemy import or_, and_, func
 import auth
 import config
+from email_service import send_admin_request_notification
 
 app = FastAPI()
 
@@ -79,6 +85,11 @@ def _run_startup_migrations():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS website VARCHAR",
+        # Phase 1 role-based signup: additive only, existing rows untouched.
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status VARCHAR DEFAULT 'active'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
         # Explore Skills: learning_resources already created by
         # Base.metadata.create_all(); the learning_records additions
         # below prepare My Learning tracking (started/in_progress/
@@ -149,6 +160,32 @@ class SignupRequest(BaseModel):
     name: str
     email: str
     password: str
+    # Phase 1 roles. Optional so OLD clients (name/email/password only)
+    # keep working — they default to student. Anything outside
+    # student/recruiter/mentor (admin, tpo, ...) is rejected with 403.
+    role: str | None = None
+    phone: str | None = None
+    profile: dict | None = None
+
+
+class AdminAccessRequestIn(BaseModel):
+    full_name: str
+    email: str
+    phone: str | None = None
+    organization: str | None = None
+    current_role: str | None = None
+    reason: str
+
+
+class RoleProfileUpdate(BaseModel):
+    """Role-specific profile edit (Phase 2).
+
+    ``role`` / ``account_status`` are NEVER accepted here — the backend
+    derives the user and role from the JWT only, so a client cannot
+    escalate privileges by sending {"role": "admin"}.
+    """
+    phone: str | None = None
+    profile: dict | None = None
 
 
 class LoginRequest(BaseModel):
@@ -203,6 +240,152 @@ def validate_signup_data(data: SignupRequest):
             status_code=400, detail="Password must be at least 6 characters"
         )
 
+    # SECURITY: never trust the frontend role. Only the three public
+    # roles are allowed here; admin/legacy roles get a 403 (not a 400)
+    # so automated abuse is unambiguous in logs/tests.
+    requested = (data.role or "student").strip().lower()
+    if requested not in PUBLIC_SIGNUP_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail="That role cannot be registered through public signup",
+        )
+    data.role = requested
+
+    if data.phone is not None:
+        digits = re.sub(r"\D", "", data.phone)
+        if data.phone.strip() and not (7 <= len(digits) <= 15):
+            raise HTTPException(
+                status_code=400, detail="Please enter a valid phone number"
+            )
+
+
+# PHASE 1 helpers: validation + storage for role profiles.
+def _clean_str(value) -> str:
+    return str(value or "").strip()
+
+
+def _clean_csv(value):
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple)):
+        parts = [str(v).strip() for v in value if str(v).strip()]
+    else:
+        parts = [p.strip() for p in str(value).split(",") if p.strip()]
+    return ", ".join(parts) if parts else None
+
+
+def _validate_role_profile(role: str, profile: dict) -> None:
+    if role == "student":
+        cgpa = profile.get("cgpa")
+        if cgpa not in (None, ""):
+            try:
+                cgpa_val = float(cgpa)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="CGPA must be a number between 0 and 10")
+            if not (0 <= cgpa_val <= 10):
+                raise HTTPException(status_code=400, detail="CGPA must be between 0 and 10")
+        grad = profile.get("graduation_year")
+        if grad not in (None, ""):
+            try:
+                grad_val = int(grad)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="Graduation year is invalid")
+            if not (1990 <= grad_val <= 2100):
+                raise HTTPException(status_code=400, detail="Graduation year is invalid")
+    elif role == "recruiter":
+        website = _clean_str(profile.get("company_website"))
+        if website and not re.match(r"^(https?://|www\.)\S+\.\S+", website):
+            raise HTTPException(status_code=400, detail="Company website URL is invalid")
+    elif role == "mentor":
+        exp = profile.get("years_experience")
+        if exp not in (None, ""):
+            try:
+                exp_val = float(exp)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="Years of experience must be a number")
+            if not (0 <= exp_val <= 80):
+                raise HTTPException(status_code=400, detail="Years of experience is invalid")
+        for field in ("linkedin_url", "portfolio_url", "github_url"):
+            url = _clean_str(profile.get(field))
+            if url and not re.match(r"^(https?://|www\.)\S+\.\S+", url):
+                raise HTTPException(status_code=400, detail="Professional link URL is invalid")
+
+
+def _create_role_profile(db: Session, user: User, profile: dict) -> None:
+    grad_raw = str(profile.get("graduation_year") or "").strip()
+    cgpa_raw = str(profile.get("cgpa") or "").strip()
+    exp_raw = str(profile.get("years_experience") or "").strip()
+    if user.role == "student":
+        db.add(StudentProfile(
+            user_id=user.id,
+            college=_clean_str(profile.get("college")) or None,
+            degree=_clean_str(profile.get("degree")) or None,
+            branch=_clean_str(profile.get("branch")) or None,
+            graduation_year=int(grad_raw) if grad_raw else None,
+            semester=_clean_str(profile.get("semester")) or None,
+            cgpa=float(cgpa_raw) if cgpa_raw else None,
+            top_skills=_clean_csv(profile.get("top_skills")),
+            programming_languages=_clean_csv(profile.get("programming_languages")),
+            technologies=_clean_csv(profile.get("technologies")),
+            target_job_role=_clean_str(profile.get("target_job_role")) or None,
+            preferred_industry=_clean_str(profile.get("preferred_industry")) or None,
+            looking_for=_clean_csv(profile.get("looking_for")),
+        ))
+    elif user.role == "recruiter":
+        db.add(RecruiterProfile(
+            user_id=user.id,
+            job_title=_clean_str(profile.get("job_title")) or None,
+            company_name=_clean_str(profile.get("company_name")) or None,
+            company_website=_clean_str(profile.get("company_website")) or None,
+            industry=_clean_str(profile.get("industry")) or None,
+            company_size=_clean_str(profile.get("company_size")) or None,
+            company_location=_clean_str(profile.get("company_location")) or None,
+            company_registration=_clean_str(profile.get("company_registration")) or None,
+            hiring_for=_clean_csv(profile.get("hiring_for")),
+            job_roles=_clean_csv(profile.get("job_roles")),
+            required_skills=_clean_csv(profile.get("required_skills")),
+            internship_availability=_clean_str(profile.get("internship_availability")) or None,
+            verification_status="pending",
+        ))
+    elif user.role == "mentor":
+        db.add(MentorProfile(
+            user_id=user.id,
+            job_title=_clean_str(profile.get("job_title")) or None,
+            company=_clean_str(profile.get("company")) or None,
+            industry=_clean_str(profile.get("industry")) or None,
+            years_experience=float(exp_raw) if exp_raw else None,
+            skills=_clean_csv(profile.get("skills")),
+            expertise_areas=_clean_csv(profile.get("expertise_areas")),
+            linkedin_url=_clean_str(profile.get("linkedin_url")) or None,
+            portfolio_url=_clean_str(profile.get("portfolio_url")) or None,
+            github_url=_clean_str(profile.get("github_url")) or None,
+            available_days=_clean_csv(profile.get("available_days")),
+            available_hours=_clean_str(profile.get("available_hours")) or None,
+            mentorship_topics=_clean_csv(profile.get("mentorship_topics")),
+            mentorship_types=_clean_csv(profile.get("mentorship_types")),
+            bio=_clean_str(profile.get("bio")) or None,
+        ))
+
+
+def _sync_profile_skills(user: User, profile: dict) -> None:
+    if user.role == "student":
+        merged = ", ".join(filter(None, [
+            _clean_csv(profile.get("top_skills")) or "",
+            _clean_csv(profile.get("programming_languages")) or "",
+            _clean_csv(profile.get("technologies")) or "",
+        ]))
+    elif user.role == "mentor":
+        merged = ", ".join(filter(None, [
+            _clean_csv(profile.get("skills")) or "",
+            _clean_csv(profile.get("expertise_areas")) or "",
+        ]))
+    elif user.role == "recruiter":
+        merged = _clean_csv(profile.get("required_skills")) or ""
+    else:
+        merged = ""
+    if merged:
+        user.skills = merged[:2000]
+
 
 # ==========================================
 # SIGNUP
@@ -221,16 +404,27 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    profile = data.profile if isinstance(data.profile, dict) else {}
+    _validate_role_profile(data.role, profile)
+
     new_user = User(
         name=data.name.strip(),
         email=email,
         public_id=allocate_public_id(db),
         created_at=func.now(),
+        role=data.role,
+        phone=(data.phone or "").strip() or None,
+        account_status="active",
         # Password is stored as a bcrypt hash using the existing auth module
         password_hash=auth.hash_password(data.password),
     )
 
     db.add(new_user)
+    db.flush()  # need new_user.id for the profile row
+    _create_role_profile(db, new_user, profile)
+    # Merge headline skills into the legacy CSV column so existing
+    # search/dashboard/stats keep working unchanged.
+    _sync_profile_skills(new_user, profile)
     db.commit()
     db.refresh(new_user)
 
@@ -241,6 +435,8 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
             "public_id": new_user.public_id,
             "name": new_user.name,
             "email": new_user.email,
+            "role": new_user.role,
+            "account_status": new_user.account_status,
         },
     }
 
@@ -274,6 +470,8 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
             "public_id": user.public_id,
             "name": user.name,
             "email": user.email,
+            "role": getattr(user, "role", None),
+            "account_status": getattr(user, "account_status", "active"),
         },
     }
 
@@ -351,6 +549,9 @@ def serialize_current_user(user: User) -> dict:
         "username": user.username,
         "name": user.name,
         "email": user.email,
+        "role": getattr(user, "role", None),
+        "phone": getattr(user, "phone", None),
+        "account_status": getattr(user, "account_status", "active"),
         "bio": user.bio,
         "skills": user.skills,
         "interests": user.interests,
@@ -468,6 +669,177 @@ def update_current_user(
     db.commit()
     db.refresh(current_user)
     return {"success": True, "user": serialize_current_user(current_user)}
+
+
+# =========================================================
+# PHASE 2 — ROLE-BASED PROFILE API (database driven)
+#
+#   GET /profile/me  ->   authenticated user + role-specific
+#                            profile from PostgreSQL (students /
+#                            recruiters / mentors / admins).
+#   PUT /profile/me  ->   update ONLY the authenticated user's
+#                            own role-profile fields. The role and
+#                            account_status are derived from the JWT
+#                            and can never be changed by the client.
+# =========================================================
+
+def _get_role_profile_row(db: Session, user: User):
+    role = (user.role or "student").lower()
+    if role == "student":
+        return (
+            user.student_profile
+            or db.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
+        )
+    if role == "recruiter":
+        return (
+            user.recruiter_profile
+            or db.query(RecruiterProfile).filter(RecruiterProfile.user_id == user.id).first()
+        )
+    if role == "mentor":
+        return (
+            user.mentor_profile
+            or db.query(MentorProfile).filter(MentorProfile.user_id == user.id).first()
+        )
+    return None
+
+
+def serialize_role_profile(user: User, row) -> dict:
+    """Role-specific profile fields (lists for CSV columns)."""
+    role = (user.role or "student").lower()
+    if role == "student"and row:
+        return {
+            "college": row.college, "degree": row.degree, "branch": row.branch,
+            "graduation_year": row.graduation_year, "semester": row.semester,
+            "cgpa": row.cgpa,
+            "top_skills": _split_csv(row.top_skills),
+            "programming_languages": _split_csv(row.programming_languages),
+            "technologies": _split_csv(row.technologies),
+            "target_job_role": row.target_job_role,
+            "preferred_industry": row.preferred_industry,
+            "looking_for": _split_csv(row.looking_for),
+        }
+    if role == "recruiter"and row:
+        return {
+            "job_title": row.job_title, "company_name": row.company_name,
+            "company_website": row.company_website, "industry": row.industry,
+            "company_size": row.company_size, "company_location": row.company_location,
+            "company_registration": row.company_registration,
+            "hiring_for": _split_csv(row.hiring_for), "job_roles": _split_csv(row.job_roles),
+            "required_skills": _split_csv(row.required_skills),
+            "internship_availability": row.internship_availability,
+            "verification_status": row.verification_status or "pending",
+        }
+    if role == "mentor"and row:
+        return {
+            "job_title": row.job_title, "company": row.company, "industry": row.industry,
+            "years_experience": row.years_experience,
+            "skills": _split_csv(row.skills), "expertise_areas": _split_csv(row.expertise_areas),
+            "linkedin_url": row.linkedin_url, "portfolio_url": row.portfolio_url,
+            "github_url": row.github_url,
+            "available_days": _split_csv(row.available_days), "available_hours": row.available_hours,
+            "mentorship_topics": _split_csv(row.mentorship_topics),
+            "mentorship_types": _split_csv(row.mentorship_types), "bio": row.bio,
+        }
+    # Admin (or legacy user without a role profile)— no secrets..
+    return {}
+
+
+def serialize_role_profile_payload(user: User, db: Session) -> dict:
+    row = _get_role_profile_row(db, user)
+    return {
+        "user": serialize_current_user(user),
+        "role": user.role or "student",
+        "profile": serialize_role_profile(user, row) if row else {},
+    }
+
+
+@app.get("/profile/me")
+@app.get("/api/profile/me")
+def get_role_profile(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Authenticated user's own role-based profile from PostgreSQL."""
+    return serialize_role_profile_payload(current_user, db)
+
+
+def _apply_role_profile_updates(db: Session, user: User, profile: dict) -> None:
+    """Update an existing role-profile row in place (create if missing)."""
+    role = (user.role or "student").lower()
+    row = _get_role_profile_row(db, user)
+    if row is None:
+        _create_role_profile(db, user, {})
+        db.flush()
+        row = _get_role_profile_row(db, user)
+
+    def has(key):
+        return key in profile and profile[key] is not None
+
+    def set_if(key, attr=None):
+        if has(key):
+            setattr(row, attr or key, _clean_str(profile.get(key)) or None)
+
+    def set_list(key, attr=None):
+        if has(key):
+            setattr(row, attr or key, _clean_csv(profile.get(key)))
+
+    if role == "student":
+        set_if("college"); set_if("degree"); set_if("branch"); set_if("semester")
+        set_if("target_job_role"); set_if("preferred_industry")
+        set_list("top_skills"); set_list("programming_languages"); set_list("technologies")
+        set_list("looking_for")
+        if has("graduation_year"):
+            raw = str(profile.get("graduation_year") or "").strip()
+            row.graduation_year = int(raw) if raw else None
+        if has("cgpa"):
+            raw = str(profile.get("cgpa") or "").strip()
+            row.cgpa = float(raw) if raw else None
+    elif role == "recruiter":
+        set_if("job_title"); set_if("company_name"); set_if("company_website")
+        set_if("industry"); set_if("company_size"); set_if("company_location")
+        set_if("company_registration"); set_if("internship_availability")
+        set_list("hiring_for"); set_list("job_roles"); set_list("required_skills")
+        # verification_status is never user-editable; always re-read from DB..
+    elif role == "mentor":
+        set_if("job_title"); set_if("company"); set_if("industry")
+        set_if("available_hours"); set_if("bio")
+        set_list("skills"); set_list("expertise_areas"); set_list("available_days")
+        set_list("mentorship_topics"); set_list("mentorship_types")
+        set_if("linkedin_url"); set_if("portfolio_url"); set_if("github_url")
+        if has("years_experience"):
+            raw = str(profile.get("years_experience") or "").strip()
+            row.years_experience = float(raw) if raw else None
+    row.updated_at = func.now()
+    _sync_profile_skills(user, profile)
+
+
+@app.put("/profile/me")
+@app.put("/api/profile/me")
+def update_role_profile(
+    data: RoleProfileUpdate,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Update the authenticated user's own role-specific profile.
+
+    Identity and role come from the JWT ONLY. A body sent with
+    {"role": "admin", ...} is ignored — role can never change here."""
+
+    role = (current_user.role or "student").lower()
+
+    if data.phone is not None:
+        phone = data.phone.strip()
+        digits = re.sub(r"\D", "", phone)
+        if phone and not (7 <= len(digits) <= 15):
+            raise HTTPException(status_code=400, detail="Please enter a valid phone number")
+        current_user.phone = phone or None
+
+    profile = data.profile if isinstance(data.profile, dict) else {}
+    _validate_role_profile(role, profile)
+    _apply_role_profile_updates(db, current_user, profile)
+
+    db.commit()
+    return serialize_role_profile_payload(current_user, db)
 
 
 
@@ -2095,4 +2467,137 @@ def get_learning_resource(
     if not resource:
         raise HTTPException(status_code=404, detail="Learning resource not found")
     return {"resource": serialize_learning_resource(resource)}
+
+
+# =========================================================
+# PHASE 1 — ADMIN ACCESS REQUESTS (public submit, admin review)
+# =========================================================
+
+def serialize_admin_request(req: AdminAccessRequest) -> dict:
+    return {
+        "id": req.id,
+        "full_name": req.full_name,
+        "email": req.email,
+        "phone": req.phone,
+        "organization": req.organization,
+        "current_role": req.current_role,
+        "reason": req.reason,
+        "status": req.status,
+        "created_at": req.created_at.isoformat() if req.created_at else None,
+        "reviewed_at": req.reviewed_at.isoformat() if req.reviewed_at else None,
+        "reviewed_by": req.reviewed_by,
+    }
+
+
+def require_admin(current_user: User = Depends(get_current_user_model)) -> User:
+    """Gate for admin-only endpoints. Authority comes ONLY from
+    users.role == 'admin' in PostgreSQL — never from an email match."""
+    if (current_user.role or "").strip().lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+
+@app.post("/admin/requests")
+@app.post("/api/admin/requests")
+def submit_admin_request(data: AdminAccessRequestIn, db: Session = Depends(get_db)):
+    """Public endpoint: file a request for admin access.
+
+    It NEVER creates an admin account — it only stores a pending row
+    and notifies MAIN_ADMIN_EMAIL. No authentication required.
+    """
+    full_name = (data.full_name or "").strip()
+    email = (data.email or "").strip().lower()
+    reason = (data.reason or "").strip()
+    if len(full_name) < 2:
+        raise HTTPException(status_code=400, detail="Full name must be at least 2 characters")
+    if not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address")
+    if len(reason) < 10:
+        raise HTTPException(status_code=400, detail="Please explain why you need admin access (min 10 characters)")
+    phone = (data.phone or "").strip() or None
+    if phone and not (7 <= len(re.sub(r"\D", "", phone)) <= 15):
+        raise HTTPException(status_code=400, detail="Please enter a valid phone number")
+
+    existing_pending = (
+        db.query(AdminAccessRequest)
+        .filter(AdminAccessRequest.email == email, AdminAccessRequest.status == "pending")
+        .first()
+    )
+    if existing_pending:
+        raise HTTPException(status_code=409, detail="A pending admin request already exists for this email")
+
+    req = AdminAccessRequest(
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        organization=(data.organization or "").strip() or None,
+        current_role=(data.current_role or "").strip() or None,
+        reason=reason,
+        status="pending",
+    )
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    payload = serialize_admin_request(req)
+    # Best-effort email; failures never break the request itself.
+    send_admin_request_notification(payload)
+    return {"message": "Admin access request submitted", "request": payload}
+
+
+@app.get("/admin/requests")
+@app.get("/api/admin/requests")
+def list_admin_requests(
+    status: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """List admin access requests (admin JWT required)."""
+    query = db.query(AdminAccessRequest).order_by(AdminAccessRequest.created_at.desc())
+    if status:
+        cleaned = status.strip().lower()
+        if cleaned not in ("pending", "approved", "rejected"):
+            raise HTTPException(status_code=400, detail="Invalid status filter")
+        query = query.filter(AdminAccessRequest.status == cleaned)
+    return {"requests": [serialize_admin_request(r) for r in query.all()]}
+
+
+def _review_admin_request(db: Session, admin: User, request_id: int, decision: str) -> dict:
+    req = db.get(AdminAccessRequest, request_id)
+    if req is None:
+        raise HTTPException(status_code=404, detail="Admin request not found")
+    if req.status != "pending":
+        raise HTTPException(status_code=409, detail="This request has already been reviewed")
+    req.status = decision
+    req.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    req.reviewed_by = admin.id
+    if decision == "approved":
+        # Promote the matching user account if one exists. Approval does
+        # NOT auto-create accounts; the requester must already have a login.
+        target = db.query(User).filter(User.email == req.email.strip().lower()).first()
+        if target is not None:
+            target.role = "admin"
+            target.account_status = "active"
+    db.commit()
+    db.refresh(req)
+    return {"success": True, "request": serialize_admin_request(req)}
+
+
+@app.post("/admin/requests/{request_id}/approve")
+@app.post("/api/admin/requests/{request_id}/approve")
+def approve_admin_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    return _review_admin_request(db, admin, request_id, "approved")
+
+
+@app.post("/admin/requests/{request_id}/reject")
+@app.post("/api/admin/requests/{request_id}/reject")
+def reject_admin_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    return _review_admin_request(db, admin, request_id, "rejected")
 

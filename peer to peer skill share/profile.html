@@ -13,10 +13,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <link rel="stylesheet" href="profile.css?v=4">
+    <link rel="stylesheet" href="profile-role.css">
 
     <script src="config.js"></script>
     <script src="api-client.js"></script>
+    <script src="auth.js"></script>
     <script src="profile.js?v=4" defer></script>
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 <body>
@@ -92,6 +96,7 @@
                             Loading Profile...
                         </h1>
                         <span class="verified" title="Verified Member">✓</span>
+                        <span class="role-badge" id="roleBadge"></span>
                     </div>
 
                     <p class="role" id="profileUsername">
@@ -173,6 +178,27 @@
                      MAIN LEFT COLUMN
                 ========================================== -->
                 <div class="layout-main-col">
+
+                    <!-- =====================================
+                         ROLE PROFILE (Phase 2)
+                         Database-driven role-based profile card.
+                         Rendered by profile.js from GET /profile/me.
+                    ====================================== -->
+                    <div class="panel-card" id="roleProfileCard">
+                        <div class="card-heading">
+                            <h2>ROLE PROFILE</h2>
+                            <button class="text-btn" id="roleEditBtn" type="button" hidden>✎ Edit</button>
+                        </div>
+                        <p class="section-subtitle" id="roleSubtitle">Loading your role profile…</p>
+                        <div id="roleProfileBody">
+                            <div class="empty-state-box">
+                                <div class="empty-state-icon">⏳</div>
+                                <h4>Loading profile…</h4>
+                                <p>Fetching the latest data from the database.</p>
+                            </div>
+                        </div>
+                        <div id="roleEditForm" hidden></div>
+                    </div>
 
                     <!-- =====================================
                          2 & 4. ABOUT & EDIT PROFILE (3 FIELDS ONLY)
@@ -611,3 +637,10 @@
 </body>
 
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>

@@ -7,14 +7,18 @@
     <title>Create a Session | SkillShare</title>
     <link rel="stylesheet" href="create-session.css">
     <script src="create-session.js" defer></script>
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 <body>
     <header class="app-head"><a class="app-brand" href="dashboard.html"><b>◇</b>SkillShare</a>
         <nav class="app-nav"><a href="dashboard.html">Dashboard</a><a href="explore.html">Explore</a><a
                 href="my-learning.html">Learning</a><a href="tutor-profile.html">Teaching</a></nav>
-        <div class="head-right"><a href="notifications.html" class="bell">♧<i>3</i></a><a href="profile.html"><img
-                    src="" alt="Profile"></a></div>
+        <div class="head-right"><a href="notifications.html" class="bell">♧<i>3</i></a><div id="profileDropdownContainer"></div></div>
     </header>
     <main class="page">
         <div class="page-heading">

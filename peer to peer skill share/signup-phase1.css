@@ -1,0 +1,48 @@
+/* Phase 1 additions: role cards, wizard steps, dynamic fields, chips, review. */
+.steps { display: flex; gap: 8px; list-style: none; margin: 18px 0 6px; padding: 0; }
+.steps li { flex: 1; display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 11px; color: var(--muted); background: #fbfbff; }
+.steps li i { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: #ece9fb; color: var(--purple-dark); font-style: normal; font-weight: 800; font-size: 11px; }
+.steps li.active { border-color: var(--purple); color: var(--text); background: #f4f0ff; box-shadow: 0 8px 20px rgba(103,64,239,.12); }
+.steps li.active i { background: var(--purple); color: #fff; }
+.role-card { width: 100%; text-align: left; display: grid; grid-template-columns: 44px 1fr 26px; gap: 12px; align-items: center; padding: 14px; margin-top: 12px; border: 2px solid var(--border); border-radius: 16px; background: #fff; cursor: pointer; transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease; }
+.role-card strong { display: block; font-size: 14px; }
+.role-card small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.5; }
+.role-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg,#f0eaff,#e2d7ff); font-size: 22px; }
+.role-check { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--border); color: transparent; font-weight: 900; }
+.role-card:hover { transform: translateY(-3px); border-color: #b9a5ff; box-shadow: 0 16px 34px rgba(103,64,239,.16); }
+.role-card.selected { border-color: var(--purple); box-shadow: 0 16px 34px rgba(103,64,239,.22); background: linear-gradient(180deg,#fff,#f6f2ff); }
+.role-card.selected .role-check { background: var(--purple); border-color: var(--purple); color: #fff; }
+.role-hint { margin: 12px 2px 0; font-size: 12px; color: var(--muted); }
+.admin-link { margin-top: 16px; font-size: 12px; color: var(--muted); text-align: center; }
+.link-btn { border: 0; background: none; color: var(--purple); font-weight: 800; cursor: pointer; padding: 0; }
+.link-btn:hover { text-decoration: underline; }
+.step[hidden], form[hidden] { display: none !important; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.field select, .field textarea { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 13px; font-family: inherit; }
+textarea { width: 100%; margin-top: 11px; padding: 12px 15px; border: 1px solid var(--border); border-radius: 11px; font-size: 13px; font-family: inherit; resize: vertical; }
+.lbl { display: block; margin: 14px 2px 0; font-size: 12px; font-weight: 700; color: var(--text); }
+.section-title { margin: 20px 2px 4px; font-size: 13px; font-weight: 800; color: var(--purple-dark); text-transform: uppercase; letter-spacing: .06em; }
+.chip-input-row { display: flex; gap: 8px; margin-top: 11px; }
+.chip-input-row input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; }
+.chip-add { height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--purple); color: #fff; font-weight: 800; cursor: pointer; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 6px 6px 12px; border-radius: 999px; background: #efe9ff; color: #3f2fb5; font-size: 12px; font-weight: 700; }
+.chip button { border: 0; width: 20px; height: 20px; border-radius: 50%; background: #fff; color: #6a5ae0; cursor: pointer; font-weight: 900; line-height: 1; }
+.check-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.check-pill input { display: none; }
+.check-pill span { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--muted); background: #fff; cursor: pointer; }
+.check-pill input:checked + span { background: var(--purple); border-color: var(--purple); color: #fff; }
+.nav-row { display: flex; gap: 10px; margin-top: 20px; }
+.ghost-btn { flex: 1; height: 52px; border: 1px solid var(--border); border-radius: 13px; background: #fff; font-weight: 800; cursor: pointer; color: var(--text); }
+.ghost-btn:hover { border-color: var(--purple); color: var(--purple-dark); }
+#submitBtn, #adminSubmitBtn { flex: 2; margin-top: 0; }
+.review { margin-top: 14px; border: 1px dashed #b9a5ff; background: #faf8ff; border-radius: 12px; padding: 14px; font-size: 12px; }
+.review dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px 10px; margin: 0; }
+.review dt { color: var(--muted); font-weight: 700; }
+.review dd { margin: 0; word-break: break-word; }
+.admin-title { font-size: 22px; letter-spacing: -.5px; }
+.admin-sub { margin: 8px 0 6px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.success-card { text-align: center; padding: 26px 12px; }
+.success-icon { width: 64px; height: 64px; display: grid; place-items: center; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg,#25a85f,#35c777); color: #fff; font-size: 28px; font-weight: 900; }
+.success-link { display: flex; align-items: center; justify-content: center; text-decoration: none; margin-top: 18px; }
+@media (max-width: 560px) { .grid-2 { grid-template-columns: 1fr; } .review dl { grid-template-columns: 1fr; } }

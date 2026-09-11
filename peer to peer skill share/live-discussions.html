@@ -14,6 +14,11 @@
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <link rel="stylesheet" href="live-discussions.css">
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 <body>
@@ -714,3 +719,10 @@
 
 </body>
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>

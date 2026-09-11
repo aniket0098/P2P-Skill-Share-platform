@@ -104,6 +104,24 @@ except ValueError:
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # ---------------------------------------------------------------------------
+# Admin access-request workflow (Phase 1)
+# ---------------------------------------------------------------------------
+# MAIN_ADMIN_EMAIL is the notification recipient + bootstrap identity.
+# It is NEVER proof of authority by itself: admin powers always come
+# from users.role == "admin" in PostgreSQL.
+MAIN_ADMIN_EMAIL = os.getenv("MAIN_ADMIN_EMAIL", "daniket797@gmail.com").strip().lower()
+
+# SMTP for admin-request notification emails. All optional: when unset,
+# requests are still stored as pending and the mail step is skipped
+# with a logged warning (never a 500).
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587") or 587)
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USERNAME or MAIN_ADMIN_EMAIL)
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").strip().lower() in ("1", "true", "yes")
+
+# ---------------------------------------------------------------------------
 # CORS — allowed production frontend origins
 # ---------------------------------------------------------------------------
 # Comma-separated list, e.g. the future Vercel frontend URL:

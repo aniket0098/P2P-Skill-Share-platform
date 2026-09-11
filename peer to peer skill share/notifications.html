@@ -7,6 +7,11 @@
     <title>Notifications | SkillShare</title>
     <link rel="stylesheet" href="notifications.css">
     <script src="notifications.js" defer></script>
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 <body>
@@ -30,3 +35,10 @@
 </body>
 
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>

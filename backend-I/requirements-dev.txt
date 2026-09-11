@@ -1,0 +1,2 @@
+# httpx is used only by the local Phase-1 verification script.
+httpx==0.28.1

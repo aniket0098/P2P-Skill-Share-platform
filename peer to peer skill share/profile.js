@@ -108,6 +108,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const toast = document.getElementById("toast");
 
     /* =====================================================
+       LOADING STATE
+    ===================================================== */
+    if (heroName) heroName.textContent = "Loading Profile...";
+
+    /* =====================================================
+       AUTH EXPIRED HANDLER
+    ===================================================== */
+    window.addEventListener("skillshare:auth-expired", () => {
+        window.location.href = "login.html";
+    });
+
+    /* =====================================================
        HELPERS
     ===================================================== */
     function escapeHTML(str) {
@@ -244,13 +256,23 @@ document.addEventListener("DOMContentLoaded", () => {
         // Avatar — real DB image, initials fallback only when DB is empty
         const avatarSrc = user.avatar_url || initialsAvatar(user.name);
         if (profileAvatar) {
-            profileAvatar.src = avatarSrc;
-            profileAvatar.onerror = () => {
-                profileAvatar.onerror = null;
-                profileAvatar.src = initialsAvatar(user.name);
-            };
+            if (user.avatar_url) {
+                profileAvatar.src = avatarSrc;
+                profileAvatar.onerror = () => {
+                    profileAvatar.onerror = null;
+                    profileAvatar.src = initialsAvatar(user.name);
+                };
+            } else {
+                profileAvatar.src = avatarSrc;
+            }
         }
-        if (topNavAvatar) topNavAvatar.src = avatarSrc;
+        if (topNavAvatar) {
+            if (topNavAvatar.tagName === "IMG") {
+                topNavAvatar.src = avatarSrc;
+            } else {
+                topNavAvatar.textContent = (user.name || "?")[0] || "?";
+            }
+        }
         if (topNavName) topNavName.textContent = user.name || "Member";
 
         // ABOUT section — display mode (First / Last / Bio)
@@ -513,6 +535,17 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             renderProfile(currentUser);
+        // Load the backend-driven role profile (GET /profile/me)
+        try {
+            const roleRes = await window.SkillShareAPI.getMyRoleProfile();
+            renderRoleProfile(roleRes);
+        } catch (err) {
+            if (err && err.status === 401) {
+                // session handled globally
+            } else {
+                console.warn("Role profile could not be loaded:", err);
+            }
+        }
             renderChips(currentUser);
             showToast("Profile updated successfully.");
             closeInlineEdit();
@@ -597,6 +630,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.warn("Activity could not be loaded:", actRes.reason.message);
 
         renderProfile(currentUser);
+        loadRoleProfile(currentUser);
         renderChips(currentUser);
         renderProjects();
         renderLearning();
@@ -664,5 +698,235 @@ document.addEventListener("DOMContentLoaded", () => {
     /* =====================================================
         INIT
     ===================================================== */
+
+    /* ROLE PROFILE LOADING STATE */
+    const roleProfileBody = document.getElementById("roleProfileBody");
+    if (roleProfileBody) {
+        roleProfileBody.innerHTML = "<div class=\"empty-state-box\"><div class=\"empty-state-icon\">&#9203;</div><h4>Loading role profile&hellip;</h4><p>Fetching your role-specific data from the server.</p></div>";
+    }
+
+/* =========================================================
+   PHASE 2 — ROLE-BASED PROFILE (backend-driven)
+   GET /profile/me  ->   real role-specific profile from
+   PostgreSQL; renders a professional role card with:
+   badges, info grids, skill chips, empty states.
+
+   PUT /profile/me  ->   edits ONLY role-profile fields.
+   Role can never be changed by the client..
+========================================================= */
+let roleProfileData = null;
+
+function escapeRole(s) {
+    if (s == null) return "";
+    return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+function roleToast(msg) {
+    let t = document.getElementById("toast");
+    if (t) { t.textContent = msg; t.classList.add("show"); clearTimeout(window.__roleToastTimer); window.__roleToastTimer = setTimeout(() => t.classList.remove("show"), 2600); }
+}
+function roleChips(items) {
+    if (!items || !items.length) return '<span class="field-val muted">Not provided</span>';
+    return '<div class="role-chip-list">' + items.map((v) => '<span class="role-chip">' + escapeRole(v) + '</span>').join("") + '</div>';
+}
+function roleValue(v) {
+    if (v == null || v === "") return '<span class="field-val muted">Not provided</span>';
+    return '<span class="field-val">' + escapeRole(v) + '</span>';
+}
+function roleLink(v) {
+    if (!v) return '<span class="field-val muted">Not provided</span>';
+    const clean = (v || "").replace(/^https?:\/\//, "");
+    return '<a class="field-val role-link" href="' + escapeRole(v) + '" target="_blank" rel="noopener">' + escapeRole(clean) + '</a>';
+}
+function roleRow(label, valHtml) {
+    return '<div class="role-info-row"><span class="field-title">' + label + '</span>' + valHtml + '</div>';
+}
+function roleSection(title, inner) {
+    return '<div class="role-section"><h3 class="role-section-title">' + title + '</h3>' + inner + '</div>';
+}
+function roleBadgeText(role) {
+    return ({ student: "STUDENT", recruiter: "COMPANY RECRUITER", mentor: "INDUSTRY MENTOR", admin: "ADMIN" }[role] || String(role || "STUDENT")).toUpperCase();
+}
+function roleBadgeClass(role) {
+    return "role-badge role-badge-" + String(role || "student");
+}
+function renderRoleProfile(data) {
+    roleProfileData = data;
+    const body = document.getElementById("roleProfileBody");
+    const badge = document.getElementById("roleBadge");
+    const editBtn = document.getElementById("roleEditBtn");
+    if (!body) return;
+
+    const role = (data && data.role) || "student";
+    const u = (data && data.user) || {};
+    const p = (data && data.profile) || {};
+
+    if (badge) {
+        badge.textContent = roleBadgeText(role);
+        badge.className = roleBadgeClass(role);
+    }
+
+    const subtitle = document.getElementById("roleSubtitle");
+    if (subtitle) subtitle.textContent = "Authenticated as " + roleBadgeText(role) + " — live data from PostgreSQL.";
+
+    let html = "";
+
+    if (role === "admin") {
+        html += '<div class="role-admin-card"><h3>Account Overview</h3>';
+        html += roleRow("Full Name", roleValue(u.name));
+        html += roleRow("Email", roleValue(u.email));
+        html += roleRow("Account Status", roleValue((u.account_status || "active")).toUpperCase());
+        html += roleRow("Permission Level", '<span class="field-val role-admin-pill">Administrator</span>');
+        html += '<p class="role-note">Only approved administrators see this state. Admin powers are granted server-side.</p></div>';
+        if (editBtn) editBtn.hidden = true;
+    } else if (role === "student") {
+        html += roleSection("Academic", roleRow("College", roleValue(p.college)) + roleRow("Degree", roleValue(p.degree)) + roleRow("Branch", roleValue(p.branch)) + roleRow("Graduation Year", roleValue(p.graduation_year)) + roleRow("Current Semester / Year", roleValue(p.semester)) + roleRow("CGPA", roleValue(p.cgpa == null ? "" : p.cgpa)));
+        html += roleSection("Skills", roleRow("Top Skills", roleChips(p.top_skills)) + roleRow("Programming Languages", roleChips(p.programming_languages)) + roleRow("Technologies / Tools", roleChips(p.technologies)));
+        html += roleSection("Career", roleRow("Target Job Role", roleValue(p.target_job_role)) + roleRow("Preferred Industry", roleValue(p.preferred_industry)) + roleRow("Looking For", roleChips(p.looking_for)));
+        if (editBtn) editBtn.hidden = false;
+    } else if (role === "recruiter") {
+        html += roleSection("Header", roleRow("Job Title", roleValue(p.job_title)) + roleRow("Company", roleValue(p.company_name)));
+        html += roleSection("Company", roleRow("Company Name", roleValue(p.company_name)) + roleRow("Website", roleLink(p.company_website)) + roleRow("Industry", roleValue(p.industry)) + roleRow("Company Size", roleValue(p.company_size)) + roleRow("Location", roleValue(p.company_location)));
+        html += roleSection("Recruitment", roleRow("Hiring For", roleChips(p.hiring_for)) + roleRow("Job Roles", roleChips(p.job_roles)) + roleRow("Required Skills", roleChips(p.required_skills)) + roleRow("Internship Availability", roleValue(p.internship_availability)));
+        const vStatus = (p.verification_status || "pending").toLowerCase();
+        const vLabel = vStatus === "verified" ? "Verified" : "Pending";
+        html += roleSection("Verification", '<div class="verification-pill ' + (vStatus === "verified" ? "verified" : "pending") + '">' + vLabel + '</div><p class="role-note">Reviewed by an admin server-side.</p>');
+        if (editBtn) editBtn.hidden = false;
+    } else if (role === "mentor") {
+        html += roleSection("Professional", roleRow("Job Title", roleValue(p.job_title)) + roleRow("Company", roleValue(p.company)) + roleRow("Industry", roleValue(p.industry)) + roleRow("Years of Experience", roleValue(p.years_experience)));
+        html += roleSection("Expertise", roleRow("Skills", roleChips(p.skills)) + roleRow("Areas of Expertise", roleChips(p.expertise_areas)));
+        html += roleSection("Professional Links", roleRow("LinkedIn", roleLink(p.linkedin_url)) + roleRow("Portfolio", roleLink(p.portfolio_url)) + roleRow("GitHub", roleLink(p.github_url)));
+        html += roleSection("Mentorship", roleRow("Professional Bio", roleValue(p.bio)) + roleRow("Topics", roleChips(p.mentorship_topics)) + roleRow("Availability", roleChips(p.available_days)) + roleRow("Available Hours", roleValue(p.available_hours)) + roleRow("Mentorship Types", roleChips(p.mentorship_types)));
+        if (editBtn) editBtn.hidden = false;
+    } else {
+        html += '<div class="empty-state-box"><div class="empty-state-icon">🎓</div><h4>No role profile yet</h4><p>Complete your profile to showcase it here.</p></div>';
+        if (editBtn) editBtn.hidden = false;
+    }
+
+    body.innerHTML = html;
+
+    const editForm = document.getElementById("roleEditForm");
+    if (editForm) { editForm.hidden = true; editForm.innerHTML = ""; }
+}
+function buildRoleEditForm(data) {
+    const form = document.getElementById("roleEditForm");
+    const editBtn = document.getElementById("roleEditBtn");
+    if (!form || !editBtn) return;
+    const role = (data && data.role) || "student";
+    const p = (data && data.profile) || {};
+    const u = (data && data.user) || {};
+
+    const FIELD_MAP = {
+        student: [
+            { key: "branch", label: "Branch" },
+            { key: "cgpa", label: "CGPA (0-10)" },
+            { key: "target_job_role", label: "Target Job Role" },
+            { key: "preferred_industry", label: "Preferred Industry" },
+            { key: "top_skills", label: "Top Skills (comma-separated)", list: true },
+            { key: "programming_languages", label: "Programming Languages (comma-separated)", list: true },
+            { key: "technologies", label: "Technologies / Tools (comma-separated)", list: true },
+            { key: "looking_for", label: "Looking For (comma-separated)", list: true },
+        ],
+        recruiter: [
+            { key: "job_title", label: "Job Title" },
+            { key: "company_name", label: "Company Name" },
+            { key: "company_website", label: "Company Website" },
+            { key: "industry", label: "Industry" },
+            { key: "company_size", label: "Company Size" },
+            { key: "company_location", label: "Company Location" },
+            { key: "internship_availability", label: "Internship Availability" },
+            { key: "hiring_for", label: "Hiring For (comma-separated)", list: true },
+            { key: "job_roles", label: "Job Roles (comma-separated)", list: true },
+            { key: "required_skills", label: "Required Skills (comma-separated)", list: true },
+        ],
+        mentor: [
+            { key: "job_title", label: "Job Title" },
+            { key: "company", label: "Company" },
+            { key: "industry", label: "Industry" },
+            { key: "years_experience", label: "Years of Experience" },
+            { key: "skills", label: "Skills (comma-separated)", list: true },
+            { key: "expertise_areas", label: "Areas of Expertise (comma-separated)", list: true },
+            { key: "linkedin_url", label: "LinkedIn URL" },
+            { key: "portfolio_url", label: "Portfolio URL" },
+            { key: "github_url", label: "GitHub URL" },
+            { key: "available_days", label: "Available Days (comma-separated)", list: true },
+            { key: "available_hours", label: "Available Hours" },
+            { key: "mentorship_topics", label: "Mentorship Topics (comma-separated)", list: true },
+            { key: "mentorship_types", label: "Mentorship Types (comma-separated)", list: true },
+            { key: "bio", label: "Professional Bio" },
+        ],
+    };
+
+    const fields = FIELD_MAP[role] || [];
+    const isList = (key) => (fields.find((f) => f.key === key) || {}).list;
+    const lines = ['<div class="role-edit-grid">'];
+    lines.push('<label><span class="field-title">Phone</span><input class="role-edit-field" data-key="phone" data-role-phone="1" type="tel" value="' + escapeRole(u.phone || "") + '"></label>');
+    fields.forEach((f) => {
+        const cur = p[f.key];
+        const val = Array.isArray(cur) ? (cur || []).join(", ") : (cur == null ? "" : String(cur));
+        lines.push('<label><span class="field-title">' + escapeRole(f.label) + '</span>' + (f.list ? '<textarea class="role-edit-field" data-key="' + f.key + '" rows="2">' + escapeRole(val) + '</textarea>' : '<input class="role-edit-field" data-key="' + f.key + '" type="text" value="' + escapeRole(val) + '">') + '</label>');
+    });
+    lines.push('</div><div class="role-edit-actions"><button type="button" class="secondary-btn" id="roleEditCancel">Cancel</button><button type="button" class="primary-btn" id="roleEditSave">Save Changes</button></div>');
+    form.innerHTML = lines.join("");
+    form.hidden = false;
+
+    document.getElementById("roleEditCancel").addEventListener("click", () => { form.hidden = true; });
+    document.getElementById("roleEditSave").addEventListener("click", async () => {
+        const profile = {};
+        let changed = false;
+        form.querySelectorAll(".role-edit-field").forEach((input) => {
+            if (input.dataset.rolePhone) return;
+            const key = input.dataset.key;
+            let v = input.value.trim();
+            if (isList(key) && v) v = v.split(",").map((x) => x.trim()).filter(Boolean);
+            profile[key] = v;
+            changed = true;
+        });
+        if (!changed) { form.hidden = true; return; }
+        const phoneInput = form.querySelector('[data-role-phone="1"]');
+        const payload = { phone: phoneInput ? phoneInput.value.trim() : undefined, profile };
+        try {
+            const updated = await window.SkillShareAPI.updateMyRoleProfile(payload);
+            roleProfileData = updated;
+            renderRoleProfile(updated);
+            roleToast("Profile updated successfully.");
+        } catch (err) {
+            roleToast((err && (err.detail || err.message)) || "Could not save profile.");
+            if (err && err.status === 0) roleToast("Server unavailable. Please try again.");
+        }
+    });
+}
+async function loadRoleProfile(user) {
+    if (!window.SkillShareAPI || typeof window.SkillShareAPI.getMyRoleProfile !== "function") return;
+    try {
+        const data = await window.SkillShareAPI.getMyRoleProfile();
+        renderRoleProfile(data);
+        const editBtn = document.getElementById("roleEditBtn");
+        if (editBtn) editBtn.addEventListener("click", () => {
+            const form = document.getElementById("roleEditForm");
+            if (roleProfileData && form && form.hidden) {
+                buildRoleEditForm(roleProfileData);
+            } else if (form) {
+                form.hidden = true;
+            }
+        });
+    } catch (error) {
+        if (error && error.status === 401) return;  // session handled globally
+        const body = document.getElementById("roleProfileBody");
+        if (body) {
+            let msg = "Please try again.";
+            if (error && error.status === 0) {
+                msg = "Server unavailable. Please check your connection and try again.";
+            } else if (error && (error.detail || error.message)) {
+                msg = escapeRole(error.detail || error.message);
+            }
+            body.innerHTML = '<div class="empty-state-box"><div class="empty-state-icon">⚠️</div><h4>Could not load role profile</h4><p>' + msg + '</p><button type="button" class="primary-btn mini-btn" onclick="window.location.reload()">Retry</button></div>';
+        }
+    }
+}
     loadAll();
 });
