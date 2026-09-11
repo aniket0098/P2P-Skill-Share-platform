@@ -91,8 +91,13 @@ window.SkillShareProfileDropdown = (() => {
     }
 
     function handleLogout() {
-        if (window.SkillShareAPI) { window.SkillShareAPI.clearSession(); }
-        window.location.href = "login.html";
+        // Use the centralized logout from auth.js (clears session + cached user).
+        if (window.SkillShareAuth && window.SkillShareAuth.logout) {
+            window.SkillShareAuth.logout();
+        } else {
+            if (window.SkillShareAPI) { window.SkillShareAPI.clearSession(); }
+            window.location.href = "login.html";
+        }
     }
 
     return {

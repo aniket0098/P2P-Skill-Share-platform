@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Students — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="students.html" data-role="faculty">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Students · cohort</span>
+<h1>Student <span>directory</span></h1><p>Readiness, skills and internship status. Placeholder rows.</p></header>
+<div class="toolbar"><div class="search-box"><span>⌕</span><input data-filter="#stuTable" type="text" placeholder="Search students..."></div>
+<select><option>All years</option><option>Year 1</option><option>Year 2</option><option>Year 3</option><option>Year 4</option></select>
+<a class="btn ghost small" href="skill-gap.html">Cohort gaps →</a></div>
+<section class="panel"><div class="table-wrap"><table class="data" id="stuTable"><tr><th>Student</th><th>Focus</th><th>Readiness</th><th>Status</th></tr>
+<tr data-name="a sharma frontend"><td><b>A. Sharma</b><br><span class="muted">3rd yr</span></td><td>Frontend</td><td><div class="progress"><i style="width:72%"></i></div></td><td><span class="badge blue">Interviewing</span></td></tr>
+<tr data-name="r iyer data"><td><b>R. Iyer</b><br><span class="muted">2nd yr</span></td><td>Data</td><td><div class="progress"><i style="width:64%"></i></div></td><td><span class="badge purple">In internship</span></td></tr>
+<tr data-name="s khan backend"><td><b>S. Khan</b><br><span class="muted">3rd yr</span></td><td>Backend</td><td><div class="progress"><i style="width:51%"></i></div></td><td><span class="badge grey">Preparing</span></td></tr>
+</table></div></section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opportunities — SkillShare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css">
+</head>
+<body data-page="opportunities.html" data-role="student">
+<div id="app-sidebar"></div>
+<div class="app-main">
+<div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Discover · SIH 2026</span>
+<h1>Opportunities <span>for you</span></h1>
+<p>Internships, jobs and apprenticeships matched to verified skills. Placeholder listings.</p></header>
+<section class="grid-3">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">💼</span></div><b>128</b><span>Open opportunities</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b>82%</b><span>Average skill match</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⏰</span></div><b>9</b><span>Deadlines this week</span></div>
+</section>
+<div class="toolbar mt">
+<div class="search-box"><span>⌕</span><input data-filter="#oppGrid" data-empty="#oppEmpty" type="text" placeholder="Search roles, companies, skills..."></div>
+<select><option>All types</option><option>Internship</option><option>Full-time</option><option>Apprenticeship</option></select>
+<select><option>All locations</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select>
+<a class="btn ghost small" href="applications.html">My Applications →</a>
+</div>
+<section class="grid-3" id="oppGrid">
+<div class="panel" data-name="frontend developer intern pixelcraft react javascript"><span class="badge blue">Internship</span><h3 class="mt">Frontend Developer Intern</h3><p class="muted">PixelCraft · Remote · 6 months</p><div class="mt"><span class="tag">React</span><span class="tag">JavaScript</span></div><div class="match mt"><div class="bar"><i style="width:92%"></i></div>92%</div><p class="muted mt">Deadline 30 Sep · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
+<div class="panel" data-name="data analyst intern insightlabs python sql"><span class="badge blue">Internship</span><h3 class="mt">Data Analyst Intern</h3><p class="muted">InsightLabs · Hybrid · 3 months</p><div class="mt"><span class="tag">Python</span><span class="tag">SQL</span></div><div class="match mt"><div class="bar"><i style="width:78%"></i></div>78%</div><p class="muted mt">Deadline 02 Oct · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
+<div class="panel" data-name="ui ux design apprentice formstudio figma"><span class="badge purple">Apprenticeship</span><h3 class="mt">UI/UX Design Apprentice</h3><p class="muted">FormStudio · On-site · 12 months</p><div class="mt"><span class="tag">Figma</span><span class="tag">UX Research</span></div><div class="match mt"><div class="bar"><i style="width:71%"></i></div>71%</div><p class="muted mt">Deadline 05 Oct · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
+<div class="panel" data-name="backend developer edgetech node postgresql"><span class="badge green">Full-time</span><h3 class="mt">Backend Developer</h3><p class="muted">EdgeTech · Remote · Full-time</p><div class="mt"><span class="tag">Node.js</span><span class="tag">PostgreSQL</span></div><div class="match mt"><div class="bar"><i style="width:64%"></i></div>64%</div><p class="muted mt">Deadline 10 Oct · Salary (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
+<div class="panel" data-name="ml intern visionai python pytorch"><span class="badge blue">Internship</span><h3 class="mt">ML Intern</h3><p class="muted">VisionAI · Remote · 6 months</p><div class="mt"><span class="tag">Python</span><span class="tag">PyTorch</span></div><div class="match mt"><div class="bar"><i style="width:58%"></i></div>58%</div><p class="muted mt">Deadline 12 Oct · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
+<div class="panel" data-name="technical content writer docuwise writing"><span class="badge amber">Part-time</span><h3 class="mt">Technical Content Writer</h3><p class="muted">DocuWise · Remote · 3 months</p><div class="mt"><span class="tag">Writing</span><span class="tag">Docs</span></div><div class="match mt"><div class="bar"><i style="width:84%"></i></div>84%</div><p class="muted mt">Deadline 15 Oct · Paid (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
+</section>
+<div class="panel filter-empty mt" id="oppEmpty" style="display:none"><div class="empty-state"><div class="empty-icon">🔎</div><h3>No opportunities found</h3><p>Try a different search.</p></div></div>
+</main>
+</div>
+<div id="toast-root"></div>
+<script src="config.js"></script>
+<script src="api-client.js"></script>
+<script src="portal-shell.js"></script>
+<script src="portal.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aptitude — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="aptitude.html" data-role="student">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Career · aptitude</span>
+<h1>Aptitude <span>Lab</span></h1><p>Quant, logical, verbal, DI and technical aptitude with speed + accuracy tracking.</p></header>
+<section class="grid-4">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b>78%</b><span>Accuracy</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⚡</span></div><b>52s</b><span>Avg. per question</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📝</span></div><b>120</b><span>Attempts</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⚠</span></div><b>Data Interp.</b><span>Weak area</span></div>
+</section>
+<div class="tabs mt"><button class="active" data-tab="a-q">Quantitative</button><button data-tab="a-l">Logical</button><button data-tab="a-v">Verbal</button><button data-tab="a-d">Data Interpretation</button><button data-tab="a-t">Technical</button></div>
+<div class="tab-pane active" id="a-q"><section class="panel"><div class="row-list">
+<div class="row-item"><div class="grow"><h3>Percentages & ratios — Set 4</h3><p>15 Q · 20 min · timed</p></div><button class="btn small primary" data-toast="Test starts (frontend only).">Start</button></div>
+<div class="row-item"><div class="grow"><h3>Time, speed & distance</h3><p>12 Q · accuracy 82%</p></div><button class="btn small" data-toast="Test starts (frontend only).">Practice</button></div>
+</div></section></div>
+<div class="tab-pane" id="a-l"><section class="panel"><div class="row-list"><div class="row-item"><div class="grow"><h3>Blood relations + coding-decoding</h3><p>15 Q</p></div><button class="btn small" data-toast="Test starts (frontend only).">Start</button></div></div></section></div>
+<div class="tab-pane" id="a-v"><section class="panel"><div class="row-list"><div class="row-item"><div class="grow"><h3>Reading comprehension — Set 2</h3><p>3 passages · 12 Q</p></div><button class="btn small" data-toast="Test starts (frontend only).">Start</button></div></div></section></div>
+<div class="tab-pane" id="a-d"><section class="panel"><div class="row-list"><div class="row-item"><div class="grow"><h3>Bar + pie charts drill</h3><p>Weak area · recommended 3×/week</p></div><button class="btn small primary" data-toast="Test starts (frontend only).">Improve</button></div></div></section></div>
+<div class="tab-pane" id="a-t"><section class="panel"><div class="row-list"><div class="row-item"><div class="grow"><h3>CS fundamentals MCQ</h3><p>OS + DBMS + CN · 20 Q</p></div><button class="btn small" data-toast="Test starts (frontend only).">Start</button></div></div></section></div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

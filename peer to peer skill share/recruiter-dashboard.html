@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruiter Dashboard — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="recruiter-dashboard.html" data-role="recruiter">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Home · recruiter</span>
+<h1>Hiring <span>overview</span></h1><p>Pipeline, talent evidence and open roles at a glance. Placeholder metrics.</p></header>
+<section class="grid-4">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📥</span></div><b>48</b><span>Active applicants</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎤</span></div><b>6</b><span>Interviews this week</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">💼</span></div><b>5</b><span>Open roles</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⏱</span></div><b>9 days</b><span>Avg. time to shortlist</span></div>
+</section>
+<div class="grid-2 mt">
+<section class="panel"><div class="section-head"><h2>Needs action</h2><a href="applications.html?role=recruiter">Pipeline →</a></div>
+<div class="row-list">
+<div class="row-item"><div class="grow"><h3>12 applications under review</h3><p>Frontend Intern · oldest waiting 4 days</p></div><a class="btn small primary" href="applications.html?role=recruiter">Review</a></div>
+<div class="row-item"><div class="grow"><h3>3 interviews need panel</h3><p>Assign interviewers</p></div><a class="btn small ghost" href="interviews.html?role=recruiter">Schedule</a></div>
+</div></section>
+<section class="panel"><div class="section-head"><h2>Top evidence-backed talent</h2><a href="find-talent.html">Find talent →</a></div>
+<div class="row-list">
+<div class="row-item"><div class="avatar sm">AS</div><div class="grow"><h3>A. Sharma · 92% · React</h3><p>3 projects · sandbox verified*</p></div><a class="btn small ghost" href="talent-profile.html">Evidence</a></div>
+<div class="row-item"><div class="avatar sm">RI</div><div class="grow"><h3>R. Iyer · 88% · Data</h3><p>Hackathon win · 5 projects</p></div><a class="btn small ghost" href="talent-profile.html">Evidence</a></div>
+</div></section>
+</div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

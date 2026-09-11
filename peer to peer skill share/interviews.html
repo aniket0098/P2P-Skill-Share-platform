@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interviews — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="interviews.html" data-role="shared">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data. Shared student/recruiter view via ?role=. -->
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">Interview center · shared view</span>
+<h1>Interviews <span>hub</span></h1>
+<p>Upcoming, completed, type, schedule and join actions. Placeholder schedule.</p></div>
+<div class="role-switch shared-view"><button data-view="student">Student view</button><button data-view="recruiter">Recruiter view</button></div></div></header>
+<section class="grid-3">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📅</span></div><b>2</b><span>Upcoming</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">✅</span></div><b>3</b><span>Completed</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⭐</span></div><b>4.2/5</b><span>Avg. feedback (placeholder)</span></div>
+</section>
+<div data-view-student>
+<section class="panel mt"><div class="section-head"><h2>Upcoming interviews</h2><a href="interview-prep.html">Prepare →</a></div>
+<div class="row-list">
+<div class="row-item"><div class="avatar sm">FS</div><div class="grow"><h3>FormStudio · Design round (Portfolio)</h3><p>Fri, 12:00 PM · Video · 45 min · Panel of 2</p></div><span class="badge amber">Scheduled</span><button class="btn small primary" data-toast="Meeting link will appear here (frontend only).">Join</button></div>
+<div class="row-item"><div class="avatar sm">PC</div><div class="grow"><h3>PixelCraft · Technical (React + DSA)</h3><p>Mon, 11:00 AM · Video · 60 min</p></div><span class="badge blue">Confirmed</span><button class="btn small" data-toast="Added to calendar (frontend only).">Add to calendar</button></div>
+</div></section>
+<section class="panel mt"><div class="section-head"><h2>Completed</h2></div>
+<div class="row-list"><div class="row-item"><div class="avatar sm">IL</div><div class="grow"><h3>InsightLabs · Aptitude + SQL</h3><p>Score 78/100 · feedback: strong SQL, revise stats</p></div><span class="badge green">Passed</span><a class="btn small ghost" href="career-report.html">Report</a></div></div></section>
+</div>
+<div data-view-recruiter style="display:none">
+<section class="panel mt"><div class="section-head"><h2>Interview schedule — hiring team</h2><button class="btn small primary" data-toast="Scheduler opens (frontend only).">+ Schedule</button></div>
+<div class="table-wrap"><table class="data"><tr><th>Candidate</th><th>Round</th><th>When</th><th>Panel</th><th></th></tr>
+<tr><td><b>A. Sharma</b></td><td>Technical</td><td>Fri 12:00 PM</td><td>You + S. Rao</td><td><button class="btn small primary" data-toast="Meeting link copied (frontend only).">Start</button></td></tr>
+<tr><td><b>R. Iyer</b></td><td>HR</td><td>Mon 11:00 AM</td><td>Hiring team</td><td><button class="btn small" data-toast="Rescheduled (frontend only).">Reschedule</button></td></tr>
+</table></div></section></div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

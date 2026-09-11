@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faculty Challenges — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="faculty-challenges.html" data-role="faculty">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Industry · challenges (faculty view)</span>
+<h1>Challenge <span>oversight</span></h1><p>Map challenges to courses, endorse teams, track reviews. Placeholder.</p></header>
+<section class="panel"><div class="table-wrap"><table class="data"><tr><th>Challenge</th><th>Partner</th><th>Teams</th><th>Reviews</th><th></th></tr>
+<tr><td><b>Checkout bug hunt</b><br><span class="muted">Mapped: Web Eng 301</span></td><td>EdgeTech</td><td>9</td><td><span class="badge green">On track</span></td><td><button class="btn small" data-toast="Endorsed (frontend only).">Endorse</button></td></tr>
+<tr><td><b>Demand forecast</b><br><span class="muted">Mapped: Data 201</span></td><td>InsightLabs</td><td>6</td><td><span class="badge amber">2 pending</span></td><td><button class="btn small" data-toast="Reminder sent (frontend only).">Nudge</button></td></tr>
+</table></div></section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

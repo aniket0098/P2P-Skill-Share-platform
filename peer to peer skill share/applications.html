@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Applications — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="applications.html" data-role="shared">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data. Shared student/recruiter view via ?role=. No duplicate file created. -->
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">Hiring pipeline · shared view</span>
+<h1>Applications <span>pipeline</span></h1>
+<p>One file serves both roles. Students see their journey; recruiters see the candidate funnel.</p></div>
+<div class="role-switch shared-view"><button data-view="student">Student view</button><button data-view="recruiter">Recruiter view</button></div></div></header>
+<section class="pipeline">
+<div class="stage done"><h4>Applied</h4><b>12</b></div><div class="stage done"><h4>Under Review</h4><b>7</b></div>
+<div class="stage now"><h4>Shortlisted</h4><b>4</b></div><div class="stage"><h4>Assessment</h4><b>3</b></div>
+<div class="stage"><h4>Interview</h4><b>2</b></div><div class="stage"><h4>Selected</h4><b>1</b></div>
+<div class="stage"><h4>Offer</h4><b>1</b></div><div class="stage"><h4>Joined</h4><b>0</b></div>
+</section>
+<div data-view-student>
+<section class="panel"><div class="section-head"><h2>My applications</h2><a href="opportunities.html">Find more</a></div>
+<div class="row-list">
+<div class="row-item"><div class="avatar sm">PC</div><div class="grow"><h3>Frontend Developer Intern · PixelCraft</h3><p>Applied 2 days ago · 92% match</p></div><span class="badge blue">Under Review</span><a class="btn small ghost" href="opportunity-details.html">Open</a></div>
+<div class="row-item"><div class="avatar sm">IL</div><div class="grow"><h3>Data Analyst Intern · InsightLabs</h3><p>Shortlisted · assessment due Friday</p></div><span class="badge purple">Shortlisted</span><a class="btn small ghost" href="interviews.html">Prep</a></div>
+<div class="row-item"><div class="avatar sm">FS</div><div class="grow"><h3>UI/UX Apprentice · FormStudio</h3><p>Interview scheduled</p></div><span class="badge amber">Interview</span><a class="btn small ghost" href="interviews.html">Details</a></div>
+</div></section></div>
+<div data-view-recruiter style="display:none">
+<section class="panel"><div class="section-head"><h2>Candidate funnel — Frontend Intern</h2><a href="find-talent.html">Source talent</a></div>
+<div class="table-wrap"><table class="data"><tr><th>Candidate</th><th>Match</th><th>Stage</th><th>Evidence</th><th></th></tr>
+<tr><td><b>A. Sharma</b><br><span class="muted">3 projects · 2 certs</span></td><td>92%</td><td><span class="badge purple">Shortlisted</span></td><td><a href="talent-profile.html">Evidence →</a></td><td><button class="btn small primary" data-toast="Moved to Assessment (frontend only).">Advance</button></td></tr>
+<tr><td><b>R. Iyer</b><br><span class="muted">5 projects · hackathon win</span></td><td>88%</td><td><span class="badge blue">Assessment</span></td><td><a href="talent-profile.html">Evidence →</a></td><td><button class="btn small primary" data-toast="Interview scheduled (frontend only).">Schedule</button></td></tr>
+<tr><td><b>S. Khan</b><br><span class="muted">2 projects · strong DSA</span></td><td>81%</td><td><span class="badge grey">Under Review</span></td><td><a href="talent-profile.html">Evidence →</a></td><td><button class="btn small" data-toast="Shortlisted (frontend only).">Shortlist</button></td></tr>
+</table></div></section></div>
+<section class="panel mt"><div class="empty-state" style="padding:12px"><div class="empty-icon">ℹ</div><h3>Frontend-only stage</h3><p>Counts and rows are placeholders. Wire to applications API later.</p></div></section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

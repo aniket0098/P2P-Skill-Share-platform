@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Internships — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="internships.html" data-role="recruiter">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">Hiring · internships</span><h1>Internship <span>manager</span></h1><p>Cohort internships with mentor + college linkage. Placeholder rows.</p></div>
+<div><button class="btn primary small" data-toast="Internship composer opens (frontend only).">+ Post internship</button></div></div></header>
+<section class="panel"><div class="table-wrap"><table class="data"><tr><th>Program</th><th>Status</th><th>Applicants</th><th>Duration</th><th></th></tr>
+<tr><td><b>Frontend Intern — Fall cohort</b><br><span class="muted">Remote · mentor assigned</span></td><td><span class="badge green">Published</span></td><td>42</td><td>6 mo</td><td><a class="btn small ghost" href="applications.html?role=recruiter">Applicants</a></td></tr>
+<tr><td><b>Data Intern — Winter</b><br><span class="muted">Hybrid</span></td><td><span class="badge amber">Draft</span></td><td>0</td><td>3 mo</td><td><button class="btn small" data-toast="Published (frontend only).">Publish</button></td></tr>
+</table></div></section>
+<section class="panel mt"><div class="empty-state" style="padding:14px"><div class="empty-icon">🎓</div><h3>Student view</h3><p>Students discover these programs in <a href="opportunities.html">Opportunities</a>.</p></div></section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

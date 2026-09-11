@@ -226,7 +226,10 @@ async function onSubmit(e) {
         $('#successTitle').textContent = 'Account created!';
         $('#successMsg').textContent = 'Welcome, ' + (user.name || d.name) + ' (' + (user.role || d.role) + '). Redirecting to sign in...';
         show('success'); toast('Welcome ' + (user.name || d.name) + '!', 'success');
-        setTimeout(() => { window.location.href = 'login.html'; }, 1400);
+        setTimeout(() => {
+            // Send to login with the role pre-selected so the user lands on the right dashboard.
+            window.location.href = 'login.html';
+        }, 1400);
     } catch (err) {
         setErr('formError', (err && (err.detail || err.message)) || 'Signup failed. Please try again.');
         toast((err && (err.detail || err.message)) || 'Signup failed.', 'error');
