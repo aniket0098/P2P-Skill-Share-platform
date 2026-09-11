@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Innovation Lab | Portal</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="innovation-lab1.css">
+</head>
+
+<body>
+
+  <!-- Cursor effect -->
+  <div class="cursor-glow" id="cursorGlow"></div>
+
+  <!-- Noise -->
+  <div class="noise"></div>
+
+  <!-- ================= NAVBAR ================= -->
+
+  <header class="navbar" id="navbar">
+
+    <a href="#" class="logo">
+      <span class="logo-icon">
+        <i></i>
+        <i></i>
+        <i></i>
+      </span>
+
+      PORTAL<span>.</span>
+    </a>
+
+    <nav class="nav-links">
+
+      <a href="#top" class="active">Innovation Lab</a>
+      <a href="#loop">Lab Loop</a>
+      <a href="#genome">Genome</a>
+      <a href="#radar">Radar</a>
+
+    </nav>
+
+    <a href="#enter" class="nav-button">
+      Enter Lab <span>↗</span>
+    </a>
+
+    <button class="mobile-menu" id="mobileMenu">
+      ☰
+    </button>
+
+  </header>
+
+
+  <main id="top">
+
+    <!-- ================= HERO ================= -->
+
+    <section class="hero">
+
+      <div class="hero-content reveal">
+
+        <div class="eyebrow">
+          <span></span>
+          INNOVATION LAB / 01
+        </div>
+
+        <h1>
+          Don't wait for the
+          <em>future.</em>
+          Investigate it.
+        </h1>
+
+        <p>
+          A living environment where students discover real problems,
+          challenge assumptions, build experiments, work with industry
+          and turn unanswered questions into real-world solutions.
+        </p>
+
+        <div class="hero-buttons">
+
+          <a href="#loop" class="primary-button">
+            Enter the Lab
+            <span>→</span>
+          </a>
+
+          <a href="#philosophy" class="simple-link">
+            How it works ↓
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <!-- DIGITAL LAB VISUAL -->
+
+      <div class="lab-environment reveal">
+
+        <div class="lab-grid"></div>
+
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <div class="orbit orbit-three"></div>
+
+        <div class="lab-core">
+
+          <div class="core-ring"></div>
+
+          <div class="core-text">
+            LAB
+            <strong>LIVE</strong>
+          </div>
+
+        </div>
+
+
+        <!-- Nodes -->
+
+        <div class="lab-node student">
+          <strong>STUDENTS</strong>
+          <small>284 active</small>
+        </div>
+
+        <div class="lab-node industry">
+          <strong>INDUSTRY</strong>
+          <small>67 partners</small>
+        </div>
+
+        <div class="lab-node problems">
+          <strong>PROBLEMS</strong>
+          <small>42 open</small>
+        </div>
+
+        <div class="lab-node experiments">
+          <strong>EXPERIMENTS</strong>
+          <small>1,842 running</small>
+        </div>
+
+        <div class="lab-node mentors">
+          <strong>MENTORS</strong>
+          <small>126 connected</small>
+        </div>
+
+
+        <!-- Connections -->
+
+        <div class="connection connection-one"></div>
+        <div class="connection connection-two"></div>
+        <div class="connection connection-three"></div>
+        <div class="connection connection-four"></div>
+
+
+        <div class="scan-line"></div>
+
+        <div class="live-label">
+          <span>●</span>
+          LIVE LAB ACTIVITY
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= STATS ================= -->
+
+    <section class="stats">
+
+      <div>
+        <strong>42</strong>
+        <span>Open Problems</span>
+      </div>
+
+      <div>
+        <strong>1,842</strong>
+        <span>Experiments</span>
+      </div>
+
+      <div>
+        <strong>327</strong>
+        <span>Prototypes</span>
+      </div>
+
+      <div>
+        <strong>116</strong>
+        <span>Validated</span>
+      </div>
+
+      <div>
+        <strong>42</strong>
+        <span>Deployed</span>
+      </div>
+
+    </section>
+
+
+    <!-- ================= PHILOSOPHY ================= -->
+
+    <section class="section philosophy" id="philosophy">
+
+      <div class="section-label">
+        01 — THE SHIFT
+      </div>
+
+      <div class="two-column">
+
+        <h2>
+          What if your
+          campus became
+          a <span>laboratory?</span>
+        </h2>
+
+        <div class="section-copy">
+
+          <p class="large">
+            Most education measures what students remember.
+            The Innovation Lab measures what they can discover,
+            test, break, rebuild and prove.
+          </p>
+
+          <p>
+            Instead of waiting for a project topic, students enter
+            a living problem space connected to academia and industry.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="path-box">
+
+        <div class="traditional">
+
+          <small>TRADITIONAL</small>
+
+          <div>
+            Learn
+            <i>→</i>
+            Assignment
+            <i>→</i>
+            Exam
+            <i>→</i>
+            Grade
+          </div>
+
+        </div>
+
+
+        <div class="innovation-path">
+
+          <small>INNOVATION LAB</small>
+
+          <div>
+
+            <b>Question</b>
+            <i>→</i>
+
+            <b>Experiment</b>
+            <i>→</i>
+
+            <b>Evidence</b>
+            <i>→</i>
+
+            <b>Impact</b>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= LAB LOOP ================= -->
+
+    <section class="section lab-loop" id="loop">
+
+      <div class="section-label">
+        02 — THE LAB LOOP
+      </div>
+
+      <div class="loop-heading">
+
+        <h2>
+          Ideas are easy.
+          <span>Evidence is earned.</span>
+        </h2>
+
+        <p>
+          Every innovation moves through a repeatable cycle.
+          Students don't have to get it right the first time —
+          they have to learn what the next experiment should be.
+        </p>
+
+      </div>
+
+
+      <div class="loop-container">
+
+        <div class="loop-circle"></div>
+
+        <div class="loop-inner">
+
+          <span>THE</span>
+
+          <strong>
+            LAB<br>
+            LOOP
+          </strong>
+
+          <small>
+            ITERATE →
+          </small>
+
+        </div>
+
+
+        <button class="loop-node node-one"
+          data-step="01"
+          data-title="Question"
+          data-text="What is worth solving?">
+          01
+          <strong>Question</strong>
+        </button>
+
+        <button class="loop-node node-two"
+          data-step="02"
+          data-title="Observe"
+          data-text="Understand the real environment.">
+          02
+          <strong>Observe</strong>
+        </button>
+
+        <button class="loop-node node-three"
+          data-step="03"
+          data-title="Hypothesize"
+          data-text="Make an assumption worth testing.">
+          03
+          <strong>Hypothesize</strong>
+        </button>
+
+        <button class="loop-node node-four"
+          data-step="04"
+          data-title="Experiment"
+          data-text="Build evidence, not just a presentation.">
+          04
+          <strong>Experiment</strong>
+        </button>
+
+        <button class="loop-node break"
+          data-step="05"
+          data-title="Break"
+          data-text="Failure is not wasted work. Failure is data.">
+          05
+          <strong>Break</strong>
+        </button>
+
+        <button class="loop-node node-six"
+          data-step="06"
+          data-title="Iterate"
+          data-text="Change the approach using what you learned.">
+          06
+          <strong>Iterate</strong>
+        </button>
+
+        <button class="loop-node node-seven"
+          data-step="07"
+          data-title="Validate"
+          data-text="Test with people who matter.">
+          07
+          <strong>Validate</strong>
+        </button>
+
+        <button class="loop-node node-eight"
+          data-step="08"
+          data-title="Deploy"
+          data-text="Move beyond the classroom.">
+          08
+          <strong>Deploy</strong>
+        </button>
+
+      </div>
+
+
+      <div class="loop-description" id="loopDescription">
+
+        <span>01</span>
+
+        <div>
+          <h3>Question</h3>
+          <p>What is worth solving?</p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= LIVE LAB ================= -->
+
+    <section class="live-lab">
+
+      <div class="section">
+
+        <div class="section-label">
+          03 — THE LAB IS ALIVE
+        </div>
+
+
+        <div class="live-layout">
+
+          <div>
+
+            <h2>
+              Every question
+              creates <span>movement.</span>
+            </h2>
+
+            <p class="large">
+              Problems arrive, teams form, mentors challenge
+              assumptions and prototypes evolve — in public,
+              not behind closed doors.
+            </p>
+
+            <div class="live-counter">
+
+              <span class="pulse"></span>
+
+              LIVE ACTIVITY
+
+              <strong id="activityNumber">
+                17
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="activity-feed" id="activityFeed">
+
+            <article>
+
+              <span>↗</span>
+
+              <div>
+                <small>INDUSTRY · 2m</small>
+
+                <p>
+                  Manufacturing partner posted a new problem.
+                </p>
+              </div>
+
+            </article>
+
+
+            <article>
+
+              <span>⌁</span>
+
+              <div>
+                <small>STUDENT · 4m</small>
+
+                <p>
+                  Team Orion started Experiment #184.
+                </p>
+              </div>
+
+            </article>
+
+
+            <article>
+
+              <span>?</span>
+
+              <div>
+                <small>FACULTY · 9m</small>
+
+                <p>
+                  Dr. Mehta challenged the team's hypothesis.
+                </p>
+              </div>
+
+            </article>
+
+
+            <article>
+
+              <span>+</span>
+
+              <div>
+                <small>MENTOR · 12m</small>
+
+                <p>
+                  New AI mentor joined the experiment.
+                </p>
+              </div>
+
+            </article>
+
+
+            <article>
+
+              <span>✓</span>
+
+              <div>
+                <small>TEAM · 18m</small>
+
+                <p>
+                  Prototype v2 uploaded for validation.
+                </p>
+              </div>
+
+            </article>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= INNOVATION GENOME ================= -->
+
+    <section class="section genome" id="genome">
+
+      <div class="section-label">
+        04 — STUDENT INTELLIGENCE
+      </div>
+
+
+      <div class="genome-heading">
+
+        <h2>
+          Every student has
+          an <span>Innovation Genome.</span>
+        </h2>
+
+        <p>
+          Not a score. Not a résumé.
+          An evolving evidence map of how a student
+          actually solves problems.
+        </p>
+
+      </div>
+
+
+      <div class="genome-card">
+
+        <div class="profile">
+
+          <div class="avatar">
+            A
+          </div>
+
+          <div>
+
+            <small>
+              STUDENT / SAMPLE PROFILE
+            </small>
+
+            <h3>
+              Aria Sharma
+            </h3>
+
+            <p>
+              Computer Science · 3rd Year
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="skills">
+
+          <div class="skill">
+            <span>Curiosity</span>
+            <div><i style="width:82%"></i></div>
+            <b>82</b>
+          </div>
+
+          <div class="skill">
+            <span>Problem Framing</span>
+            <div><i style="width:74%"></i></div>
+            <b>74</b>
+          </div>
+
+          <div class="skill">
+            <span>Experimentation</span>
+            <div><i style="width:91%"></i></div>
+            <b>91</b>
+          </div>
+
+          <div class="skill">
+            <span>Technical Building</span>
+            <div><i style="width:78%"></i></div>
+            <b>78</b>
+          </div>
+
+          <div class="skill">
+            <span>Collaboration</span>
+            <div><i style="width:88%"></i></div>
+            <b>88</b>
+          </div>
+
+          <div class="skill">
+            <span>Iteration</span>
+            <div><i style="width:94%"></i></div>
+            <b>94</b>
+          </div>
+
+        </div>
+
+
+        <div class="evidence">
+
+          <div>
+            <strong>12</strong>
+            <small>EXPERIMENTS</small>
+          </div>
+
+          <div>
+            <strong>4</strong>
+            <small>FAILED HYPOTHESES</small>
+          </div>
+
+          <div>
+            <strong>7</strong>
+            <small>PROTOTYPES</small>
+          </div>
+
+          <div>
+            <strong>3</strong>
+            <small>INDUSTRY VALIDATIONS</small>
+          </div>
+
+          <div>
+            <strong>2</strong>
+            <small>DEPLOYED</small>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <a href="#enter" class="outline-button">
+        View my Innovation Genome ↗
+      </a>
+
+    </section>
+
+
+    <!-- ================= INNOVATION RADAR ================= -->
+
+    <section class="section radar" id="radar">
+
+      <div class="section-label">
+        05 — INNOVATION RADAR
+      </div>
+
+
+      <div class="radar-layout">
+
+        <div>
+
+          <h2>
+            What's worth
+            investigating <span>next?</span>
+          </h2>
+
+          <p class="large">
+            Turn emerging signals into student opportunities.
+            Follow the problems before they become tomorrow's
+            job descriptions.
+          </p>
+
+          <div class="legend">
+
+            <span>
+              <i class="emerging"></i>
+              Emerging
+            </span>
+
+            <span>
+              <i class="research"></i>
+              Active research
+            </span>
+
+            <span>
+              <i class="demand"></i>
+              Industry demand
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="radar-visual">
+
+          <div class="radar-ring ring-one"></div>
+          <div class="radar-ring ring-two"></div>
+          <div class="radar-ring ring-three"></div>
+
+          <div class="radar-sweep"></div>
+
+          <div class="radar-center">
+            NOW
+          </div>
+
+
+          <span class="radar-tag tag-one">
+            AI & AGENTS
+          </span>
+
+          <span class="radar-tag tag-two">
+            ROBOTICS
+          </span>
+
+          <span class="radar-tag tag-three">
+            CLIMATE
+          </span>
+
+          <span class="radar-tag tag-four">
+            HEALTHTECH
+          </span>
+
+          <span class="radar-tag tag-five">
+            SMART MANUFACTURING
+          </span>
+
+          <span class="radar-tag tag-six">
+            FUTURE OF WORK
+          </span>
+
+          <span class="radar-tag tag-seven">
+            CYBERSECURITY
+          </span>
+
+          <span class="radar-tag tag-eight">
+            AGRICULTURE
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= CAREER PATH ================= -->
+
+    <section class="section impact">
+
+      <div class="section-label">
+        06 — FROM QUESTION TO OPPORTUNITY
+      </div>
+
+      <h2>
+        One question can
+        open a <span>career.</span>
+      </h2>
+
+
+      <div class="impact-track">
+
+        <div>STUDENT</div>
+        <i>→</i>
+
+        <div>REAL PROBLEM</div>
+        <i>→</i>
+
+        <div>EXPERIMENT</div>
+        <i>→</i>
+
+        <div>PROTOTYPE</div>
+        <i>→</i>
+
+        <div>INDUSTRY VALIDATION</div>
+        <i>→</i>
+
+        <div>INTERNSHIP</div>
+        <i>→</i>
+
+        <div>PLACEMENT / RESEARCH / STARTUP</div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= FINAL CTA ================= -->
+
+    <section class="section closing" id="enter">
+
+      <div class="closing-label">
+        07 — YOUR NEXT MOVE
+      </div>
+
+
+      <div class="closing-content">
+
+        <h2>
+          Don't just build
+          a <em>project.</em>
+        </h2>
+
+        <h2>
+          Build evidence
+          that you can
+          <span>solve real problems.</span>
+        </h2>
+
+        <p>
+          Your experiments, decisions, failures and impact
+          can become the evidence behind your next opportunity.
+        </p>
+
+        <a href="#" class="primary-button">
+          Enter the Innovation Lab
+          <span>→</span>
+        </a>
+
+      </div>
+
+
+      <div class="closing-code">
+        QUESTION
+        <span>→</span>
+        EXPERIMENT
+        <span>→</span>
+        IMPACT
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    <span>
+      © 2026 PORTAL · Academia × Industry × Students
+    </span>
+
+    <span>
+      Built for curious minds.
+    </span>
+
+  </footer>
+
+
+  <script src="innovation-lab1.js"></script>
+
+</body>
+</html>

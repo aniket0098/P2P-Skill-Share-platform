@@ -1,0 +1,2232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#07090d"
+    >
+
+    <title>Innovation Lab — Build</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="innovation-lab3.css"
+    >
+</head>
+
+<body>
+
+<!-- =========================================================
+     CURSOR
+     ========================================================= -->
+
+<div class="cursor-glow"></div>
+
+
+<!-- =========================================================
+     NAVBAR
+     ========================================================= -->
+
+<header
+    class="navbar"
+    id="navbar"
+>
+
+    <a
+        href="innovation-lab.html"
+        class="logo"
+    >
+        <span class="logo-icon">◇</span>
+        <span>PORTAL.</span>
+    </a>
+
+    <nav class="nav-links">
+
+        <a href="innovation-lab.html">
+            <span>01</span>
+            Discover
+        </a>
+
+        <a href="innovation-lab2.html">
+            <span>02</span>
+            Imagine
+        </a>
+
+        <a
+            href="#top"
+            class="active"
+        >
+            <span>03</span>
+            Build
+        </a>
+
+        <a href="innovation-lab4.html">
+            <span>04</span>
+            Impact
+        </a>
+
+        <a
+            href="#buildWorkspace"
+            class="nav-button"
+        >
+            Enter Studio →
+        </a>
+
+    </nav>
+
+    <button
+        class="mobile-menu"
+        id="mobileMenu"
+        type="button"
+        aria-label="Open menu"
+    >
+        <span></span>
+        <span></span>
+    </button>
+
+</header>
+
+
+<!-- =========================================================
+     HERO
+     ========================================================= -->
+
+<main id="top">
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <div class="eyebrow">
+            INNOVATION LAB / 03
+        </div>
+
+        <h1>
+            Don't just imagine it.
+            <em>Build it.</em>
+        </h1>
+
+        <p class="hero-description">
+            Turn an idea into a working prototype.
+            Define the problem, design the solution,
+            experiment, test, learn and iterate —
+            all inside one student build environment.
+        </p>
+
+        <div class="hero-actions">
+
+            <button
+                class="primary-button start-build"
+                id="startBuild"
+                type="button"
+            >
+                Start Building →
+            </button>
+
+            <a
+                href="#projectSetup"
+                class="secondary-button"
+            >
+                Define Your Idea
+            </a>
+
+        </div>
+
+        <div class="hero-meta">
+
+            <span>
+                <i></i>
+                BUILD ENGINE: READY
+            </span>
+
+            <span>
+                AUTOSAVE: ON
+            </span>
+
+            <span>
+                VERSION 01
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- BUILD VISUAL -->
+
+    <div class="build-console">
+
+        <div class="console-header">
+
+            <span>
+                BUILD.STUDIO
+            </span>
+
+            <span
+                id="buildStatus"
+                class="console-status"
+            >
+                BUILD SYSTEM ONLINE
+            </span>
+
+        </div>
+
+        <div class="console-body">
+
+            <div class="console-grid"></div>
+
+            <div class="console-orbit orbit-one"></div>
+            <div class="console-orbit orbit-two"></div>
+
+            <div class="console-core">
+
+                <span class="core-symbol">
+                    +
+                </span>
+
+                <strong>
+                    IDEA
+                </strong>
+
+                <small>
+                    → PROTOTYPE
+                </small>
+
+            </div>
+
+            <div class="console-node node-one">
+                DEFINE
+            </div>
+
+            <div class="console-node node-two">
+                DESIGN
+            </div>
+
+            <div class="console-node node-three">
+                TEST
+            </div>
+
+            <div class="console-node node-four">
+                ITERATE
+            </div>
+
+        </div>
+
+        <div class="console-footer">
+
+            <span>
+                SYSTEM
+            </span>
+
+            <strong>
+                READY
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     PROJECT SETUP
+     ========================================================= -->
+
+<section
+    class="section setup-section"
+    id="projectSetup"
+>
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.01
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                PROJECT DEFINITION
+            </div>
+
+            <h2>
+                Give your idea
+                <em>direction.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="setup-layout">
+
+        <!-- LEFT -->
+
+        <div class="project-form">
+
+            <div class="form-header">
+
+                <div>
+                    <span class="form-label">
+                        PROJECT SETUP
+                    </span>
+
+                    <h3>
+                        Start with the
+                        <em>why.</em>
+                    </h3>
+                </div>
+
+                <span
+                    class="autosave"
+                    data-autosave
+                >
+                    Saved
+                </span>
+
+            </div>
+
+
+            <!-- PROJECT NAME -->
+
+            <div class="input-group">
+
+                <label for="projectName">
+                    PROJECT NAME
+                </label>
+
+                <input
+                    id="projectName"
+                    type="text"
+                    data-field="title"
+                    data-maxlength="80"
+                    placeholder="Give your innovation a name..."
+                    autocomplete="off"
+                >
+
+                <span class="character-count">
+                    0/80
+                </span>
+
+            </div>
+
+
+            <!-- PROBLEM -->
+
+            <div class="input-group">
+
+                <label for="problem">
+                    WHAT PROBLEM ARE YOU SOLVING?
+                </label>
+
+                <textarea
+                    id="problem"
+                    data-field="problem"
+                    data-maxlength="500"
+                    data-required="true"
+                    placeholder="Describe the real-world problem you want to solve..."
+                ></textarea>
+
+                <span class="character-count">
+                    0/500
+                </span>
+
+            </div>
+
+
+            <!-- USERS -->
+
+            <div class="input-group">
+
+                <label for="users">
+                    WHO EXPERIENCES THIS PROBLEM?
+                </label>
+
+                <input
+                    id="users"
+                    type="text"
+                    data-field="users"
+                    placeholder="Students, patients, farmers, businesses..."
+                >
+
+            </div>
+
+
+            <!-- SOLUTION -->
+
+            <div class="input-group">
+
+                <label for="solution">
+                    YOUR SOLUTION DIRECTION
+                </label>
+
+                <textarea
+                    id="solution"
+                    data-field="solution"
+                    data-maxlength="500"
+                    placeholder="What could you build to solve this?"
+                ></textarea>
+
+                <span class="character-count">
+                    0/500
+                </span>
+
+            </div>
+
+
+            <!-- CONSTRAINTS -->
+
+            <div class="input-group">
+
+                <label for="constraints">
+                    CONSTRAINTS
+                </label>
+
+                <textarea
+                    id="constraints"
+                    data-field="constraints"
+                    data-maxlength="300"
+                    placeholder="Budget, time, hardware, access, skills..."
+                ></textarea>
+
+                <span class="character-count">
+                    0/300
+                </span>
+
+            </div>
+
+
+            <!-- PROJECT TYPE -->
+
+            <div class="input-group">
+
+                <label>
+                    WHAT ARE YOU BUILDING?
+                </label>
+
+                <div
+                    class="choice-group"
+                    data-choice-group="projectType"
+                >
+
+                    <button
+                        type="button"
+                        data-choice="Prototype"
+                        class="active"
+                    >
+                        Prototype
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="Web App"
+                    >
+                        Web App
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="Mobile App"
+                    >
+                        Mobile App
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="Hardware"
+                    >
+                        Hardware
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="Research"
+                    >
+                        Research
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- TECHNOLOGY -->
+
+            <div class="input-group">
+
+                <label>
+                    TECHNOLOGY
+                </label>
+
+                <div
+                    class="choice-group technology-group"
+                    data-choice-group="technology"
+                    data-multi="true"
+                >
+
+                    <button
+                        type="button"
+                        data-choice="AI"
+                    >
+                        AI
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="Web"
+                    >
+                        Web
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="IoT"
+                    >
+                        IoT
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="Robotics"
+                    >
+                        Robotics
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="Data"
+                    >
+                        Data
+                    </button>
+
+                    <button
+                        type="button"
+                        data-choice="No-code"
+                    >
+                        No-code
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- TAGS -->
+
+            <div class="input-group">
+
+                <label for="tagInput">
+                    PROJECT TAGS
+                </label>
+
+                <input
+                    id="tagInput"
+                    type="text"
+                    data-tag-input
+                    placeholder="Type a tag and press Enter..."
+                >
+
+                <div
+                    class="tags"
+                    data-tags
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RIGHT PREVIEW -->
+
+        <aside class="project-preview">
+
+            <div class="preview-top">
+
+                <span>
+                    LIVE PROJECT MODEL
+                </span>
+
+                <span
+                    data-project-status
+                >
+                    DRAFT
+                </span>
+
+            </div>
+
+            <div class="preview-core">
+
+                <span class="preview-kicker">
+                    YOUR PROJECT
+                </span>
+
+                <h3
+                    data-preview="title"
+                >
+                    Untitled Innovation
+                </h3>
+
+                <div class="preview-line"></div>
+
+                <div class="preview-block">
+
+                    <span>
+                        PROBLEM
+                    </span>
+
+                    <p data-preview="problem">
+                        Your problem statement
+                        will appear here.
+                    </p>
+
+                </div>
+
+                <div class="preview-block">
+
+                    <span>
+                        USERS
+                    </span>
+
+                    <p data-preview="users">
+                        Define your target users
+                    </p>
+
+                </div>
+
+                <div class="preview-block">
+
+                    <span>
+                        SOLUTION
+                    </span>
+
+                    <p data-preview="solution">
+                        Your solution direction
+                        will appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="preview-bottom">
+
+                <span>
+                    BUILD COMPLETION
+                </span>
+
+                <strong data-completion>
+                    0%
+                </strong>
+
+                <div class="completion-track">
+                    <div
+                        class="completion-fill"
+                        data-completion-bar
+                    ></div>
+                </div>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     BLUEPRINT
+     ========================================================= -->
+
+<section class="section blueprint-section">
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.02
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                BUILD BLUEPRINT
+            </div>
+
+            <h2>
+                Turn your thinking
+                into a <em>plan.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="blueprint-layout">
+
+        <div class="blueprint-intro">
+
+            <span class="blueprint-number">
+                01
+            </span>
+
+            <h3>
+                Generate your
+                build direction.
+            </h3>
+
+            <p>
+                Convert your problem,
+                users and solution into
+                a structured starting point
+                for your prototype.
+            </p>
+
+            <button
+                class="primary-button"
+                data-action="generate-blueprint"
+                type="button"
+            >
+                Generate Blueprint →
+            </button>
+
+        </div>
+
+
+        <div
+            class="blueprint-result-container"
+            data-blueprint
+        >
+
+            <div class="blueprint-placeholder">
+
+                <span>
+                    BLUEPRINT ENGINE
+                </span>
+
+                <strong>
+                    Waiting for project data...
+                </strong>
+
+                <small>
+                    Complete your project definition
+                    and generate a blueprint.
+                </small>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     BUILD WORKSPACE
+     ========================================================= -->
+
+<section
+    class="section workspace-section"
+    id="buildWorkspace"
+>
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.03
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                PROTOTYPE WORKSPACE
+            </div>
+
+            <h2>
+                Now build
+                the <em>thing.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="workspace">
+
+        <!-- TOOLBAR -->
+
+        <div class="workspace-toolbar">
+
+            <div class="workspace-project">
+
+                <span class="status-dot"></span>
+
+                <div>
+
+                    <strong
+                        id="workspaceProjectName"
+                    >
+                        Untitled Innovation
+                    </strong>
+
+                    <small>
+                        Prototype workspace
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div class="workspace-actions">
+
+                <button
+                    id="saveVersion"
+                    class="toolbar-button"
+                    type="button"
+                >
+                    Save version
+                </button>
+
+                <button
+                    id="presentBuild"
+                    class="toolbar-button"
+                    type="button"
+                >
+                    Present
+                </button>
+
+                <button
+                    id="exportBuild"
+                    class="toolbar-button"
+                    type="button"
+                >
+                    Export
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="workspace-body">
+
+            <!-- LEFT TOOLS -->
+
+            <aside class="tools-panel">
+
+                <span class="panel-label">
+                    TOOLS
+                </span>
+
+                <button
+                    class="build-tool active"
+                    data-tool="select"
+                    type="button"
+                >
+                    <span>↖</span>
+                    Select
+                    <kbd>V</kbd>
+                </button>
+
+                <button
+                    class="build-tool"
+                    data-tool="text"
+                    type="button"
+                >
+                    <span>T</span>
+                    Text
+                    <kbd>T</kbd>
+                </button>
+
+                <button
+                    class="build-tool"
+                    data-tool="component"
+                    type="button"
+                >
+                    <span>□</span>
+                    Component
+                    <kbd>C</kbd>
+                </button>
+
+                <button
+                    class="build-tool"
+                    data-tool="shape"
+                    type="button"
+                >
+                    <span>◇</span>
+                    Shape
+                </button>
+
+                <button
+                    class="build-tool"
+                    data-tool="flow"
+                    type="button"
+                >
+                    <span>→</span>
+                    Flow
+                    <kbd>F</kbd>
+                </button>
+
+                <button
+                    class="build-tool"
+                    data-tool="note"
+                    type="button"
+                >
+                    <span>▤</span>
+                    Note
+                    <kbd>N</kbd>
+                </button>
+
+                <button
+                    class="build-tool"
+                    data-tool="image"
+                    type="button"
+                >
+                    <span>▧</span>
+                    Image
+                </button>
+
+
+                <div class="tools-divider"></div>
+
+                <button
+                    id="clearCanvas"
+                    class="tool-danger"
+                    type="button"
+                >
+                    Clear canvas
+                </button>
+
+            </aside>
+
+
+            <!-- CANVAS -->
+
+            <div class="canvas-area">
+
+                <div class="canvas-topbar">
+
+                    <span>
+                        CANVAS
+                    </span>
+
+                    <div class="zoom-controls">
+
+                        <button
+                            data-zoom="out"
+                            type="button"
+                        >
+                            −
+                        </button>
+
+                        <span id="zoomValue">
+                            100%
+                        </span>
+
+                        <button
+                            data-zoom="in"
+                            type="button"
+                        >
+                            +
+                        </button>
+
+                        <button
+                            data-zoom="reset"
+                            type="button"
+                        >
+                            Reset
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="build-canvas"
+                    id="canvas"
+                >
+
+                    <div class="canvas-grid"></div>
+
+                    <div
+                        class="canvas-empty"
+                        id="canvasEmpty"
+                    >
+
+                        <span class="empty-symbol">
+                            +
+                        </span>
+
+                        <strong>
+                            Your canvas is empty
+                        </strong>
+
+                        <p>
+                            Choose a tool to start
+                            building your prototype.
+                        </p>
+
+                    </div>
+
+
+                    <!-- INITIAL NODES -->
+
+                    <div
+                        class="canvas-node"
+                        style="left:120px;top:110px;"
+                        data-type="USER"
+                    >
+
+                        <span class="node-type">
+                            USER
+                        </span>
+
+                        <strong>
+                            Student
+                        </strong>
+
+                        <button
+                            class="node-delete"
+                            type="button"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="canvas-node"
+                        style="left:390px;top:190px;"
+                        data-type="PROBLEM"
+                    >
+
+                        <span class="node-type">
+                            PROBLEM
+                        </span>
+
+                        <strong>
+                            Pain Point
+                        </strong>
+
+                        <button
+                            class="node-delete"
+                            type="button"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="canvas-node"
+                        style="left:650px;top:110px;"
+                        data-type="SOLUTION"
+                    >
+
+                        <span class="node-type">
+                            SOLUTION
+                        </span>
+
+                        <strong>
+                            Your Product
+                        </strong>
+
+                        <button
+                            class="node-delete"
+                            type="button"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- INSPECTOR -->
+
+            <aside class="inspector">
+
+                <div class="inspector-header">
+
+                    <span class="panel-label">
+                        INSPECTOR
+                    </span>
+
+                    <span
+                        id="inspectorType"
+                    >
+                        ELEMENT
+                    </span>
+
+                </div>
+
+
+                <div class="inspector-content">
+
+                    <div class="inspector-field">
+
+                        <label>
+                            ELEMENT NAME
+                        </label>
+
+                        <input
+                            id="inspectorTitle"
+                            type="text"
+                            placeholder="Select an element"
+                            data-property="text"
+                        >
+
+                    </div>
+
+
+                    <div class="inspector-field">
+
+                        <label>
+                            DESCRIPTION
+                        </label>
+
+                        <textarea
+                            placeholder="Describe this element..."
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="inspector-field">
+
+                        <label>
+                            POSITION
+                        </label>
+
+                        <div class="position-grid">
+
+                            <input
+                                type="text"
+                                placeholder="X"
+                            >
+
+                            <input
+                                type="text"
+                                placeholder="Y"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="inspector-section">
+
+                        <span>
+                            BEHAVIOR
+                        </span>
+
+                        <label class="switch-row">
+
+                            <span>
+                                Interactive
+                            </span>
+
+                            <input
+                                type="checkbox"
+                            >
+
+                        </label>
+
+                        <label class="switch-row">
+
+                            <span>
+                                Visible
+                            </span>
+
+                            <input
+                                type="checkbox"
+                                checked
+                            >
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     BUILD PROCESS
+     ========================================================= -->
+
+<section class="section process-section">
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.04
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                BUILD PROCESS
+            </div>
+
+            <h2>
+                Move from idea
+                to <em>evidence.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="workflow">
+
+        <button
+            class="workflow-step active"
+            data-stage="Define"
+            type="button"
+        >
+
+            <span>01</span>
+
+            <strong>
+                Define
+            </strong>
+
+            <small>
+                Understand
+            </small>
+
+        </button>
+
+
+        <button
+            class="workflow-step"
+            data-stage="Design"
+            type="button"
+        >
+
+            <span>02</span>
+
+            <strong>
+                Design
+            </strong>
+
+            <small>
+                Shape
+            </small>
+
+        </button>
+
+
+        <button
+            class="workflow-step"
+            data-stage="Build"
+            type="button"
+        >
+
+            <span>03</span>
+
+            <strong>
+                Build
+            </strong>
+
+            <small>
+                Prototype
+            </small>
+
+        </button>
+
+
+        <button
+            class="workflow-step"
+            data-stage="Test"
+            type="button"
+        >
+
+            <span>04</span>
+
+            <strong>
+                Test
+            </strong>
+
+            <small>
+                Validate
+            </small>
+
+        </button>
+
+
+        <button
+            class="workflow-step"
+            data-stage="Iterate"
+            type="button"
+        >
+
+            <span>05</span>
+
+            <strong>
+                Iterate
+            </strong>
+
+            <small>
+                Improve
+            </small>
+
+        </button>
+
+    </div>
+
+
+    <div class="progress-system">
+
+        <div class="progress-meta">
+
+            <span>
+                BUILD PROGRESS
+            </span>
+
+            <strong
+                class="progress-value"
+            >
+                18%
+            </strong>
+
+        </div>
+
+        <div class="progress-track">
+
+            <div
+                class="progress-fill"
+                style="width:18%;"
+            ></div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     TEST LAB
+     ========================================================= -->
+
+<section
+    class="section test-section"
+    id="testLab"
+>
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.05
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                EXPERIMENT LAB
+            </div>
+
+            <h2>
+                Don't assume.
+                <em>Test.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="test-layout">
+
+        <div class="experiment-form">
+
+            <span class="form-label">
+                EXPERIMENT DESIGN
+            </span>
+
+            <h3>
+                What do you
+                <em>believe?</em>
+            </h3>
+
+
+            <div class="input-group">
+
+                <label for="hypothesis">
+                    HYPOTHESIS
+                </label>
+
+                <textarea
+                    id="hypothesis"
+                    data-field="hypothesis"
+                    data-maxlength="280"
+                    placeholder="We believe that..."
+                ></textarea>
+
+                <span
+                    class="character-count"
+                    id="hypothesisCounter"
+                >
+                    0/280
+                </span>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="successMetric">
+                    SUCCESS METRIC
+                </label>
+
+                <input
+                    id="successMetric"
+                    type="text"
+                    data-field="successMetric"
+                    placeholder="What result would prove your idea works?"
+                >
+
+            </div>
+
+
+            <div class="test-options">
+
+                <span>
+                    TEST METHOD
+                </span>
+
+                <button
+                    class="test-method active"
+                    type="button"
+                >
+                    User Interview
+                </button>
+
+                <button
+                    class="test-method"
+                    type="button"
+                >
+                    Prototype Test
+                </button>
+
+                <button
+                    class="test-method"
+                    type="button"
+                >
+                    Survey
+                </button>
+
+                <button
+                    class="test-method"
+                    type="button"
+                >
+                    Data Experiment
+                </button>
+
+            </div>
+
+
+            <button
+                class="primary-button run-test"
+                id="runTest"
+                type="button"
+            >
+                Run Experiment →
+            </button>
+
+        </div>
+
+
+        <div class="test-result-panel">
+
+            <div class="test-header">
+
+                <span>
+                    LIVE EXPERIMENT
+                </span>
+
+                <span class="test-live">
+                    ● LIVE
+                </span>
+
+            </div>
+
+            <div
+                class="test-result"
+                id="testResult"
+            >
+                Ready to run your first
+                experiment.
+            </div>
+
+            <div class="experiment-visual">
+
+                <div class="experiment-ring"></div>
+
+                <div class="experiment-core">
+                    TEST
+                </div>
+
+            </div>
+
+            <div class="test-stat-grid">
+
+                <div>
+                    <span>
+                        TESTS
+                    </span>
+
+                    <strong
+                        data-metric="tests"
+                    >
+                        0
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        SIGNAL
+                    </span>
+
+                    <strong>
+                        —
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        CONFIDENCE
+                    </span>
+
+                    <strong>
+                        —
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     EVIDENCE
+     ========================================================= -->
+
+<section class="section evidence-section">
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.06
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                EVIDENCE VAULT
+            </div>
+
+            <h2>
+                Build with
+                <em>proof.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="evidence-layout">
+
+        <div
+            class="upload-zone"
+            data-upload-zone
+        >
+
+            <div class="upload-symbol">
+                +
+            </div>
+
+            <strong>
+                Drop your evidence here
+            </strong>
+
+            <p>
+                Screenshots, research,
+                datasets, interview notes,
+                videos or documents.
+            </p>
+
+            <span>
+                CLICK TO UPLOAD
+            </span>
+
+            <input
+                type="file"
+                data-file-input
+                multiple
+                hidden
+            >
+
+        </div>
+
+
+        <div class="evidence-list">
+
+            <div class="evidence-list-header">
+
+                <span>
+                    PROJECT EVIDENCE
+                </span>
+
+                <strong
+                    data-metric="evidence"
+                >
+                    0
+                </strong>
+
+            </div>
+
+            <div
+                id="evidenceList"
+                data-file-list
+            >
+
+                <div class="empty-evidence">
+                    No evidence added yet.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     COLLABORATION
+     ========================================================= -->
+
+<section class="section collaboration-section">
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.07
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                COLLABORATION
+            </div>
+
+            <h2>
+                Build with
+                <em>people.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="collaboration">
+
+        <div class="collab-intro">
+
+            <span class="collab-label">
+                BUILD TEAM
+            </span>
+
+            <h3>
+                Great ideas become
+                stronger when tested
+                by different minds.
+            </h3>
+
+            <button
+                class="secondary-button add-collaborator"
+                id="addCollaborator"
+                type="button"
+            >
+                + Invite collaborator
+            </button>
+
+        </div>
+
+
+        <div class="team-grid">
+
+            <div class="team-member">
+
+                <div class="avatar">
+                    Y
+                </div>
+
+                <div>
+
+                    <strong>
+                        You
+                    </strong>
+
+                    <span>
+                        Founder / Builder
+                    </span>
+
+                </div>
+
+                <b>
+                    OWNER
+                </b>
+
+            </div>
+
+
+            <div class="team-member">
+
+                <div class="avatar">
+                    +
+                </div>
+
+                <div>
+
+                    <strong>
+                        Add teammate
+                    </strong>
+
+                    <span>
+                        Invite someone
+                    </span>
+
+                </div>
+
+                <b>
+                    INVITE
+                </b>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     VERSION TIMELINE
+     ========================================================= -->
+
+<section class="section version-section">
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.08
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                ITERATION HISTORY
+            </div>
+
+            <h2>
+                Every version
+                tells a <em>story.</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="version-layout">
+
+        <div class="version-actions">
+
+            <span>
+                VERSION CONTROL
+            </span>
+
+            <h3>
+                Don't delete
+                your experiments.
+            </h3>
+
+            <p>
+                Keep your iterations so you can
+                understand what changed, what
+                failed and why the final idea
+                became stronger.
+            </p>
+
+            <button
+                class="primary-button save-version"
+                id="saveVersionSecondary"
+                type="button"
+            >
+                Save New Version →
+            </button>
+
+        </div>
+
+
+        <div
+            class="version-timeline"
+            id="versionTimeline"
+        >
+
+            <div class="version-item">
+
+                <span class="version-dot"></span>
+
+                <div>
+
+                    <strong>
+                        Version 01
+                    </strong>
+
+                    <small>
+                        Initial concept
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     BUILD REVIEW
+     ========================================================= -->
+
+<section
+    class="section review-section"
+    id="reviewPanel"
+>
+
+    <div class="section-heading reveal">
+
+        <span class="section-number">
+            03.09
+        </span>
+
+        <div>
+
+            <div class="eyebrow">
+                BUILD REVIEW
+            </div>
+
+            <h2>
+                Is your idea
+                ready for <em>impact?</em>
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="review-layout">
+
+        <div class="readiness">
+
+            <span>
+                BUILD READINESS
+            </span>
+
+            <strong
+                id="readinessValue"
+            >
+                20%
+            </strong>
+
+            <div class="readiness-track">
+
+                <div
+                    id="readinessBar"
+                    style="width:20%;"
+                ></div>
+
+            </div>
+
+            <p>
+                Complete the build checklist
+                before moving your project
+                into the Impact Lab.
+            </p>
+
+        </div>
+
+
+        <div class="checklist">
+
+            <div
+                class="check-item"
+                data-check="problem"
+            >
+
+                <span class="check-icon">
+                    ○
+                </span>
+
+                <div>
+
+                    <strong>
+                        Problem defined
+                    </strong>
+
+                    <small>
+                        Identify the real pain point
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="check-item"
+                data-check="concept"
+            >
+
+                <span class="check-icon">
+                    ○
+                </span>
+
+                <div>
+
+                    <strong>
+                        Solution defined
+                    </strong>
+
+                    <small>
+                        Explain what you're building
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="check-item"
+                data-check="prototype"
+            >
+
+                <span class="check-icon">
+                    ○
+                </span>
+
+                <div>
+
+                    <strong>
+                        Prototype created
+                    </strong>
+
+                    <small>
+                        Build something testable
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="check-item"
+                data-check="test"
+            >
+
+                <span class="check-icon">
+                    ○
+                </span>
+
+                <div>
+
+                    <strong>
+                        Experiment completed
+                    </strong>
+
+                    <small>
+                        Test your assumption
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="check-item"
+                data-check="evidence"
+            >
+
+                <span class="check-icon">
+                    ○
+                </span>
+
+                <div>
+
+                    <strong>
+                        Evidence collected
+                    </strong>
+
+                    <small>
+                        Support your decisions
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="review-actions">
+
+        <button
+            class="primary-button review-build"
+            id="reviewBuild"
+            type="button"
+        >
+            Review My Build →
+        </button>
+
+        <button
+            class="secondary-button go-to-impact"
+            id="goToImpact"
+            type="button"
+        >
+            Continue to Impact
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     CLOSING
+     ========================================================= -->
+
+<section class="closing-section">
+
+    <div class="closing-grid">
+
+        <div class="closing-content">
+
+            <span class="eyebrow">
+                INNOVATION LAB / NEXT
+            </span>
+
+            <h2>
+                You built
+                <em>something.</em>
+                Now prove it matters.
+            </h2>
+
+            <p>
+                Take your prototype, evidence and
+                learning into the Impact Lab and
+                discover where your idea can create
+                real-world value.
+            </p>
+
+            <a
+                href="innovation-lab4.html"
+                class="primary-button"
+            >
+                Enter Impact Lab →
+            </a>
+
+        </div>
+
+
+        <div class="closing-orbit">
+
+            <div class="closing-ring ring-one"></div>
+            <div class="closing-ring ring-two"></div>
+            <div class="closing-ring ring-three"></div>
+
+            <div class="closing-core">
+                BUILD
+                <span>→</span>
+                IMPACT
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+
+<footer class="footer">
+
+    <div class="footer-brand">
+
+        <a
+            href="innovation-lab.html"
+            class="logo"
+        >
+            <span class="logo-icon">◇</span>
+            PORTAL.
+        </a>
+
+        <p>
+            A space for students to discover,
+            imagine, build and create meaningful
+            innovation.
+        </p>
+
+    </div>
+
+
+    <div class="footer-nav">
+
+        <a href="innovation-lab.html">
+            Discover
+        </a>
+
+        <a href="innovation-lab2.html">
+            Imagine
+        </a>
+
+        <a href="#top">
+            Build
+        </a>
+
+        <a href="innovation-lab4.html">
+            Impact
+        </a>
+
+    </div>
+
+
+    <div class="footer-bottom">
+
+        <span>
+            INNOVATION LAB © 2026
+        </span>
+
+        <span>
+            BUILD / 03
+        </span>
+
+    </div>
+
+</footer>
+
+
+<!-- =========================================================
+     PRESENTATION MODE
+     ========================================================= -->
+
+<div
+    class="presentation-overlay"
+    id="presentationOverlay"
+>
+
+    <button
+        id="exitPresentation"
+        type="button"
+    >
+        Exit presentation ×
+    </button>
+
+    <div class="presentation-content">
+
+        <span>
+            INNOVATION BUILD
+        </span>
+
+        <h2
+            data-preview="title"
+        >
+            Untitled Innovation
+        </h2>
+
+        <p
+            data-preview="solution"
+        >
+            Your solution direction will appear here.
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     TOAST
+     ========================================================= -->
+
+<div
+    class="toast"
+    id="toast"
+></div>
+
+
+<script src="innovation-lab3.js"></script>
+
+</body>
+</html>

@@ -42,6 +42,8 @@
 
     <link rel="stylesheet" href="setting.css">
 
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 
@@ -2707,3 +2709,10 @@
 </body>
 
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>

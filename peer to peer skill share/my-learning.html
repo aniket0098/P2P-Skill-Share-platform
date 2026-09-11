@@ -9,6 +9,11 @@
 
     <link rel="stylesheet" href="my-learning.css">
 
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 <body>
@@ -55,7 +60,7 @@
             </button>
 
             <button class="profile">
-                <a href="profile.html">Profile</a>
+                <div id="profileDropdownContainer"></div>
             </button>
 
         </div>
@@ -562,3 +567,10 @@
 </body>
 
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>

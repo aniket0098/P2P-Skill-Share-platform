@@ -455,33 +455,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* ==========================================
        SIGN UP LINK
+       (anchor navigates to signup.html normally)
     ========================================== */
 
-    const signupLink =
-        document.querySelector(".signup-prompt a");
-
-
-    if (signupLink) {
-
-        signupLink.addEventListener(
-            "click",
-            (event) => {
-
-                /*
-                 * signup.html is not created yet.
-                 * Prevent the broken link for now.
-                 */
-
-                event.preventDefault();
-
-                showToast(
-                    "Sign Up page coming soon."
-                );
-
-            }
-        );
-
-    }
+    // Intentionally no JS interception: the link points to signup.html.
 
 
     /* ==========================================

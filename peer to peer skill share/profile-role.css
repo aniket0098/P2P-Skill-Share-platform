@@ -1,0 +1,52 @@
+/* =========================================================
+   PHASE 2 — ROLE PROFILE (dynamic role-based profile card)
+   Matches the existing dark profile page visual identity.
+========================================================= */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #7434ed, #20c9ed);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(116, 52, 237, .35);
+    border: 1px solid rgba(255, 255, 255, .18);
+}
+.role-badge-student { background: linear-gradient(135deg, #7434ed, #20c9ed); }
+.role-badge-recruiter { background: linear-gradient(135deg, #0f7bd9, #27dc8b); }
+.role-badge-mentor { background: linear-gradient(135deg, #e8792d, #a76cff); }
+.role-badge-admin { background: linear-gradient(135deg, #d64545, #7434ed); }
+
+#roleProfileBody { display: grid; gap: 14px; margin-top: 6px; }
+.role-section { border: 1px solid rgba(46, 52, 88, .9); background: rgba(15, 21, 43, .55); border-radius: 14px; padding:	14px; }
+.role-section-title { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--purple-light); margin-bottom:	10px; }
+.role-info-row { display:	grid; grid-template-columns: 170px 1fr; gap:	8px 12px; padding:	6px 0; border-bottom:	1px dashed rgba(46, 52, 88, .55); align-items:	baseline; }
+.role-info-row:last-child { border-bottom:	0; }
+.role-info-row .field-title { color:	var(--muted); font-size:	12px; font-weight:	700; }
+.field-val { color:	var(--text); font-size:	13px; word-break:	break-word; }
+.field-val.muted { color:	var(--muted-2); font-style:	italic; }
+.role-link { color:	var(--cyan); text-decoration:	none; }
+.role-link:hover { text-decoration:	underline; }
+.role-chip-list { display:	flex; flex-wrap:	wrap; gap:	6px; }
+.role-chip { padding:	4px 10px; border-radius:	999px; background:	rgba(116, 52, 237, .16); border:	1px solid rgba(167, 108, 255, .28); color:	var(--text); font-size:	12px; font-weight:	600; }
+.verification-pill { display:	inline-block; padding:	5px 14px; border-radius:	999px; font-size:	11px; font-weight:	800; letter-spacing:	.05em; text-transform:	uppercase; }
+.verification-pill.verified { background:	rgba(39, 220, 139, .18); color:	#27dc8b; border:	1px solid rgba(39, 220, 139, .5); }
+.verification-pill.pending { background:	rgba(232, 121, 45, .16); color:	#f5a458; border:	1px solid rgba(232, 121,, 45, .5); }
+.role-admin-card { border:	1px solid rgba(214, 69, 69, .45); background:	rgba(116, 52,, 237, .08); border-radius:	14px; padding:	14px; }
+.role-admin-pill { color:	#fff; background:	linear-gradient(135deg, #d64545, #7434ed); padding:	3px 10px; border-radius:	999px; font-size:	11px; font-weight:	800; }
+.role-note { margin-top:	10px; font-size:	11px; color:	var(--muted); line-height:	1.6; }
+.role-edit-grid { display:	grid; grid-template-columns:	1fr 1fr; gap:	12px; margin:	10px 0; }
+.role-edit-grid label { display:	block; }
+.role-edit-grid .field-title { display:	block; margin-bottom:	6px; font-size:	11px; font-weight:	700; color:	var(--muted); }
+.role-edit-field { width:	100%; padding:	10px 12px; border:	1px solid rgba(46, 52, 88, .9); border-radius:	10px; background:	rgba(5, 8, 22, .6); color:	var(--text); font-size:	13px; }
+.role-edit-field:focus { outline:	none; border-color:	var(--purple-light); }
+.role-edit-actions { display:	flex; gap:	10px; justify-content:	flex-end; margin-top:	10px; }
+@media (max-width: 640px) {
+	.role-info-row { grid-template-columns:	1fr; gap:	4px; }
+	.role-edit-grid { grid-template-columns:	1fr; }
+}

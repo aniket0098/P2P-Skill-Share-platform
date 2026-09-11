@@ -1,0 +1,208 @@
+/* =========================================================
+   SKILLSHARE — SHARED PROFILE DROPDOWN COMPONENT
+   Used across all authenticated pages.
+   Matches the Dashboard profile dropdown visual identity.
+========================================================= */
+
+/* Profile area container */
+.profile-area {
+    position: relative;
+    display: inline-block;
+}
+
+/* Profile button (trigger) */
+.profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: transparent;
+    color: white;
+    padding: 4px;
+    text-align: left;
+    border: 0;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+    font-family: inherit;
+}
+
+.profile-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Avatar with initials */
+.profile-btn .avatar {
+    width: 37px;
+    height: 37px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7657ff, #20c9ff);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.profile-btn .avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Name + role text */
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+}
+
+.profile-info strong {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #f1f3ff;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-info span {
+    display: block;
+    color: #858ba6;
+    font-size: 9px;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
+/* Dropdown arrow */
+.profile-arrow {
+    color: #858ba6;
+    font-size: 10px;
+    margin-left: 3px;
+    transition: transform 0.2s ease;
+}
+
+.profile-btn[aria-expanded="true"] .profile-arrow {
+    transform: rotate(180deg);
+}
+
+/* Dropdown menu */
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 220px;
+    padding: 8px;
+    border-radius: 15px;
+    background: #11172a;
+    border: 1px solid rgba(38, 44, 72, 0.8);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1200;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.profile-dropdown.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Dropdown header (user info) */
+.profile-dropdown .dropdown-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(38, 44, 72, 0.6);
+    margin-bottom: 6px;
+}
+
+.profile-dropdown .dropdown-header .user-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f1f3ff;
+    display: block;
+}
+
+.profile-dropdown .dropdown-header .user-role {
+    font-size: 10px;
+    color: #a76cff;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    display: block;
+    margin-top: 3px;
+}
+
+/* Dropdown links and buttons */
+.profile-dropdown a,
+.profile-dropdown button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: transparent;
+    color: #aeb3c9;
+    font-size: 11px;
+    text-align: left;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.profile-dropdown a:hover,
+.profile-dropdown button:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Logout button */
+.profile-dropdown .logout {
+    color: #f5a458;
+    margin-top: 5px;
+    border-top: 1px solid rgba(38, 44, 72, 0.6);
+    border-radius: 0 0 9px 9px;
+}
+
+.profile-dropdown .logout:hover {
+    color: #ff6b6b;
+    background: rgba(245, 164, 88, 0.08);
+}
+
+/* Icon in dropdown items */
+.profile-dropdown .item-icon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+    .profile-btn .profile-info {
+        display: none;
+    }
+
+    .profile-dropdown {
+        width: 200px;
+        right: -8px;
+    }
+}
+
+@media (max-width: 390px) {
+    .profile-dropdown {
+        width: 180px;
+        right: -4px;
+    }
+}

@@ -108,18 +108,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const toast = document.getElementById("toast");
 
     /* =====================================================
-       LOADING STATE
-    ===================================================== */
-    if (heroName) heroName.textContent = "Loading Profile...";
-
-    /* =====================================================
-       AUTH EXPIRED HANDLER
-    ===================================================== */
-    window.addEventListener("skillshare:auth-expired", () => {
-        window.location.href = "login.html";
-    });
-
-    /* =====================================================
        HELPERS
     ===================================================== */
     function escapeHTML(str) {
@@ -256,23 +244,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Avatar — real DB image, initials fallback only when DB is empty
         const avatarSrc = user.avatar_url || initialsAvatar(user.name);
         if (profileAvatar) {
-            if (user.avatar_url) {
-                profileAvatar.src = avatarSrc;
-                profileAvatar.onerror = () => {
-                    profileAvatar.onerror = null;
-                    profileAvatar.src = initialsAvatar(user.name);
-                };
-            } else {
-                profileAvatar.src = avatarSrc;
-            }
+            profileAvatar.src = avatarSrc;
+            profileAvatar.onerror = () => {
+                profileAvatar.onerror = null;
+                profileAvatar.src = initialsAvatar(user.name);
+            };
         }
-        if (topNavAvatar) {
-            if (topNavAvatar.tagName === "IMG") {
-                topNavAvatar.src = avatarSrc;
-            } else {
-                topNavAvatar.textContent = (user.name || "?")[0] || "?";
-            }
-        }
+        if (topNavAvatar) topNavAvatar.src = avatarSrc;
         if (topNavName) topNavName.textContent = user.name || "Member";
 
         // ABOUT section — display mode (First / Last / Bio)
@@ -535,17 +513,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             renderProfile(currentUser);
-        // Load the backend-driven role profile (GET /profile/me)
-        try {
-            const roleRes = await window.SkillShareAPI.getMyRoleProfile();
-            renderRoleProfile(roleRes);
-        } catch (err) {
-            if (err && err.status === 401) {
-                // session handled globally
-            } else {
-                console.warn("Role profile could not be loaded:", err);
-            }
-        }
+        loadRoleProfile(currentUser);
             renderChips(currentUser);
             showToast("Profile updated successfully.");
             closeInlineEdit();
@@ -698,13 +666,6 @@ document.addEventListener("DOMContentLoaded", () => {
     /* =====================================================
         INIT
     ===================================================== */
-
-    /* ROLE PROFILE LOADING STATE */
-    const roleProfileBody = document.getElementById("roleProfileBody");
-    if (roleProfileBody) {
-        roleProfileBody.innerHTML = "<div class=\"empty-state-box\"><div class=\"empty-state-icon\">&#9203;</div><h4>Loading role profile&hellip;</h4><p>Fetching your role-specific data from the server.</p></div>";
-    }
-
 /* =========================================================
    PHASE 2 — ROLE-BASED PROFILE (backend-driven)
    GET /profile/me  ->   real role-specific profile from
@@ -739,9 +700,9 @@ function roleValue(v) {
 }
 function roleLink(v) {
     if (!v) return '<span class="field-val muted">Not provided</span>';
+    return '<a class="field-val role-link" href="' + escapeRole(v) + '" target="_blank" rel="noopener">' + escapeRole(v.replace(/^https?:\/\//, ""))) + '</a>';
     const clean = (v || "").replace(/^https?:\/\//, "");
     return '<a class="field-val role-link" href="' + escapeRole(v) + '" target="_blank" rel="noopener">' + escapeRole(clean) + '</a>';
-}
 function roleRow(label, valHtml) {
     return '<div class="role-info-row"><span class="field-title">' + label + '</span>' + valHtml + '</div>';
 }
@@ -752,7 +713,8 @@ function roleBadgeText(role) {
     return ({ student: "STUDENT", recruiter: "COMPANY RECRUITER", mentor: "INDUSTRY MENTOR", admin: "ADMIN" }[role] || String(role || "STUDENT")).toUpperCase();
 }
 function roleBadgeClass(role) {
-    return "role-badge role-badge-" + String(role || "student");
+function renderRoleProfile(data) {
+}
 }
 function renderRoleProfile(data) {
     roleProfileData = data;
@@ -779,14 +741,14 @@ function renderRoleProfile(data) {
         html += '<div class="role-admin-card"><h3>Account Overview</h3>';
         html += roleRow("Full Name", roleValue(u.name));
         html += roleRow("Email", roleValue(u.email));
-        html += roleRow("Account Status", roleValue((u.account_status || "active")).toUpperCase());
+        html += roleRow("Account Status", roleValue((u.account_status || "active")).toUpperCase()));
         html += roleRow("Permission Level", '<span class="field-val role-admin-pill">Administrator</span>');
         html += '<p class="role-note">Only approved administrators see this state. Admin powers are granted server-side.</p></div>';
         if (editBtn) editBtn.hidden = true;
     } else if (role === "student") {
         html += roleSection("Academic", roleRow("College", roleValue(p.college)) + roleRow("Degree", roleValue(p.degree)) + roleRow("Branch", roleValue(p.branch)) + roleRow("Graduation Year", roleValue(p.graduation_year)) + roleRow("Current Semester / Year", roleValue(p.semester)) + roleRow("CGPA", roleValue(p.cgpa == null ? "" : p.cgpa)));
-        html += roleSection("Skills", roleRow("Top Skills", roleChips(p.top_skills)) + roleRow("Programming Languages", roleChips(p.programming_languages)) + roleRow("Technologies / Tools", roleChips(p.technologies)));
-        html += roleSection("Career", roleRow("Target Job Role", roleValue(p.target_job_role)) + roleRow("Preferred Industry", roleValue(p.preferred_industry)) + roleRow("Looking For", roleChips(p.looking_for)));
+        html += roleSection("Skills", roleRow("Top Skills", roleChips(p.top_skills)) + roleRow("Programming Languages", roleChips(p.programming_languages)) + roleRow("Technologies / Tools", roleChips(p.technologies));
+        html += roleSection("Career", roleRow("Target Job Role", roleValue(p.target_job_role)) + roleRow("Preferred Industry", roleValue(p.preferred_industry)) + roleRow("Looking For", roleChips(p.looking_for));
         if (editBtn) editBtn.hidden = false;
     } else if (role === "recruiter") {
         html += roleSection("Header", roleRow("Job Title", roleValue(p.job_title)) + roleRow("Company", roleValue(p.company_name)));
@@ -800,7 +762,7 @@ function renderRoleProfile(data) {
         html += roleSection("Professional", roleRow("Job Title", roleValue(p.job_title)) + roleRow("Company", roleValue(p.company)) + roleRow("Industry", roleValue(p.industry)) + roleRow("Years of Experience", roleValue(p.years_experience)));
         html += roleSection("Expertise", roleRow("Skills", roleChips(p.skills)) + roleRow("Areas of Expertise", roleChips(p.expertise_areas)));
         html += roleSection("Professional Links", roleRow("LinkedIn", roleLink(p.linkedin_url)) + roleRow("Portfolio", roleLink(p.portfolio_url)) + roleRow("GitHub", roleLink(p.github_url)));
-        html += roleSection("Mentorship", roleRow("Professional Bio", roleValue(p.bio)) + roleRow("Topics", roleChips(p.mentorship_topics)) + roleRow("Availability", roleChips(p.available_days)) + roleRow("Available Hours", roleValue(p.available_hours)) + roleRow("Mentorship Types", roleChips(p.mentorship_types)));
+        html += roleSection("Mentorship", roleRow("Professional Bio", roleValue(p.bio)) + roleRow("Topics", roleChips(p.mentorship_topics)) + roleRow("Availability", roleChips(p.available_days)) + roleRow("Available Hours", roleValue(p.available_hours)) + roleRow("Mentorship Types", roleChips(p.mentorship_types));
         if (editBtn) editBtn.hidden = false;
     } else {
         html += '<div class="empty-state-box"><div class="empty-state-icon">🎓</div><h4>No role profile yet</h4><p>Complete your profile to showcase it here.</p></div>';
@@ -895,7 +857,7 @@ function buildRoleEditForm(data) {
             renderRoleProfile(updated);
             roleToast("Profile updated successfully.");
         } catch (err) {
-            roleToast((err && (err.detail || err.message)) || "Could not save profile.");
+            roleToast((err && (err.detail || err.message))) || "Could not save profile.");
             if (err && err.status === 0) roleToast("Server unavailable. Please try again.");
         }
     });
@@ -918,13 +880,7 @@ async function loadRoleProfile(user) {
         if (error && error.status === 401) return;  // session handled globally
         const body = document.getElementById("roleProfileBody");
         if (body) {
-            let msg = "Please try again.";
-            if (error && error.status === 0) {
-                msg = "Server unavailable. Please check your connection and try again.";
-            } else if (error && (error.detail || error.message)) {
-                msg = escapeRole(error.detail || error.message);
-            }
-            body.innerHTML = '<div class="empty-state-box"><div class="empty-state-icon">⚠️</div><h4>Could not load role profile</h4><p>' + msg + '</p><button type="button" class="primary-btn mini-btn" onclick="window.location.reload()">Retry</button></div>';
+            body.innerHTML = '<div class="empty-state-box"><div class="empty-state-icon">⚠️</div><h4>Could not load role profile</h4><p>' + escapeRole((error && (error.detail || error.message))) || "Please try again.") + '</p><button type="button" class="primary-btn mini-btn" onclick="window.location.reload()">Retry</button></div>';
         }
     }
 }

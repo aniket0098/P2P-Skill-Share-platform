@@ -10,6 +10,7 @@
     <title>SkillShare - Create Account</title>
 
     <link rel="stylesheet" href="signup.css">
+    <link rel="stylesheet" href="signup-phase1.css">
 
     <!-- Signup JavaScript -->
     <script src="config.js"></script>
@@ -60,57 +61,70 @@
 
             <div class="form-wrap">
 
-                <span class="eyebrow">
+                <span class="eyebrow" id="stepEyebrow">
                     JOIN THE COMMUNITY
                 </span>
 
 
-                <h1>
+                <h1 id="stepTitle">
 
-                    Start your
+                    Who
 
                     <em>
-                        learning journey.
+                        are you?
                     </em>
 
                 </h1>
 
 
-                <p>
-                    Learn from others, share your skills,
-                    and grow together.
+                <p id="stepSubtitle">
+                    Choose the path that fits you best.
                 </p>
 
+                <ol class="steps" id="stepsBar">
+                    <li class="active" data-step-dot="1"><i>1</i><span>Role</span></li>
+                    <li data-step-dot="2"><i>2</i><span>Details</span></li>
+                    <li data-step-dot="3"><i>3</i><span>Review</span></li>
+                    <li data-step-dot="4"><i>4</i><span>Done</span></li>
+                </ol>
 
-                <!-- SOCIAL BUTTONS -->
+                <div id="stepRole" class="step active">
 
-                <div class="socials">
-
-                    <button type="button">
-                        G
-                        <span>Google</span>
+                    <button type="button" class="role-card" data-role="student">
+                        <span class="role-icon">🎓</span>
+                        <strong>Student</strong>
+                        <small>Find jobs, internships, projects and skill guidance.</small>
+                        <span class="role-check">✓</span>
                     </button>
 
-                    <button type="button">
-                        f
-                        <span>Facebook</span>
+                    <button type="button" class="role-card" data-role="recruiter">
+                        <span class="role-icon">💼</span>
+                        <strong>Company Recruiter / HR</strong>
+                        <small>Discover and hire skilled student talent.</small>
+                        <span class="role-check">✓</span>
                     </button>
 
-                    <button type="button">
-                        in
-                        <span>LinkedIn</span>
+                    <button type="button" class="role-card" data-role="mentor">
+                        <span class="role-icon">🌟</span>
+                        <strong>Industry Mentor / Expert</strong>
+                        <small>Share industry knowledge and mentor students.</small>
+                        <span class="role-check">✓</span>
                     </button>
 
-                </div>
+                    <p class="role-hint" id="roleHint">Select a role to continue.</p>
 
+                    <button type="button" class="create" id="continueRoleBtn" disabled>
+                        Continue →
+                        <b>→</b>
+                        <i></i>
+                    </button>
 
-                <!-- DIVIDER -->
-
-                <div class="divider">
-
-                    <span>
-                        OR CONTINUE WITH EMAIL
-                    </span>
+                    <p class="admin-link">
+                        Need elevated access?
+                        <button type="button" id="showAdminRequest" class="link-btn">
+                            Request Admin Access
+                        </button>
+                    </p>
 
                 </div>
 
@@ -122,165 +136,42 @@
                      id="signupForm"
                 ================================================== -->
 
-                <form id="signupForm" novalidate>
-
-
-                    <!-- NAME -->
-
-                    <label>
-
-                        <div class="field">
-
-                            <span>♙</span>
-
-                            <input id="name" name="name" type="text" placeholder="Your name" autocomplete="name"
-                                required>
-
-                        </div>
-
-                        <small class="error" id="nameError">
-                        </small>
-
-                    </label>
-
-
-                    <!-- EMAIL -->
-
-                    <label>
-
-                        <div class="field">
-
-                            <span>✉</span>
-
-                            <input id="email" name="email" type="email" placeholder="Email address" autocomplete="email"
-                                required>
-
-                        </div>
-
-                        <small class="error" id="emailError">
-                        </small>
-
-                    </label>
-
-
-                    <!-- PASSWORD -->
-
-                    <label>
-
-                        <div class="field">
-
-                            <span>▣</span>
-
-                            <input id="password" name="password" type="password" placeholder="Create password"
-                                autocomplete="new-password" required>
-
-                            <!-- PASSWORD TOGGLE -->
-
-                            <button id="toggle" type="button" aria-label="Show password">
-                                ◌
-                            </button>
-
-                        </div>
-
-
-                        <small class="error" id="passwordError">
-                        </small>
-
-
-                        <!-- PASSWORD STRENGTH -->
-
-                        <div class="strength">
-
-                            <span>
-
-                                Password strength:
-
-                                <b id="strengthText">
-                                    Weak
-                                </b>
-
-                            </span>
-
-
-                            <span id="strengthScore">
-                                0%
-                            </span>
-
-
-                            <i>
-
-                                <u id="strengthBar"></u>
-
-                            </i>
-
-                        </div>
-
-                    </label>
-
-
-                    <!-- TERMS -->
-
-                    <label class="terms">
-
-                        <input id="terms" name="terms" type="checkbox">
-
-                        <span>✓</span>
-
-                        <p>
-
-                            I agree to the
-
-                            <a href="#">
-                                Terms
-                            </a>
-
-                            and
-
-                            <a href="#">
-                                Privacy Policy
-                            </a>.
-
-                        </p>
-
-                    </label>
-
-
-                    <small class="error" id="termsError">
-                    </small>
-
-
-                    <!-- =================================================
-                         CREATE ACCOUNT BUTTON
-
-                         IMPORTANT:
-                         type="submit"
-                    ================================================== -->
-
-                    <button id="create" class="create" type="submit">
-
-                        <span>
-                            Create Account
-                        </span>
-
-                        <b>
-                            →
-                        </b>
-
-                        <i></i>
-
-                    </button>
-
-
-                    <!-- SECURITY -->
-
-                    <div class="safe">
-
-                        🔒 Your information is secure
-
+                <form id="signupForm" novalidate hidden>
+                    <div id="dynamicFields"></div>
+                    <div id="reviewBox" class="review" hidden></div>
+                    <small class="error" id="formError"></small>
+                    <div class="nav-row">
+                        <button type="button" class="ghost-btn" id="backBtn">Back</button>
+                        <button type="button" class="ghost-btn" id="reviewBtn">Review</button>
+                        <button type="submit" class="create" id="submitBtn" hidden>Create Account<b>→</b><i></i></button>
                     </div>
-
-
+                    <div class="safe">Your information is secure</div>
                 </form>
+
+                <form id="adminForm" novalidate hidden>
+                    <h2 class="admin-title">Request Admin Access</h2>
+                    <p class="admin-sub">This sends a pending request to the main administrator. It does not create an admin account.</p>
+                    <label><div class="field"><span>♙</span><input id="adminName" type="text" placeholder="Full Name"></div><small class="error" id="adminNameError"></small></label>
+                    <label><div class="field"><span>✉</span><input id="adminEmail" type="email" placeholder="Email"></div><small class="error" id="adminEmailError"></small></label>
+                    <label><div class="field"><span>☎</span><input id="adminPhone" type="tel" placeholder="Phone Number"></div><small class="error" id="adminPhoneError"></small></label>
+                    <label><div class="field"><span>🏢</span><input id="adminOrg" type="text" placeholder="Organization / Institution"></div></label>
+                    <label><div class="field"><span>👔</span><input id="adminRole" type="text" placeholder="Current Role"></div></label>
+                    <label><span class="lbl">Reason for requesting admin access</span><textarea id="adminReason" rows="4" placeholder="Why do you need admin access? (min 10 characters)"></textarea><small class="error" id="adminReasonError"></small></label>
+                    <small class="error" id="adminFormError"></small>
+                    <div class="nav-row">
+                        <button type="button" class="ghost-btn" id="adminBackBtn">Back to roles</button>
+                        <button type="submit" class="create" id="adminSubmitBtn">Submit Request<b>→</b><i></i></button>
+                    </div>
+                </form>
+
+                <div id="stepSuccess" class="step" hidden>
+                    <div class="success-card">
+                        <span class="success-icon">✓</span>
+                        <h2 id="successTitle">Account created!</h2>
+                        <p id="successMsg">Welcome aboard. Redirecting...</p>
+                        <a class="create success-link" href="login.html">Continue to Sign In</a>
+                    </div>
+                </div>
 
             </div>
 

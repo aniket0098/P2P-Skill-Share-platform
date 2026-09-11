@@ -21,6 +21,9 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="messages.css?v=4">
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="auth.js"></script>
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 
@@ -100,16 +103,7 @@
 
 
                 <!-- Current User -->
-                <button class="user-menu">
-                    <a href="profile.html">
-                        <img src="" alt="">
-
-                        <span>
-                            Profile
-                        </span>
-                    </a>
-
-                </button>
+                <div id="profileDropdownContainer"></div>
 
             </div>
 
@@ -824,3 +818,10 @@
 </body>
 
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>

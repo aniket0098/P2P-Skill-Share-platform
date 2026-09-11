@@ -189,25 +189,9 @@
                 </button>
 
 
-                <!-- Profile -->
+                <!-- Profile dropdown rendered by shared component -->
 
-                <div class="profile">
-
-                    <div class="profile-image">
-
-                        <img src="" alt="">
-
-                        <span class="online-dot"></span>
-
-                    </div>
-
-                    <span class="profile-name">
-                        Anonymous
-                    </span>
-
-                    <i class="fa-solid fa-chevron-down"></i>
-
-                </div>
+                <div id="profileDropdownContainer"></div>
 
             </div>
 
@@ -882,6 +866,17 @@
 
     <script src="community.js"></script>
     <script src="profile-quick.js" defer></script>
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+    <script src="components/profile-dropdown.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.SkillShareProfileDropdown) {
+                window.SkillShareProfileDropdown.init('#profileDropdownContainer');
+            }
+        });
+    </script>
 
 </body>
 

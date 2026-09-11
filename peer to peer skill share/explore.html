@@ -12,6 +12,9 @@
     <script src="api-client.js"></script>
     <script src="explore.js"></script>
     <script src="profile-quick.js" defer></script>
+    <link rel="stylesheet" href="components/profile-dropdown.css">
+    <script src="auth.js"></script>
+    <script src="components/profile-dropdown.js"></script>
 </head>
 
 <body>
@@ -78,14 +81,7 @@
                 ♧
             </button>
 
-            <div class="mini-avatar">
-                <a href="profile.html">P</a>
-            </div>
-
-            <di class="profile-text">
-                <a href="profile.html">Profile</a>
-
-        </div>
+            <div id="profileDropdownContainer"></div>
 
         <span class="chevron">
 
@@ -769,3 +765,10 @@
 </body>
 
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>

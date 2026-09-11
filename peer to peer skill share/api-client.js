@@ -97,10 +97,26 @@ window.SkillShareAPI = (() => {
         // --- Authentication ---
         login: (email, password) =>
             request("/login", { method: "POST", body: JSON.stringify({ email, password }) }),
-        signup: (name, email, password) =>
-            request("/signup", { method: "POST", body: JSON.stringify({ name, email, password }) }),
+        signup: (name, email, password, extra) =>
+            request("/signup", {
+                method: "POST",
+                body: JSON.stringify({ name, email, password, ...(extra || {}) }),
+            }),
+        requestAdminAccess: (data) =>
+            request("/admin/requests", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
         getMe: () => request("/me"),
         getDashboard: () => request("/api/dashboard"),
+
+        // Phase 2: role-based profile (backend source of truth).
+        getMyRoleProfile: () => request("/profile/me"),
+        updateMyRoleProfile: (data) =>
+            request("/profile/me", {
+                method: "PUT",
+                body: JSON.stringify(data || {}),
+            }),
 
         // Public, aggregated platform statistics (no auth required).
         getStats: () => request("/api/stats"),

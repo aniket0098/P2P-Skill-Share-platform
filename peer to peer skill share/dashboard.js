@@ -291,6 +291,36 @@ function renderSidebar() {
             .pop()
             .toLowerCase() || "dashboard.html";
 
+    const role = (currentVerifiedUser && currentVerifiedUser.role) || "student";
+
+    const roleLabel = ({ student: "Student", recruiter: "Recruiter", mentor: "Mentor", admin: "Admin" }[role] || "Member");
+
+    // Role-specific navigation links
+    const roleLinks = [];
+    if (role === "student") {
+        roleLinks.push({ name: "Find Jobs", icon: "💼", url: "jobs.html" });
+        roleLinks.push({ name: "Internships", icon: "🎓", url: "internships.html" });
+        roleLinks.push({ name: "Projects", icon: "💻", url: "projects.html" });
+        roleLinks.push({ name: "Mentors", icon: "🧑‍🏫", url: "mentors.html" });
+    } else if (role === "recruiter") {
+        roleLinks.push({ name: "Talent Pool", icon: "🔎", url: "talent.html" });
+        roleLinks.push({ name: "Post Job", icon: "📝", url: "post-job.html" });
+        roleLinks.push({ name: "Internships", icon: "🎓", url: "internships.html" });
+        roleLinks.push({ name: "Hiring Drives", icon: "📣", url: "drives.html" });
+    } else if (role === "mentor") {
+        roleLinks.push({ name: "Mentees", icon: "🧑‍🎓", url: "mentees.html" });
+        roleLinks.push({ name: "Mock Interviews", icon: "🎤", url: "interviews.html" });
+        roleLinks.push({ name: "Resume Reviews", icon: "📄", url: "reviews.html" });
+        roleLinks.push({ name: "Guest Lectures", icon: "🎙️", url: "lectures.html" });
+    }
+
+    const adminLinks = [];
+    if (role === "admin") {
+        adminLinks.push({ name: "Admin Panel", icon: "⚙️", url: "admin.html" });
+        adminLinks.push({ name: "Manage Users", icon: "👥", url: "admin-users.html" });
+        adminLinks.push({ name: "Admin Requests", icon: "📋", url: "admin-requests.html" });
+        adminLinks.push({ name: "Verify Recruiters", icon: "✅", url: "admin-verify.html" });
+    }
 
     const sections = [
         {
@@ -322,73 +352,85 @@ function renderSidebar() {
                     url: "industry-skills.html"
                 }
             ]
-        },
-        {
-            label: "Learn",
-            links: [
-                {
-                    name: "My Learning",
-                    icon: "📚",
-                    url: "my-learning.html"
-                },
-                {
-                    name: "Live Learn",
-                    icon: "🔴",
-                    url: "live-learning.html"
-                },
-                {
-                    name: "Live Discussion",
-                    icon: "🤝",
-                    url: "live-discussions.html"
-                }
-            ]
-        },
-        {
-            label: "Build",
-            links: [
-                {
-                    name: "Projects",
-                    icon: "💻",
-                    url: "projects.html"
-                },
-                {
-                    name: "Teams",
-                    icon: "👥",
-                    url: "community.html"
-                }
-            ]
-        },
-        {
-            label: "Community",
-            links: [
-                {
-                    name: "Messages",
-                    icon: "💬",
-                    url: "messages.html"
-                },
-                {
-                    name: "Requests",
-                    icon: "👥",
-                    url: "requests.html"
-                },
-                {
-                    name: "community",
-                    icon: "🗣",
-                    url: "community.html"
-                }
-            ]
-        },
-        {
-            label: null,
-            links: [
-                {
-                    name: "Settings",
-                    icon: "⚙️",
-                    url: "setting.html"
-                }
-            ]
         }
     ];
+
+    if (roleLinks.length) {
+        sections.push({ label: "For " + roleLabel, links: roleLinks });
+    }
+
+    sections.push({
+        label: "Learn",
+        links: [
+            {
+                name: "My Learning",
+                icon: "📚",
+                url: "my-learning.html"
+            },
+            {
+                name: "Live Learn",
+                icon: "🔴",
+                url: "live-learning.html"
+            },
+            {
+                name: "Live Discussion",
+                icon: "🤝",
+                url: "live-discussions.html"
+            }
+        ]
+    });
+
+    sections.push({
+        label: "Build",
+        links: [
+            {
+                name: "Projects",
+                icon: "💻",
+                url: "projects.html"
+            },
+            {
+                name: "Teams",
+                icon: "👥",
+                url: "community.html"
+            }
+        ]
+    });
+
+    sections.push({
+        label: "Community",
+        links: [
+            {
+                name: "Messages",
+                icon: "💬",
+                url: "messages.html"
+            },
+            {
+                name: "Requests",
+                icon: "👥",
+                url: "requests.html"
+            },
+            {
+                name: "community",
+                icon: "🗣",
+                url: "community.html"
+            }
+        ]
+    });
+
+    if (adminLinks.length) {
+        sections.push({ label: "Administration", links: adminLinks });
+    }
+
+    sections.push({
+        label: null,
+        links: [
+            {
+                name: "Settings",
+                icon: "⚙️",
+                url: "setting.html"
+            }
+        ]
+    });
 
 
     container.innerHTML = `
@@ -505,6 +547,8 @@ function renderTopbar() {
     const unreadCount = 0;
 
 
+    // Render topbar WITHOUT the profile section — the shared
+    // profile-dropdown component renders the profile separately.
     container.innerHTML = `
 
         <div class="topbar">
@@ -581,75 +625,9 @@ function renderTopbar() {
                 </button>
 
 
-                <div class="profile-area">
+                <!-- Profile dropdown — rendered by shared component -->
+                <div id="profileDropdownContainer"></div>
 
-                    <button
-                        class="profile-btn"
-                        id="profileBtn"
-                    >
-
-                        <div class="avatar">
-                            ${getInitials(user.name)}
-                        </div>
-
-                        <div class="profile-info">
-
-                            <strong>
-                                ${escapeHTML(user.name)}
-                            </strong>
-
-                            <span>
-                                ${escapeHTML(user.role)}
-                            </span>
-
-                        </div>
-
-                        <span class="profile-arrow">
-                            ▼
-                        </span>
-
-                    </button>
-
-
-                    <div
-                        class="profile-dropdown"
-                        id="profileDropdown"
-                    >
-
-                        <a href="profile.html">
-                            👤 View Profile
-                        </a>
-
-                        <a href="my-learning.html">
-                            📖 My Learning
-                        </a>
-
-                        <a href="explore.html">
-                            ⭐ My Skills
-                        </a>
-
-                        <a href="credits.html">
-                            🪙 Credits
-                        </a>
-
-                        <a href="notifications.html">
-                            🔔 Notifications
-                        </a>
-
-                        <a href="setting.html">
-                            ⚙️ Settings
-                        </a>
-
-                        <button
-                            class="logout"
-                            id="logoutBtn"
-                        >
-                            🚪 Logout
-                        </button>
-
-                    </div>
-
-                </div>
 
             </div>
 
@@ -657,6 +635,11 @@ function renderTopbar() {
 
     `;
 
+
+    // Initialize the shared profile dropdown component
+    if (window.SkillShareProfileDropdown) {
+        window.SkillShareProfileDropdown.init("#profileDropdownContainer");
+    }
 
     initializeTopbarEvents();
 }
