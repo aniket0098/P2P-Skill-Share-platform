@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Gap — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="skill-gap.html" data-role="faculty">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Students · cohort gaps</span>
+<h1>Skill <span>gaps</span></h1><p>Where the cohort lags target roles. Placeholder analysis.</p></header>
+<div class="grid-2">
+<section class="panel"><div class="section-head"><h2>Top gaps vs Frontend roles</h2></div>
+<div class="row-list">
+<div class="row-item"><div class="grow"><h3>TypeScript — 68% below bar</h3><div class="progress mt"><i style="width:32%"></i></div></div><span class="badge red">Critical</span></div>
+<div class="row-item"><div class="grow"><h3>Testing — 54% below bar</h3><div class="progress mt"><i style="width:46%"></i></div></div><span class="badge amber">High</span></div>
+<div class="row-item"><div class="grow"><h3>DSA speed — 41% below bar</h3><div class="progress mt"><i style="width:59%"></i></div></div><span class="badge amber">Watch</span></div>
+</div></section>
+<section class="panel"><div class="section-head"><h2>Recommended actions</h2></div>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>2-week TypeScript sprint</h3><p>Assign via My Learning (future)</p></div><button class="btn small" data-toast="Sprint drafted (frontend only).">Draft</button></div>
+<div class="row-item"><div class="grow"><h3>DI aptitude clinic — Year 2</h3></div><button class="btn small" data-toast="Clinic drafted (frontend only).">Draft</button></div></div></section>
+</div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

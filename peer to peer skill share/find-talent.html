@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find Talent — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="find-talent.html" data-role="recruiter">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Talent · search</span>
+<h1>Find <span>talent</span></h1><p>Search students by skills, evidence and readiness. Placeholder profiles.</p></header>
+<div class="toolbar"><div class="search-box"><span>⌕</span><input data-filter="#talentGrid" type="text" placeholder="Search skills, names, colleges..."></div>
+<select><option>Any skill</option><option>React</option><option>Python</option><option>SQL</option><option>Design</option></select>
+<select><option>Any evidence</option><option>Verified project</option><option>Assessment 75%+</option><option>Hackathon</option></select>
+<a class="btn ghost small" href="talent-pool.html">Saved pools →</a></div>
+<section class="grid-3" id="talentGrid">
+<div class="panel" data-name="a sharma react frontend"><div class="row-item"><div class="avatar sm">AS</div><div class="grow"><h3>A. Sharma</h3><p>B.Tech · 3rd yr · 92% match</p></div></div><div class="mt"><span class="tag">React</span><span class="tag">JS</span></div><p class="muted mt">3 projects · 1 sandbox review</p><div class="mt"><a class="btn small primary" href="talent-profile.html">View evidence</a></div></div>
+<div class="panel" data-name="r iyer python data sql"><div class="row-item"><div class="avatar sm">RI</div><div class="grow"><h3>R. Iyer</h3><p>Data · 88% match</p></div></div><div class="mt"><span class="tag">Python</span><span class="tag">SQL</span></div><p class="muted mt">5 projects · hackathon win</p><div class="mt"><a class="btn small primary" href="talent-profile.html">View evidence</a></div></div>
+<div class="panel" data-name="s khan dsa java backend"><div class="row-item"><div class="avatar sm">SK</div><div class="grow"><h3>S. Khan</h3><p>Backend · 81% match</p></div></div><div class="mt"><span class="tag">Java</span><span class="tag">DSA</span></div><p class="muted mt">2 projects · 120 DSA solves*</p><div class="mt"><a class="btn small primary" href="talent-profile.html">View evidence</a></div></div>
+</section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

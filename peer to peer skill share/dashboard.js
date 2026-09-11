@@ -281,6 +281,14 @@ function initializeDatabase() {
 
 function renderSidebar() {
 
+    /* STAGE 2: unified shell owns the sidebar when available.
+       dashboard.js keeps its renderer as fallback only, so the
+       strongest implementation wins and nothing is duplicated. */
+    if (window.PortalShell) {
+        try { window.PortalShell.render(); } catch (e) {}
+        return;
+    }
+
     const container = document.getElementById("app-sidebar");
 
     if (!container) return;
@@ -526,6 +534,12 @@ function renderSidebar() {
    ========================================================= */
 
 function renderTopbar() {
+
+    /* STAGE 2: unified shell owns the topbar when available. */
+    if (window.PortalShell) {
+        try { window.PortalShell.render(); } catch (e) {}
+        return;
+    }
 
     const container =
         document.getElementById("app-topbar");

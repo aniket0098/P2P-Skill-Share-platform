@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Career Coach — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="ai-career-coach.html" data-role="student">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: connect real AI API later. Frontend simulation only. -->
+<header class="portal-head"><span class="eyebrow">Career · evidence-driven (mock)</span>
+<h1>AI Career <span>Coach</span></h1><p>Guidance grounded in your skills, projects and market demand. No real AI connected yet.</p></header>
+<div class="grid-2">
+<section class="panel"><div class="section-head"><h2>Your career context</h2><a href="skill-mapping.html">Skill map →</a></div>
+<div class="row-list">
+<div class="row-item"><div class="grow"><h3>Target: Frontend Developer</h3><p>Readiness 68% · 3 gaps</p></div><span class="badge purple">Focused</span></div>
+<div class="row-item"><div class="grow"><h3>Strength: React + projects</h3><p>4 projects · 2 sandbox completions</p></div></div>
+<div class="row-item"><div class="grow"><h3>Market signal</h3><p>TypeScript demand +32% this quarter (placeholder)</p></div></div>
+</div>
+<div class="section-head mt"><h2>Next actions</h2></div>
+<div class="row-list">
+<div class="row-item"><div class="grow"><h3>Finish TypeScript essentials</h3><p>Highest ROI for your target</p></div><a class="btn small ghost" href="my-learning.html">Learn</a></div>
+<div class="row-item"><div class="grow"><h3>Attempt 1 mock interview</h3><p>Technical · 30 min</p></div><a class="btn small ghost" href="interview-prep.html">Prep</a></div>
+</div></section>
+<section class="panel"><div class="section-head"><h2>Conversation</h2><span class="badge grey">Mock — no AI yet</span></div>
+<div class="chat" id="coachChat">
+<div class="msg bot">Hi! I’m your career coach (demo). Based on your Skill Mapping, TypeScript gives you the biggest readiness jump. Want a 2-week plan?</div>
+<div class="msg user">Yes — I can study 1 hour daily.</div>
+<div class="msg bot">Plan: Days 1–5 TypeScript basics, 6–9 mini project, 10–12 Jest intro, 13–14 mock interview. Track it in My Learning.</div>
+</div>
+<form class="chat-input" id="coachForm"><input id="coachInput" type="text" placeholder="Ask about roles, skills, prep... (demo only)"><button class="btn primary small" type="submit">Send</button></form>
+<p class="muted mt">Recommendations here are static placeholders.</p></section>
+</div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

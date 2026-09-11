@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talent Profile — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="find-talent.html" data-role="recruiter">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<p class="muted"><a href="find-talent.html">← Back to Find Talent</a></p>
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">Evidence profile · placeholder</span><h1>A. Sharma — <span>Frontend</span></h1>
+<p>Skills, projects, assessments and mentor feedback. Verify before shortlisting.</p></div>
+<div><span class="badge green">92% match</span> <button class="btn primary small" data-toast="Shortlisted (frontend only).">Shortlist</button></div></div></header>
+<div class="grid-2">
+<section class="panel"><div class="section-head"><h2>Skill evidence</h2></div>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>React — Level 3</h3><p>3 projects + sandbox review</p></div><span class="badge green">Verified*</span></div>
+<div class="row-item"><div class="grow"><h3>Assessment 78/100</h3><p>Frontend · 02 Sep</p></div></div>
+<div class="row-item"><div class="grow"><h3>Mentor note</h3><p>“Ships clean, tested components.” — S. Rao</p></div></div></div></section>
+<section class="panel"><div class="section-head"><h2>Projects</h2><a href="projects.html">Gallery →</a></div>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>Campus queue app</h3><p>React + maps · live demo linked (placeholder)</p></div></div>
+<div class="row-item"><div class="grow"><h3>Design system mini-kit</h3><p>12 components · docs</p></div></div></div>
+<div class="mt"><a class="btn small primary" href="applications.html?role=recruiter">Move in pipeline</a> <a class="btn small ghost" href="interviews.html?role=recruiter">Schedule interview</a></div></section>
+</div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

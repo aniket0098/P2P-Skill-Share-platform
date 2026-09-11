@@ -335,10 +335,18 @@ document.addEventListener("DOMContentLoaded", () => {
             ====================================== */
 
             setTimeout(() => {
-
-                window.location.href =
-                    "dashboard.html";
-
+                const role = (result.user && result.user.role || "student").toLowerCase();
+                const ROLE_DASHBOARD = { student: "dashboard.html", recruiter: "recruiter-dashboard.html", faculty: "faculty-dashboard.html", mentor: "dashboard.html" };
+                let dest = ROLE_DASHBOARD[role] || "dashboard.html";
+                try {
+                    const np = new URLSearchParams(window.location.search).get("next");
+                    if (np) {
+                        const c = np.split("?")[0].split("#")[0];
+                        if (c && c.indexOf("://") === -1 && c.charAt(0) !== "/" && c !== "login.html" && c !== "signup.html") dest = c;
+                    }
+                } catch (e) {}
+                try { localStorage.setItem("skillshare_portal_role", role); } catch (e) {}
+                window.location.href = dest;
             }, 700);
 
 

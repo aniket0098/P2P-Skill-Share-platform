@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Internship Tracking — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="internships-tracking.html" data-role="faculty">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Career · internships</span>
+<h1>Internship <span>tracking</span></h1><p>Who is where, mentor check-ins and completion. Placeholder.</p></header>
+<section class="grid-3">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎓</span></div><b>58</b><span>Active interns</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">✅</span></div><b>34</b><span>Completed (2026)</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⚠</span></div><b>4</b><span>Need check-in</span></div>
+</section>
+<section class="panel mt"><div class="table-wrap"><table class="data"><tr><th>Student</th><th>Company</th><th>Progress</th><th>Check-in</th></tr>
+<tr><td><b>R. Iyer</b><br><span class="muted">Data Intern</span></td><td>InsightLabs</td><td><div class="progress"><i style="width:60%"></i></div></td><td><span class="badge green">On track</span></td></tr>
+<tr><td><b>K. Menon</b><br><span class="muted">Frontend Intern</span></td><td>PixelCraft</td><td><div class="progress"><i style="width:25%"></i></div></td><td><span class="badge amber">Due</span></td></tr>
+</table></div></section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

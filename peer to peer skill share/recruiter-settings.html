@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruiter Settings — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="recruiter-settings.html" data-role="recruiter">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Company · settings</span>
+<h1>Recruiter <span>settings</span></h1><p>Hiring team, notifications and branding. Frontend only.</p></header>
+<div class="grid-2">
+<section class="panel"><div class="section-head"><h2>Team</h2><button class="btn small primary" data-toast="Invite sent (frontend only).">+ Invite</button></div>
+<div class="row-list"><div class="row-item"><div class="avatar sm">HR</div><div class="grow"><h3>Hiring Admin</h3><p>Owner</p></div><span class="badge purple">Owner</span></div>
+<div class="row-item"><div class="avatar sm">SR</div><div class="grow"><h3>S. Rao</h3><p>Interviewer</p></div><span class="badge blue">Member</span></div></div></section>
+<section class="panel"><div class="section-head"><h2>Notifications</h2></div>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>New application alerts</h3><p>Email + in-app (placeholder toggle)</p></div><span class="badge green">On</span></div>
+<div class="row-item"><div class="grow"><h3>Weekly hiring digest</h3></div><span class="badge grey">Off</span></div></div></section>
+</div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

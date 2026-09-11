@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Career Report — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="career-report.html" data-role="student">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">Profile · report</span><h1>Career <span>Report</span></h1>
+<p>Education, skills growth, projects, industry experience and readiness. Placeholder report.</p></div>
+<div><button class="btn primary small" data-toast="PDF export wired later (frontend only).">Export PDF</button></div></div></header>
+<section class="grid-4">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📚</span></div><b>B.Tech · 3rd yr</b><span>Education (placeholder)</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📈</span></div><b>+38%</b><span>Skill growth (90d)</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">💻</span></div><b>6</b><span>Projects</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b>72%</b><span>Career readiness</span></div>
+</section>
+<div class="grid-2 mt">
+<section class="panel"><div class="section-head"><h2>Skills & learning</h2><a href="skill-passport.html">Passport →</a></div>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>Top skills</h3><p>React · JavaScript · SQL · Figma basics</p></div></div>
+<div class="row-item"><div class="grow"><h3>Learning velocity</h3><div class="progress mt"><i style="width:64%"></i></div></div><span class="muted">12 hrs/mo</span></div>
+<div class="row-item"><div class="grow"><h3>Industry experience</h3><p>2 sandbox completions · 1 internship applied</p></div></div></div></section>
+<section class="panel"><div class="section-head"><h2>Achievements & interviews</h2></div>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>Hackathon finalist · SIH internal</h3><p>Team Vector · 2026</p></div><span class="badge green">Verified*</span></div>
+<div class="row-item"><div class="grow"><h3>Mock avg 74% · 2 attempts</h3><p>Strong frontend; work on DSA speed</p></div><a class="btn small ghost" href="interview-prep.html">Improve</a></div></div>
+<p class="muted mt">* “Verified” here means UI placeholder only — real verification comes from backend.</p></section>
+</div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview Prep — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="interview-prep.html" data-role="student">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Career · preparation center</span>
+<h1>Interview <span>Prep</span></h1><p>One hub for technical, DSA, aptitude, behavioral and mocks.</p></header>
+<div class="tabs"><button class="active" data-tab="p-over">Overview</button><button data-tab="p-tech">Technical</button><button data-tab="p-dsa">DSA</button><button data-tab="p-apt">Aptitude</button><button data-tab="p-beh">Behavioral</button><button data-tab="p-mock">Mock Interview</button><button data-tab="p-hist">History</button></div>
+<div class="tab-pane active" id="p-over"><div class="grid-3">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">✅</span></div><b>18/40</b><span>Prep tasks done</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎤</span></div><b>2</b><span>Mocks completed</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📊</span></div><b>74%</b><span>Avg. mock score</span></div></div>
+<section class="panel mt"><div class="row-list">
+<div class="row-item"><div class="grow"><h3>Continue: React hooks drill</h3><p>Technical · 20 min</p></div><a class="btn small ghost" href="interview-prep.html">Resume</a></div>
+<div class="row-item"><div class="grow"><h3>DSA set: Arrays-02</h3><p>5 problems · medium</p></div><a class="btn small ghost" href="dsa.html">Open</a></div>
+<div class="row-item"><div class="grow"><h3>Aptitude: Speed set 3</h3><p>15 questions · timed</p></div><a class="btn small ghost" href="aptitude.html">Open</a></div>
+</div></section></div>
+<div class="tab-pane" id="p-tech"><section class="panel"><div class="row-list">
+<div class="row-item"><div class="grow"><h3>React: hooks + rendering</h3><p>12 questions · flashcards + code</p></div><button class="btn small" data-toast="Deck opens (frontend only).">Start</button></div>
+<div class="row-item"><div class="grow"><h3>JavaScript: closures & async</h3><p>10 questions</p></div><button class="btn small" data-toast="Deck opens (frontend only).">Start</button></div>
+</div></section></div>
+<div class="tab-pane" id="p-dsa"><section class="panel"><p class="muted">Structured coding practice lives in <a href="dsa.html">DSA</a>. Progress syncs here later.</p><div class="mt"><a class="btn small primary" href="dsa.html">Open DSA platform</a></div></section></div>
+<div class="tab-pane" id="p-apt"><section class="panel"><p class="muted">Quant, logical, verbal and DI sets live in <a href="aptitude.html">Aptitude</a>.</p><div class="mt"><a class="btn small primary" href="aptitude.html">Open Aptitude</a></div></section></div>
+<div class="tab-pane" id="p-beh"><section class="panel"><div class="row-list">
+<div class="row-item"><div class="grow"><h3>Tell me about yourself</h3><p>STAR framework · record + self-review</p></div><button class="btn small" data-toast="Recorder opens (frontend only).">Practice</button></div>
+<div class="row-item"><div class="grow"><h3>Conflict in a team project</h3><p>2-min answer drill</p></div><button class="btn small" data-toast="Recorder opens (frontend only).">Practice</button></div>
+</div></section></div>
+<div class="tab-pane" id="p-mock"><section class="panel"><div class="section-head"><h2>Book a mock</h2><button class="btn small primary" data-toast="Mock booked (frontend only).">Book 30-min mock</button></div><p class="muted">Upcoming: Technical (React + DSA), Mon 11 AM · <a href="interviews.html">Manage in Interviews</a>.</p></section></div>
+<div class="tab-pane" id="p-hist"><section class="panel"><div class="table-wrap"><table class="data"><tr><th>Date</th><th>Type</th><th>Score</th><th>Feedback</th></tr><tr><td>02 Sep</td><td>Technical</td><td>74%</td><td>Strong React; revise system basics</td></tr><tr><td>28 Aug</td><td>Aptitude</td><td>81%</td><td>Fast quant; slow DI</td></tr></table></div></section></div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

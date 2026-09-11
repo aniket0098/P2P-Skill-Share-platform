@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opportunity Details — SkillShare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css">
+</head>
+<body data-page="opportunities.html" data-role="student">
+<div id="app-sidebar"></div>
+<div class="app-main">
+<div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data (GET /api/opportunities/:id) -->
+<p class="muted"><a href="opportunities.html">← Back to Opportunities</a></p>
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">PixelCraft · Remote · Placeholder</span>
+<h1>Frontend Developer <span>Intern</span></h1>
+<p>6-month remote internship. Stipend, eligibility and dates below are UI placeholders.</p>
+</div><div><span class="badge blue">Internship</span> <span class="badge green">92% skill match</span></div></div></header>
+<div class="grid-2">
+<section class="panel">
+<div class="section-head"><h2>Role overview</h2></div>
+<p class="muted">Build responsive interfaces for a live SaaS product, ship with mentors, and earn verified skill evidence for your Skill Passport.</p>
+<h3 class="mt">Required skills</h3>
+<div class="mt"><span class="tag">React</span><span class="tag">JavaScript</span><span class="tag">CSS</span><span class="tag">Git</span><span class="tag purple">Responsive Design</span></div>
+<h3 class="mt">Eligibility</h3>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>Enrolled student, any year</h3><p>Verified college email required (future check)</p></div></div>
+<div class="row-item"><div class="grow"><h3>2+ frontend projects</h3><p>Portfolio or Projects page evidence</p></div></div>
+<div class="row-item"><div class="grow"><h3>Available 15+ hrs/week</h3><p>Remote-friendly schedule</p></div></div></div>
+</section>
+<div>
+<section class="panel">
+<div class="section-head"><h2>Key facts</h2></div>
+<div class="row-list">
+<div class="row-item"><div class="grow"><h3>📍 Location</h3><p>Remote (India)</p></div></div>
+<div class="row-item"><div class="grow"><h3>🗓 Duration</h3><p>6 months</p></div></div>
+<div class="row-item"><div class="grow"><h3>💰 Stipend / salary</h3><p>₹25,000 / month (placeholder)</p></div></div>
+<div class="row-item"><div class="grow"><h3>⏰ Deadline</h3><p>30 September (placeholder)</p></div></div>
+</div>
+<div class="mt"><button class="btn primary" data-toast="Application submitted (frontend demo only).">Apply now</button> <button class="btn ghost" data-toast="Saved to your list (frontend only).">♡ Save</button></div>
+<p class="muted mt">Application states: draft → applied → under review. Track in <a href="applications.html">Applications</a>.</p>
+</section>
+<section class="panel mt">
+<div class="section-head"><h2>About the company</h2><a href="company-profile.html">Preview</a></div>
+<p class="muted">PixelCraft builds design tooling for startups. 40 people, remote-first. (Placeholder profile.)</p>
+</section>
+</div>
+</div>
+</main>
+</div>
+<div id="toast-root"></div>
+<script src="config.js"></script>
+<script src="api-client.js"></script>
+<script src="portal-shell.js"></script>
+<script src="portal.js"></script>
+</body>
+</html>

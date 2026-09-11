@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talent Pool — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="talent-pool.html" data-role="recruiter">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">Talent · saved lists</span><h1>Talent <span>pools</span></h1><p>Curated shortlists per role. Placeholder pools.</p></div>
+<div><button class="btn primary small" data-toast="Pool created (frontend only).">+ New pool</button></div></div></header>
+<section class="grid-3">
+<div class="panel"><h3>Frontend Interns — Fall</h3><p class="muted">24 candidates · updated 2d ago</p><div class="progress mt"><i style="width:70%"></i></div><div class="mt"><a class="btn small ghost" href="find-talent.html">Open</a></div></div>
+<div class="panel"><h3>Data Interns</h3><p class="muted">16 candidates · updated 5d ago</p><div class="progress mt"><i style="width:45%"></i></div><div class="mt"><a class="btn small ghost" href="find-talent.html">Open</a></div></div>
+<div class="panel"><h3>Design Apprentices</h3><p class="muted">9 candidates · new</p><div class="progress mt"><i style="width:20%"></i></div><div class="mt"><a class="btn small ghost" href="find-talent.html">Open</a></div></div>
+</section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

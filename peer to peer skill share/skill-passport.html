@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Passport — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="skill-passport.html" data-role="student">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><div class="portal-head-row"><div>
+<span class="eyebrow">Profile · verified identity (mock)</span><h1>Skill <span>Passport</span></h1>
+<p>Verified skills, evidence, certifications and industry readiness. Badges below are UI placeholders.</p></div>
+<div><span class="badge green">ID: SP-2026-•••• (placeholder)</span></div></div></header>
+<section class="grid-3">
+<div class="panel"><div class="section-head"><h2>Verified skills</h2></div>
+<div class="row-list">
+<div class="row-item"><div class="grow"><h3>React — Level 3</h3><p>Evidence: 3 projects + sandbox review</p></div><span class="badge green">Verified*</span></div>
+<div class="row-item"><div class="grow"><h3>SQL — Level 2</h3><p>Evidence: assessment 82%</p></div><span class="badge green">Verified*</span></div>
+<div class="row-item"><div class="grow"><h3>TypeScript — Level 1</h3><p>Evidence: in progress</p></div><span class="badge amber">Pending</span></div>
+</div></section>
+<div class="panel"><div class="section-head"><h2>Certifications & assessments</h2></div>
+<div class="row-list"><div class="row-item"><div class="grow"><h3>Frontend assessment</h3><p>Score 78/100 · 02 Sep</p></div></div>
+<div class="row-item"><div class="grow"><h3>DSA Sprint certificate</h3><p>42 problems · streak 6 days</p></div></div></div></div>
+<div class="panel"><div class="section-head"><h2>Feedback</h2></div>
+<div class="row-list"><div class="row-item"><div class="avatar sm">SR</div><div class="grow"><h3>S. Rao (Mentor)</h3><p>“Clean components; add tests.”</p></div></div>
+<div class="row-item"><div class="grow"><h3>Industry readiness</h3><div class="progress mt"><i style="width:72%"></i></div></div><b>72%</b></div></div></div>
+</section>
+<section class="panel mt"><p class="muted">Share a read-only link with recruiters (future): <b>skillshare.id/u/you</b> · <button class="btn small ghost" data-toast="Link copied (frontend only).">Copy link</button></p></section>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSA Practice — SkillShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css"></head>
+<body data-page="dsa.html" data-role="student">
+<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
+<main class="page-content">
+<!-- TODO: Replace with backend API data -->
+<header class="portal-head"><span class="eyebrow">Career · coding</span>
+<h1>DSA <span>Practice</span></h1><p>Topic-wise problems, difficulty, progress and a practice editor. Judge not connected.</p></header>
+<section class="grid-4">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">✅</span></div><b>42/150</b><span>Solved</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🔥</span></div><b>6 days</b><span>Streak</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📊</span></div><b>68%</b><span>Accuracy</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⭐</span></div><b>Top 22%</b><span>Cohort rank (placeholder)</span></div>
+</section>
+<div class="toolbar mt"><div class="search-box"><span>⌕</span><input data-filter="#dsaList" type="text" placeholder="Search problems..."></div>
+<select><option>All topics</option><option>Arrays</option><option>Strings</option><option>Linked List</option><option>Trees</option><option>DP</option></select>
+<select><option>All levels</option><option>Easy</option><option>Medium</option><option>Hard</option></select>
+<a class="btn ghost small" href="interview-prep.html">← Prep hub</a></div>
+<div class="editor-shell mt">
+<section class="panel"><div class="section-head"><h2>Problem list</h2><span class="muted">Progress (placeholder)</span></div>
+<div class="row-list" id="dsaList">
+<div class="row-item" data-name="two sum arrays easy"><div class="grow"><h3>Two Sum <span class="diff-easy">· Easy</span></h3><p>Arrays · acceptance 61%</p></div><span class="badge green">Solved</span></div>
+<div class="row-item" data-name="valid parentheses stack easy"><div class="grow"><h3>Valid Parentheses <span class="diff-easy">· Easy</span></h3><p>Stack · acceptance 55%</p></div><span class="badge green">Solved</span></div>
+<div class="row-item" data-name="longest substring strings medium"><div class="grow"><h3>Longest Substring <span class="diff-med">· Medium</span></h3><p>Strings · sliding window</p></div><button class="btn small" data-toast="Problem opens (frontend only).">Solve</button></div>
+<div class="row-item" data-name="merge intervals arrays medium"><div class="grow"><h3>Merge Intervals <span class="diff-med">· Medium</span></h3><p>Arrays · sorting</p></div><button class="btn small" data-toast="Problem opens (frontend only).">Solve</button></div>
+<div class="row-item" data-name="word ladder graphs hard"><div class="grow"><h3>Word Ladder <span class="diff-hard">· Hard</span></h3><p>Graphs · BFS</p></div><button class="btn small" data-toast="Problem opens (frontend only).">Solve</button></div>
+</div></section>
+<section class="code-box"><header><span>solution.py · Two Sum (placeholder)</span><button class="btn small primary" data-toast="Run is disabled — judge not connected.">Run</button></header><pre>def two_sum(nums, target):
+    seen = {}
+    for i, n in enumerate(nums):
+        if target - n in seen:
+            return [seen[target - n], i]
+        seen[n] = i
+    return []
+
+# Sample: two_sum([2,7,11,15], 9) -&gt; [0,1]
+# TODO: submit to judge API later.</pre></section>
+</div>
+</main></div><div id="toast-root"></div>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>

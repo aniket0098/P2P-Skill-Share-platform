@@ -46,6 +46,31 @@ window.SkillShareAuth = (() => {
         if (redirecting) return;
         redirecting = true;
 
+        // Preserve the requested page so login can redirect back after auth.
+        try {
+            const current = (window.location.pathname.split("/").pop() || "dashboard.html")
+                .split("?")[0].split("#")[0] || "dashboard.html";
+            const isPublic = ["index.html","login.html","signup.html","about.html",
+                "contact.html","contanct.html","privacy.html","terms.html",
+                "safety.html","credits.html","help.html","error.html","portal.html"].indexOf(current) !== -1;
+            if (!isPublic && current !== LOGIN_PAGE) {
+                window.location.href = LOGIN_PAGE + "?next=" + encodeURIComponent(current);
+                return;
+            }
+        } catch (e) {}
+        window.location.href = LOGIN_PAGE;
+    }
+
+    /* -------------------------------------------------
+       CENTRALIZED LOGOUT
+       Clears the session and returns to login.html.
+       ------------------------------------------------- */
+
+    function logout() {
+        cachedUser = null;
+        state = "unauthenticated";
+        try { window.SkillShareAPI.clearSession(); } catch (e) {}
+        try { localStorage.removeItem("skillshare_portal_role"); } catch (e) {}
         window.location.href = LOGIN_PAGE;
     }
 
@@ -207,6 +232,7 @@ window.SkillShareAuth = (() => {
         isNetworkError,
         isAuthError,
         getErrorMessage,
+        logout,
     };
 
 })();
