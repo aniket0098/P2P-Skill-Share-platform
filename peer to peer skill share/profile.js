@@ -635,6 +635,18 @@ document.addEventListener("DOMContentLoaded", () => {
         renderProjects();
         renderLearning();
         renderActivities();
+        loadProfileCompletion();
+    }
+
+    async function loadProfileCompletion() {
+        try {
+            const res = await API.getProfileCompletion();
+            const pct = res.percentage || 0;
+            const pctEl = document.getElementById("completionPct");
+            const barEl = document.getElementById("completionBarFill");
+            if (pctEl) pctEl.textContent = pct + "%";
+            if (barEl) barEl.style.width = pct + "%";
+        } catch (e) { console.warn("Profile completion:", e); }
     }
 
     /* =====================================================
@@ -693,6 +705,44 @@ document.addEventListener("DOMContentLoaded", () => {
     // Session expired anywhere on the page -> back to login
     window.addEventListener("skillshare:auth-expired", () => {
         window.location.href = "login.html";
+
+    /* EDUCATION + SKILL EVENT WIRING */
+    var _aeb = document.getElementById("addEducationBtn");
+    if (_aeb) _aeb.addEventListener("click", function() { openEducationModal(null); });
+    var _aeeb = document.getElementById("addEducationEmptyBtn");
+    if (_aeeb) _aeeb.addEventListener("click", function() { openEducationModal(null); });
+    var _cem = document.getElementById("closeEducationModal");
+    var _ccEdu = document.getElementById("cancelEducationBtn");
+    var _csEdu = document.getElementById("saveEducationBtn");
+    if (_cem) _cem.addEventListener("click", closeEducationModal);
+    if (_ccEdu) _ccEdu.addEventListener("click", closeEducationModal);
+    if (_csEdu) _csEdu.addEventListener("click", saveEducation);
+    var _em = document.getElementById("educationModal");
+    if (_em) _em.addEventListener("click", function(e) { if (e.target === _em) closeEducationModal(); });
+    var _ec = document.getElementById("eduCurrentlyStudying");
+    if (_ec) _ec.addEventListener("change", function() { var ed = document.getElementById("eduEndDate"); if (ed) ed.disabled = _ec.checked; });
+    var _el = document.getElementById("educationList");
+    if (_el) _el.addEventListener("click", function(e) {
+        var eb = e.target.closest("[data-edu-edit]");
+        if (eb) { var id = Number(eb.dataset.eduEdit); var edu = userEducation.find(function(x) { return x.id === id; }); if (edu) openEducationModal(edu); }
+        var db2 = e.target.closest("[data-edu-delete]");
+        if (db2) deleteEducation(Number(db2.dataset.eduDelete));
+    });
+    var _csm = document.getElementById("closeSkillModal");
+    var _ccSk = document.getElementById("cancelSkillBtn");
+    var _csSk = document.getElementById("saveSkillBtn");
+    if (_csm) _csm.addEventListener("click", closeSkillModal);
+    if (_ccSk) _ccSk.addEventListener("click", closeSkillModal);
+    if (_csSk) _csSk.addEventListener("click", saveSkill);
+    var _sm = document.getElementById("skillModal");
+    if (_sm) _sm.addEventListener("click", function(e) { if (e.target === _sm) closeSkillModal(); });
+    var _ssi = document.getElementById("skillSearchInput");
+    if (_ssi) _ssi.addEventListener("input", function() { clearTimeout(window._skillSearchTimer); var q = _ssi.value.trim(); window._skillSearchTimer = setTimeout(function() { searchSkills(q); }, 250); });
+    var _ssr = document.getElementById("skillSearchResults");
+    if (_ssr) _ssr.addEventListener("click", function(e) { var item = e.target.closest(".search-result-item"); if (item) { _ssi.value = item.dataset.skillName; _ssr.innerHTML = ""; } });
+    var _sc = document.getElementById("workingSkillChips");
+    if (_sc) _sc.addEventListener("click", function(e) { var d = e.target.closest("[data-skill-delete]"); if (d) deleteSkill(Number(d.dataset.skillDelete)); });
+
     });
 
     /* =====================================================
@@ -929,4 +979,166 @@ async function loadRoleProfile(user) {
     }
 }
     loadAll();
+    loadEducation();
+    loadSkills();
 });
+
+/* EDUCATION MANAGEMENT */
+let userEducation = [];
+
+function renderEducation() {
+    const list = document.getElementById("educationList");
+    const empty = document.getElementById("educationEmptyState");
+    if (!list) return;
+    if (!userEducation.length) { list.innerHTML = ""; if (empty) empty.style.display = "block"; return; }
+    if (empty) empty.style.display = "none";
+    list.innerHTML = userEducation.map(edu => {
+        const dates = formatEduDates(edu);
+        const grade = edu.grade || (edu.cgpa != null ? "CGPA: " + edu.cgpa : (edu.percentage != null ? edu.percentage + "%" : ""));
+        return '<div class="education-card"><div class="education-card-body"><div class="education-card-top">' +
+            '<h3>' + escapeHTML(edu.institution_name) + '</h3>' +
+            '<div class="education-actions"><button class="icon-btn-sm" type="button" data-edu-edit="' + edu.id + '">✎</button>' +
+            '<button class="icon-btn-sm" type="button" data-edu-delete="' + edu.id + '">🗑</button></div></div>' +
+            '<p class="education-degree">' + escapeHTML([edu.degree, edu.field_of_study].filter(Boolean).join(" • ")) + '</p>' +
+            '<p class="education-dates">' + escapeHTML(dates) + '</p>' +
+            (grade ? '<p class="education-grade">' + escapeHTML(grade) + '</p>' : '') +
+            (edu.description ? '<p class="education-desc">' + escapeHTML(edu.description) + '</p>' : '') +
+            '</div></div>';
+    }).join("");
+}
+
+function formatEduDates(edu) {
+    const s = edu.start_date || "?";
+    if (edu.currently_studying) return s + " — Present";
+    return s + " — " + (edu.end_date || "Present");
+}
+
+async function loadEducation() {
+    try { const r = await API.getEducation(); userEducation = r.education || []; renderEducation(); }
+    catch (e) { if (e && e.status === 401) return; console.warn("Education load:", e); }
+}
+
+function openEducationModal(edu) {
+    const m = document.getElementById("educationModal");
+    if (!m) return;
+    document.getElementById("educationModalTitle").textContent = edu ? "Edit Education" : "Add Education";
+    document.getElementById("eduInstitution").value = edu ? edu.institution_name : "";
+    document.getElementById("eduDegree").value = edu ? (edu.degree || "") : "";
+    document.getElementById("eduField").value = edu ? (edu.field_of_study || "") : "";
+    document.getElementById("eduLevel").value = edu ? (edu.education_level || "") : "";
+    document.getElementById("eduStartDate").value = edu ? (edu.start_date || "") : "";
+    document.getElementById("eduEndDate").value = edu ? (edu.end_date || "") : "";
+    document.getElementById("eduCurrentlyStudying").checked = edu ? edu.currently_studying : false;
+    document.getElementById("eduCGPA").value = edu && edu.cgpa != null ? edu.cgpa : "";
+    document.getElementById("eduPercentage").value = edu && edu.percentage != null ? edu.percentage : "";
+    document.getElementById("eduGrade").value = edu ? (edu.grade || "") : "";
+    document.getElementById("eduDescription").value = edu ? (edu.description || "") : "";
+    ["eduInstitutionError", "eduDateError", "eduCGPAError"].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ""; });
+    m._eduId = edu ? edu.id : null;
+    m.classList.add("open"); m.setAttribute("aria-hidden", "false");
+}
+
+function closeEducationModal() { const m = document.getElementById("educationModal"); if (m) { m.classList.remove("open"); m.setAttribute("aria-hidden", "true"); m._eduId = null; } }
+
+async function saveEducation() {
+    ["eduInstitutionError", "eduDateError", "eduCGPAError"].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ""; });
+    const inst = document.getElementById("eduInstitution").value.trim();
+    if (!inst) { document.getElementById("eduInstitutionError").textContent = "Institution name is required."; return; }
+    const cur = document.getElementById("eduCurrentlyStudying").checked;
+    const sd = document.getElementById("eduStartDate").value, ed = document.getElementById("eduEndDate").value;
+    if (sd && ed && !cur && sd > ed) { document.getElementById("eduDateError").textContent = "Start date cannot be after end date."; return; }
+    const cg = document.getElementById("eduCGPA").value, cgpa = cg ? parseFloat(cg) : null;
+    if (cgpa != null && (cgpa < 0 || cgpa > 10)) { document.getElementById("eduCGPAError").textContent = "CGPA must be between 0 and 10."; return; }
+    const pct = document.getElementById("eduPercentage").value;
+    const payload = { institution_name: inst, degree: document.getElementById("eduDegree").value.trim() || null, field_of_study: document.getElementById("eduField").value.trim() || null, education_level: document.getElementById("eduLevel").value || null, start_date: sd || null, end_date: cur ? null : (ed || null), currently_studying: cur, cgpa: cgpa, percentage: pct ? parseFloat(pct) : null, grade: document.getElementById("eduGrade").value.trim() || null, description: document.getElementById("eduDescription").value.trim() || null };
+    const btn = document.getElementById("saveEducationBtn"); btn.disabled = true; btn.textContent = "Saving...";
+    try {
+        if (document.getElementById("educationModal")._eduId) { await API.updateEducation(document.getElementById("educationModal")._eduId, payload); showToast("Education updated."); }
+        else { await API.addEducation(payload); showToast("Education added."); }
+        closeEducationModal(); loadEducation();
+    } catch (e) { showToast(e.detail || e.message || "Could not save.", "error"); }
+    finally { btn.disabled = false; btn.textContent = "Save Education"; }
+}
+
+async function deleteEducation(id) {
+    if (!confirm("Delete this education record?")) return;
+    try { await API.deleteEducation(id); showToast("Education deleted."); loadEducation(); }
+    catch (e) { showToast(e.detail || e.message || "Could not delete.", "error"); }
+}
+
+/* SKILL MANAGEMENT (normalized) */
+let userSkills = [];
+
+function renderSkills() {
+    const chips = document.getElementById("workingSkillChips");
+    const empty = document.getElementById("skillsEmptyState");
+    if (!chips) return;
+    const all = [...userSkills].sort((a, b) => (a.skill_name || "").localeCompare(b.skill_name || ""));
+    if (!all.length) { chips.innerHTML = ""; if (empty) empty.style.display = "block"; return; }
+    if (empty) empty.style.display = "none";
+    chips.innerHTML = all.map(us => {
+        const lvl = (us.level || "beginner").charAt(0).toUpperCase() + (us.level || "beginner").slice(1);
+        return '<div class="skill-card"><div class="skill-card-info">' +
+            '<span class="skill-name">' + escapeHTML(us.skill_name) + '</span>' +
+            '<span class="skill-level skill-level-' + escapeHTML(us.level) + '">' + escapeHTML(lvl) + '</span>' +
+            '</div><div class="skill-card-meta">' +
+            (us.years_of_experience != null ? '<span class="skill-exp">' + us.years_of_experience + ' yr</span>' : '') +
+            (us.is_verified ? '<span class="skill-verified">✓ Verified</span>' : '<span class="skill-self">Self-reported</span>') +
+            '</div><div class="skill-card-actions">' +
+            '<button class="icon-btn-sm" type="button" data-skill-delete="' + us.id + '">🗑</button>' +
+            '</div></div>';
+    }).join("");
+    const stat = document.getElementById("statSkills");
+    if (stat) stat.textContent = all.length;
+}
+
+async function loadSkills() {
+    try { const r = await API.getMySkills(); userSkills = r.skills || []; renderSkills(); }
+    catch (e) { if (e && e.status === 401) return; console.warn("Skills load:", e); }
+}
+
+function openSkillModal() {
+    const m = document.getElementById("skillModal");
+    if (!m) return;
+    document.getElementById("skillForm").reset();
+    document.getElementById("skillSearchResults").innerHTML = "";
+    document.getElementById("skillSearchError").textContent = "";
+    m.classList.add("open"); m.setAttribute("aria-hidden", "false");
+}
+
+function closeSkillModal() { const m = document.getElementById("skillModal"); if (m) { m.classList.remove("open"); m.setAttribute("aria-hidden", "true"); } }
+
+async function searchSkills(q) {
+    const results = document.getElementById("skillSearchResults");
+    if (!results) return;
+    if (!q || !q.trim()) { results.innerHTML = ""; return; }
+    try {
+        const res = await API.searchSkills(q.trim());
+        const skills = res.skills || [];
+        if (!skills.length) { results.innerHTML = '<div class="search-no-results">No matches. Press Enter to add "' + escapeHTML(q.trim()) + '".</div>'; return; }
+        results.innerHTML = skills.map(s =>
+            '<button type="button" class="search-result-item" data-skill-name="' + escapeHTML(s.name) + '">' +
+            '<span>' + escapeHTML(s.name) + '</span>' + (s.category ? '<small>' + escapeHTML(s.category) + '</small>' : '') +
+            '</button>'
+        ).join("");
+    } catch (e) { results.innerHTML = ""; }
+}
+
+async function saveSkill() {
+    const name = document.getElementById("skillSearchInput").value.trim();
+    if (!name) { document.getElementById("skillSearchError").textContent = "Please search and select a skill."; return; }
+    const years = document.getElementById("skillYears").value, rating = document.getElementById("skillRating").value;
+    const payload = { skill_name: name, level: document.getElementById("skillLevel").value, years_of_experience: years ? parseInt(years) : null, self_rating: rating ? parseInt(rating) : null };
+    const btn = document.getElementById("saveSkillBtn"); btn.disabled = true; btn.textContent = "Saving...";
+    try { await API.addMySkill(payload); showToast("Skill added."); closeSkillModal(); loadSkills(); }
+    catch (e) {
+        if (e.status === 409) document.getElementById("skillSearchError").textContent = "You already added this skill.";
+        else showToast(e.detail || e.message || "Could not add skill.", "error");
+    } finally { btn.disabled = false; btn.textContent = "Save Skill"; }
+}
+
+async function deleteSkill(id) {
+    if (!confirm("Remove this skill?")) return;
+    try { await API.deleteMySkill(id); showToast("Skill removed."); loadSkills(); }
+    catch (e) { showToast(e.detail || e.message || "Could not remove.", "error"); }
+}

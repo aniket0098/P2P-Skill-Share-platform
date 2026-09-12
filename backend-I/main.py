@@ -12,10 +12,13 @@ from database import Base, engine, SessionLocal
 from models import (
     PUBLIC_SIGNUP_ROLES,
     AdminAccessRequest,
+    Education,
     MentorProfile,
     RecruiterProfile,
+    Skill,
     StudentProfile,
     User,
+    UserSkill,
     Project,
     LearningRecord,
     LearningResource,
@@ -123,6 +126,31 @@ def _run_startup_migrations():
 
 
 _run_startup_migrations()
+
+
+def _seed_skills_if_empty(db: Session):
+    """Seed a small initial skill catalog if empty. Idempotent."""
+    existing = db.query(func.count(Skill.id)).scalar()
+    if existing and existing > 0:
+        return
+    initial_skills = [
+        ("Python", "Programming"), ("JavaScript", "Programming"), ("Java", "Programming"),
+        ("C++", "Programming"), ("SQL", "Programming"), ("HTML", "Web Development"),
+        ("CSS", "Web Development"), ("React", "Web Development"), ("Node.js", "Web Development"),
+        ("FastAPI", "Web Development"), ("Data Analysis", "Data Science"),
+        ("Machine Learning", "AI / Machine Learning"), ("Deep Learning", "AI / Machine Learning"),
+        ("Communication", "Soft Skills"), ("Leadership", "Soft Skills"),
+        ("Problem Solving", "Soft Skills"), ("Cloud Computing", "Cloud"),
+        ("Cybersecurity", "Cybersecurity"), ("Data Analytics", "Data Analytics"),
+        ("Design", "Design"),
+    ]
+    for name, category in initial_skills:
+        db.add(Skill(name=name, category=category))
+    db.commit()
+
+
+# Seed the skill catalog on first startup (idempotent).
+_seed_skills_if_empty(SessionLocal())
 
 
 # ==========================================
@@ -840,6 +868,326 @@ def update_role_profile(
 
     db.commit()
     return serialize_role_profile_payload(current_user, db)
+
+
+# ==========================================
+# EDUCATION ENDPOINTS (PROTECTED)
+# ==========================================
+
+class EducationIn(BaseModel):
+    institution_name: str
+    degree: str | None = None
+    field_of_study: str | None = None
+    education_level: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    currently_studying: bool = False
+    grade: str | None = None
+    cgpa: float | None = None
+    percentage: float | None = None
+    description: str | None = None
+    location: str | None = None
+
+    @field_validator("institution_name")
+    @classmethod
+    def institution_required(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Institution name is required")
+        return v.strip()
+
+    @field_validator("cgpa")
+    @classmethod
+    def cgpa_range(cls, v):
+        if v is not None and (v < 0 or v > 10):
+            raise ValueError("CGPA must be between 0 and 10")
+        return v
+
+    @field_validator("percentage")
+    @classmethod
+    def percentage_range(cls, v):
+        if v is not None and (v < 0 or v > 100):
+            raise ValueError("Percentage must be between 0 and 100")
+        return v
+
+
+def _serialize_education(row: Education) -> dict:
+    return {
+        "id": row.id,
+        "institution_name": row.institution_name,
+        "degree": row.degree,
+        "field_of_study": row.field_of_study,
+        "education_level": row.education_level,
+        "start_date": row.start_date,
+        "end_date": row.end_date,
+        "currently_studying": row.currently_studying,
+        "grade": row.grade,
+        "cgpa": row.cgpa,
+        "percentage": row.percentage,
+        "description": row.description,
+        "location": row.location,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+    }
+
+
+@app.get("/api/profile/education")
+def get_education(current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    rows = db.query(Education).filter(Education.user_id == current_user.id).order_by(Education.id.desc()).all()
+    return {"education": [_serialize_education(r) for r in rows]}
+
+
+@app.post("/api/profile/education")
+def add_education(data: EducationIn, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    row = Education(user_id=current_user.id, **data.model_dump())
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"education": _serialize_education(row), "message": "Education added successfully"}
+
+
+@app.patch("/api/profile/education/{education_id}")
+def update_education(education_id: int, data: EducationIn, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    row = db.get(Education, education_id)
+    if not row or row.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Education record not found")
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(row, key, value)
+    db.commit()
+    db.refresh(row)
+    return {"education": _serialize_education(row), "message": "Education updated successfully"}
+
+
+@app.delete("/api/profile/education/{education_id}")
+def delete_education(education_id: int, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    row = db.get(Education, education_id)
+    if not row or row.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Education record not found")
+    db.delete(row)
+    db.commit()
+    return {"message": "Education deleted successfully"}
+
+
+# ==========================================
+# SKILL CATALOG + USER SKILLS (PROTECTED)
+# ==========================================
+
+class AddUserSkillIn(BaseModel):
+    skill_name: str
+    level: str = "beginner"
+    years_of_experience: int | None = None
+    self_rating: int | None = None
+
+    @field_validator("skill_name")
+    @classmethod
+    def skill_name_required(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Skill name is required")
+        return v.strip()
+
+    @field_validator("level")
+    @classmethod
+    def level_valid(cls, v):
+        allowed = {"beginner", "intermediate", "advanced", "expert"}
+        if v and v.lower() not in allowed:
+            raise ValueError(f"Level must be one of: {', '.join(allowed)}")
+        return v.lower() if v else v
+
+    @field_validator("self_rating")
+    @classmethod
+    def rating_range(cls, v):
+        if v is not None and (v < 1 or v > 5):
+            raise ValueError("Self rating must be between 1 and 5")
+        return v
+
+
+class UpdateUserSkillIn(BaseModel):
+    level: str | None = None
+    years_of_experience: int | None = None
+    self_rating: int | None = None
+
+    @field_validator("level")
+    @classmethod
+    def level_valid(cls, v):
+        allowed = {"beginner", "intermediate", "advanced", "expert"}
+        if v and v.lower() not in allowed:
+            raise ValueError(f"Level must be one of: {', '.join(allowed)}")
+        return v.lower() if v else v
+
+    @field_validator("self_rating")
+    @classmethod
+    def rating_range(cls, v):
+        if v is not None and (v < 1 or v > 5):
+            raise ValueError("Self rating must be between 1 and 5")
+        return v
+
+
+def _serialize_user_skill(row: UserSkill) -> dict:
+    skill_name = row.skill.name if row.skill else "Unknown"
+    return {
+        "id": row.id,
+        "skill_id": row.skill_id,
+        "skill_name": skill_name,
+        "category": row.skill.category if row.skill else None,
+        "level": row.level,
+        "years_of_experience": row.years_of_experience,
+        "self_rating": row.self_rating,
+        "is_verified": row.is_verified,
+        "verified_by": row.verified_by,
+        "source_type": row.source_type,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+    }
+
+
+@app.get("/api/profile/skills")
+def get_user_skills(current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    rows = db.query(UserSkill).filter(UserSkill.user_id == current_user.id).all()
+    return {"skills": [_serialize_user_skill(r) for r in rows]}
+
+
+@app.post("/api/profile/skills")
+def add_user_skill(data: AddUserSkillIn, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    skill_name_normalized = data.skill_name.strip()
+    skill = db.query(Skill).filter(func.lower(Skill.name) == skill_name_normalized.lower()).first()
+    if not skill:
+        skill = Skill(name=skill_name_normalized, category=None)
+        db.add(skill)
+        db.flush()
+    existing = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id, UserSkill.skill_id == skill.id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="You already added this skill")
+    row = UserSkill(
+        user_id=current_user.id, skill_id=skill.id,
+        level=data.level, years_of_experience=data.years_of_experience, self_rating=data.self_rating,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"skill": _serialize_user_skill(row), "message": "Skill added successfully"}
+
+
+@app.patch("/api/profile/skills/{user_skill_id}")
+def update_user_skill(user_skill_id: int, data: UpdateUserSkillIn, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    row = db.get(UserSkill, user_skill_id)
+    if not row or row.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Skill record not found")
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(row, key, value)
+    db.commit()
+    db.refresh(row)
+    return {"skill": _serialize_user_skill(row), "message": "Skill updated successfully"}
+
+
+@app.delete("/api/profile/skills/{user_skill_id}")
+def delete_user_skill(user_skill_id: int, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    row = db.get(UserSkill, user_skill_id)
+    if not row or row.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Skill record not found")
+    db.delete(row)
+    db.commit()
+    return {"message": "Skill removed successfully"}
+
+
+@app.get("/api/skills/catalog")
+def search_skill_catalog(q: str = "", limit: int = 20, db: Session = Depends(get_db)):
+    query = db.query(Skill)
+    if q and q.strip():
+        query = query.filter(Skill.name.ilike(f"%{q.strip()}%"))
+    skills = query.order_by(Skill.name).limit(limit).all()
+    return {"skills": [{"id": s.id, "name": s.name, "category": s.category} for s in skills]}
+
+
+# ==========================================
+# PROFILE COMPLETION (PROTECTED)
+# ==========================================
+
+@app.get("/api/profile/completion")
+def get_profile_completion(current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    """Calculate profile completion percentage from real data."""
+    completed = []
+    missing = []
+    score = 0
+
+    # Basic information (20%)
+    basic_score = 0
+    if current_user.name and current_user.name.strip():
+        basic_score += 5
+    if current_user.bio and current_user.bio.strip():
+        basic_score += 5
+    if current_user.location and current_user.location.strip():
+        basic_score += 5
+    if current_user.avatar_url and current_user.avatar_url.strip():
+        basic_score += 5
+    if basic_score >= 15:
+        completed.append("basic_information")
+    else:
+        missing.append("basic_information")
+    score += basic_score
+
+    # Education (20%)
+    edu_count = db.query(Education).filter(Education.user_id == current_user.id).count()
+    if edu_count > 0:
+        completed.append("education")
+        score += 20
+    else:
+        missing.append("education")
+
+    # Skills (20%)
+    skill_count = db.query(UserSkill).filter(UserSkill.user_id == current_user.id).count()
+    if skill_count > 0:
+        completed.append("skills")
+        score += 20
+    else:
+        missing.append("skills")
+
+    # Projects (15%)
+    proj_count = db.query(Project).filter(Project.owner_id == current_user.id).count()
+    if proj_count > 0:
+        completed.append("projects")
+        score += 15
+    else:
+        missing.append("projects")
+
+    # Career interests (10%)
+    has_interests = bool(current_user.interests and current_user.interests.strip())
+    has_target = False
+    role_row = _get_role_profile_row(db, current_user)
+    if role_row and hasattr(role_row, "target_job_role") and role_row.target_job_role:
+        has_target = True
+    if has_interests or has_target:
+        completed.append("career_interests")
+        score += 10
+    else:
+        missing.append("career_interests")
+
+    # Experience (10%)
+    learning_count = db.query(LearningRecord).filter(LearningRecord.user_id == current_user.id).count()
+    if learning_count > 0:
+        completed.append("experience")
+        score += 10
+    else:
+        missing.append("experience")
+
+    # Achievements (5%)
+    conn_count = db.query(Connection).filter(
+        (Connection.user_one_id == current_user.id) | (Connection.user_two_id == current_user.id),
+        Connection.status == "active",
+    ).count()
+    verified_skills = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id, UserSkill.is_verified == True
+    ).count()
+    if conn_count > 0 or verified_skills > 0:
+        completed.append("achievements")
+        score += 5
+    else:
+        missing.append("achievements")
+
+    return {"percentage": score, "completed": completed, "missing": missing}
+
+
+
 
 
 

@@ -2457,45 +2457,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       NAVIGATION DEMO
-    ===================================================== */
-
-    document
-        .querySelectorAll(".nav-item")
-        .forEach(item => {
-
-            item.addEventListener(
-                "click",
-                event => {
-
-                    event.preventDefault();
-
-
-                    const page =
-                        item
-                            .querySelector("span")
-                            ?.textContent
-                            .trim();
-
-
-                    if (
-                        page &&
-                        page !== "Project Gallery"
-                    ) {
-
-                        showToast(
-                            `${page} page selected`
-                        );
-
-                    }
-
-                }
-            );
-
-        });
-
-
-    /* =====================================================
        KEYBOARD SHORTCUT
     ===================================================== */
 

@@ -118,16 +118,43 @@ window.SkillShareAPI = (() => {
                 body: JSON.stringify(data || {}),
             }),
 
+        // --- Profile completion ---
+        getProfileCompletion: () => request("/api/profile/completion"),
+
+        // --- Education (CRUD, JWT-authenticated) ---
+        getEducation: () => request("/api/profile/education"),
+        addEducation: (data) =>
+            request("/api/profile/education", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        updateEducation: (id, data) =>
+            request(`/api/profile/education/${id}`, {
+                method: "PATCH",
+                body: JSON.stringify(data || {}),
+            }),
+        deleteEducation: (id) =>
+            request(`/api/profile/education/${id}`, { method: "DELETE" }),
+
+        // --- Skills (normalized, JWT-authenticated) ---
+        getMySkills: () => request("/api/profile/skills"),
+        addMySkill: (data) =>
+            request("/api/profile/skills", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        updateMySkill: (id, data) =>
+            request(`/api/profile/skills/${id}`, {
+                method: "PATCH",
+                body: JSON.stringify(data || {}),
+            }),
+        deleteMySkill: (id) =>
+            request(`/api/profile/skills/${id}`, { method: "DELETE" }),
+        searchSkills: (q) =>
+            request("/api/skills/catalog" + (q ? `?q=${encodeURIComponent(q)}` : "")),
+
         // Public, aggregated platform statistics (no auth required).
         getStats: () => request("/api/stats"),
-
-        // Append a skill to the AUTHENTICATED user's own
-        // profile (backend derives the user from the JWT).
-                        addMySkill: (name) =>
-            request("/api/users/me/skills", {
-                method: "PATCH",
-                body: JSON.stringify({ name }),
-            }),
 
         // Fetch the authenticated user's live PostgreSQL record.
         // The user is resolved server-side from the JWT "sub" claim.
