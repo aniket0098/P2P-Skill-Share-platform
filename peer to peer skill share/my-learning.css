@@ -1286,6 +1286,275 @@ main {
 .course label.green {
     color: #72e4b5;
 
+/* =========================================================
+   STAGE 6 — Evidence & Progress Components
+========================================================= */
+
+/* Skill chips */
+.skill-chip {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 20px;
+    background: rgba(113, 53, 255, 0.15);
+    color: #b39aff;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* Progress bars */
+.progress-bar {
+    position: relative;
+    height: 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #7135ff, #9b5cff);
+    transition: width 0.4s ease;
+}
+
+.progress-bar span {
+    position: absolute;
+    right: 0;
+    top: -18px;
+    font-size: 10px;
+    color: #8f98b5;
+}
+
+/* Course cards */
+.courses {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.course {
+    padding: 12px;
+    border: 1px solid var(--border, rgba(255,255,255,0.08));
+    border-radius: 10px;
+    background: rgba(255,255,255,0.02);
+    transition: border-color 0.2s;
+}
+
+.course:hover {
+    border-color: rgba(113, 53, 255, 0.4);
+}
+
+.course.done {
+    opacity: 0.75;
+}
+
+.course-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.course h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 4px 0;
+    color: #e8ecf5;
+}
+
+.status-done {
+    font-size: 10px;
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.status-progress {
+    font-size: 10px;
+    color: #fbbf24;
+    font-weight: 600;
+}
+
+.course-actions {
+    margin-top: 8px;
+    text-align: right;
+}
+
+.btn-sm {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 6px;
+    background: #7135ff;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn-sm:hover { background: #8b55ff; }
+.btn-sm.ghost {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Skill progress rows */
+.skill-progress-row {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.skill-progress-row:last-child { border-bottom: 0; }
+
+.skill-progress-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.skill-progress-row small {
+    font-size: 10px;
+    color: #68708f;
+}
+
+/* Evidence blocks */
+.ev-skill-block {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.ev-skill-block:last-child { border-bottom: 0; }
+
+.ev-skill-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.ev-count {
+    font-size: 10px;
+    color: #8f98b5;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.evidence-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 11px;
+}
+
+.evidence-row .badge {
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-learning {
+    background: rgba(56, 189, 248, 0.15);
+    color: #7dd3fc;
+}
+
+.badge-project {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c4b5fd;
+}
+
+.badge-verified {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+}
+
+.badge-self {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+}
+
+.ev-source {
+    color: #68708f;
+    text-transform: capitalize;
+    font-size: 10px;
+    min-width: 60px;
+}
+
+.ev-text {
+    color: #b8c0d4;
+    flex: 1;
+}
+
+/* Activity list */
+.activity-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.activity-row {
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.activity-dot.done { background: #4ade80; }
+.activity-dot.progress { background: #fbbf24; }
+
+.activity-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.activity-title {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.activity-info small {
+    font-size: 10px;
+    color: #68708f;
+}
+
+.activity-pct {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8f98b5;
+}
+
+/* Empty states */
+.empty-state {
+    padding: 16px;
+    text-align: center;
+    color: #68708f;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.empty-state a {
+    color: #9b5cff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.empty-state a:hover {
+    text-decoration: underline;
+}
+
+
     background: rgba(35, 209, 150, 0.12);
 }
 

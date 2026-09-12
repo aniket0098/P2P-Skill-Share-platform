@@ -8,27 +8,24 @@
 <main class="page-content">
 <!-- TODO: Replace with backend API data -->
 <header class="portal-head"><span class="eyebrow">Career · gap analysis</span>
-<h1>Skill <span>Mapping</span></h1><p>Current skills vs target role. Readiness and next skills are placeholders.</p></header>
+<h1>Skill <span>Mapping</span></h1><p id="sm-source">Backend-calculated readiness from your real skills.</p></header>
 <section class="grid-3">
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b>Frontend Dev</b><span>Target role</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📊</span></div><b>68%</b><span>Role readiness</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🧩</span></div><b>3 gaps</b><span>To close</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b id="sm-role-name">—</b><span>Target role</span><div class="mt"><select id="sm-role" aria-label="Target role"></select> <button class="btn small" id="sm-save-role">Save</button></div></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📊</span></div><b id="sm-score">—</b><span id="sm-level">Readiness</span><p class="muted" id="sm-reason"></p></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🧩</span></div><b id="sm-gap-count">—</b><span>To close</span><a class="btn small ghost" href="my-learning.html">Explore Learning</a></div>
 </section>
+<div id="sm-state" class="mt"></div>
 <div class="grid-2 mt">
-<section class="panel"><div class="section-head"><h2>Current vs required</h2></div>
-<div class="row-list">
-<div class="row-item"><div class="grow"><h3>React</h3><div class="progress mt"><i style="width:80%"></i></div></div><span class="badge green">Strong</span></div>
-<div class="row-item"><div class="grow"><h3>JavaScript</h3><div class="progress mt"><i style="width:72%"></i></div></div><span class="badge green">Good</span></div>
-<div class="row-item"><div class="grow"><h3>TypeScript</h3><div class="progress mt"><i style="width:30%"></i></div></div><span class="badge amber">Gap</span></div>
-<div class="row-item"><div class="grow"><h3>Testing (Jest)</h3><div class="progress mt"><i style="width:15%"></i></div></div><span class="badge red">Gap</span></div>
-<div class="row-item"><div class="grow"><h3>System design basics</h3><div class="progress mt"><i style="width:40%"></i></div></div><span class="badge amber">Gap</span></div>
-</div></section>
+<section class="panel"><div class="section-head"><h2>Your skills</h2></div>
+<div class="row-list" id="sm-mine"></div></section>
+<section class="panel"><div class="section-head"><h2>Role requirements</h2></div>
+<div class="row-list" id="sm-req"></div></section>
+</div>
+<div class="grid-2 mt">
+<section class="panel"><div class="section-head"><h2>Skill gap</h2></div>
+<div class="row-list" id="sm-gaps"></div></section>
 <section class="panel"><div class="section-head"><h2>Recommended next skills</h2><a href="my-learning.html">Learn →</a></div>
-<div class="row-list">
-<div class="row-item"><div class="grow"><h3>1. TypeScript essentials</h3><p>4 hrs · unlocks 2 matched internships</p></div><button class="btn small" data-toast="Added to learning plan (frontend only).">Add</button></div>
-<div class="row-item"><div class="grow"><h3>2. Testing with Jest</h3><p>3 hrs · required by 3 target roles</p></div><button class="btn small" data-toast="Added to learning plan (frontend only).">Add</button></div>
-<div class="row-item"><div class="grow"><h3>3. Interview DSA patterns</h3><p>Links to <a href="dsa.html">DSA</a> + <a href="interview-prep.html">Interview Prep</a></p></div><a class="btn small ghost" href="dsa.html">Open</a></div>
-</div></section>
+<div class="row-list" id="sm-recs"></div></section>
 </div>
 </main></div><div id="toast-root"></div>
-<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>
+<script src="config.js"></script><script src="api-client.js"></script><script src="auth.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script><script src="skill-mapping.js"></script></body></html>

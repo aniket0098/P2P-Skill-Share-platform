@@ -13,9 +13,15 @@ from models import (
     PUBLIC_SIGNUP_ROLES,
     AdminAccessRequest,
     Education,
+    IndustryDomain,
+    IndustrySkillInsight,
+    JobRole,
     MentorProfile,
     RecruiterProfile,
+    RoleSkill,
     Skill,
+    SkillEvidence,
+    SkillHistory,
     StudentProfile,
     User,
     UserSkill,
@@ -33,6 +39,11 @@ from models import (
 from sqlalchemy import or_, and_, func
 import auth
 import config
+import stage6_service as stage6
+from stage6_api import register_stage6
+from stage6_api import register_stage6
+from stage7_api import register_stage7
+from email_service import send_admin_request_notification
 from email_service import send_admin_request_notification
 
 app = FastAPI()
@@ -100,6 +111,13 @@ def _run_startup_migrations():
         "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS resource_id INTEGER",
         "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS last_accessed TIMESTAMP",
         "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS time_spent_seconds INTEGER DEFAULT 0",
+        # Stage 6: Project model gained demo_url/skills/status/image_url.
+        # create_all() covers fresh DBs; these ALTERs cover existing DBs.
+        "ALTER TABLE projects ADD COLUMN IF NOT EXISTS demo_url VARCHAR",
+        "ALTER TABLE projects ADD COLUMN IF NOT EXISTS skills VARCHAR",
+        "ALTER TABLE projects ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'in_progress'",
+        "ALTER TABLE projects ADD COLUMN IF NOT EXISTS image_url VARCHAR",
+        "ALTER TABLE projects ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
     ]
     with engine.begin() as connection:
         for statement in statements:
@@ -151,6 +169,18 @@ def _seed_skills_if_empty(db: Session):
 
 # Seed the skill catalog on first startup (idempotent).
 _seed_skills_if_empty(SessionLocal())
+
+
+def _seed_stage5_if_empty():
+    """Seed Stage 5 industry dataset. Additive + idempotent, never destructive."""
+    try:
+        from seed_stage5 import seed_stage5
+        seed_stage5(SessionLocal())
+    except Exception as exc:  # never break startup; endpoint can retry
+        print(f"[stage5] seed skipped: {exc}")
+
+
+_seed_stage5_if_empty()
 
 
 # ==========================================
@@ -2258,20 +2288,48 @@ def send_message(
 # PROJECTS API (PostgreSQL backed, single source of truth)
 # =========================================================
 
+def _csv_str(value) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, list):
+        cleaned = [str(v).strip() for v in value if str(v or "").strip()]
+        return ", ".join(cleaned[:30]) if cleaned else None
+    text = str(value).strip()
+    return text[:1000] if text else None
+
+
+def _stage6_sync_project(db, project: Project) -> list:
+    """Stage 6: rebuild project skill evidence in the caller's session."""
+    import stage6_service as s6
+
+    return s6.sync_project_evidence(db, project)
+
 def serialize_project(db: Session, project: Project) -> dict:
     owner = db.get(User, project.owner_id)
     tech_list = _split_csv(project.technologies)
+    skill_list = _split_csv(getattr(project, "skills", None))
+    ev_n = (
+        db.query(SkillEvidence)
+        .filter(
+            SkillEvidence.source_type == "project",
+            SkillEvidence.source_id == project.id,
+        )
+        .count()
+    )
     return {
         "id": project.id,
         "owner_id": project.owner_id,
         "title": project.title,
         "description": project.description,
         "technologies": tech_list,
+        "skills": skill_list,
         "image_url": project.image_url,
         "status": project.status or "in_progress",
         "github_url": project.github_url,
         "demo_url": project.demo_url,
         "created_at": project.created_at.isoformat() if project.created_at else None,
+        "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+        "evidence_count": ev_n,
         "owner": user_summary(owner),
     }
 
@@ -2280,6 +2338,7 @@ class CreateProjectSchema(BaseModel):
     title: str
     description: str | None = None
     technologies: str | list[str] | None = None
+    skills: str | list[str] | None = None
     image_url: str | None = None
     status: str | None = "in_progress"
     github_url: str | None = None
@@ -2357,12 +2416,20 @@ def create_project(
         title=clean_title,
         description=(data.description or "").strip() or None,
         technologies=tech_str,
+        skills=_csv_str(data.skills) if hasattr(data, "skills") else None,
         image_url=(data.image_url or "").strip() or None,
         status=(data.status or "in_progress").strip(),
         github_url=(data.github_url or "").strip() or None,
         demo_url=(data.demo_url or "").strip() or None,
     )
     db.add(project)
+    db.flush()
+    # Stage 6: project technologies immediately generate deduplicated
+    # skill evidence records (source_type="project", source_id=project_id).
+    try:
+        _stage6_sync_project(db, project)
+    except Exception:
+        pass  # evidence is additive; project creation must never fail on it
     db.commit()
     db.refresh(project)
     return {"success": True, "project": serialize_project(db, project)}
@@ -2817,9 +2884,102 @@ def get_learning_resource(
     return {"resource": serialize_learning_resource(resource)}
 
 
-# =========================================================
-# PHASE 1 — ADMIN ACCESS REQUESTS (public submit, admin review)
-# =========================================================
+# STAGE 5 - skill intelligence endpoints (additive).
+@app.get("/api/industry/domains")
+def s5_domains(db: Session = Depends(get_db)):
+    import stage5_service as S
+    rows = db.query(IndustryDomain).order_by(IndustryDomain.name).all()
+    return {"domains": [{"id": r.id, "name": r.name, "description": r.description} for r in rows], "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/industry/roles")
+def s5_roles(domain: str | None = None, search: str | None = None, db: Session = Depends(get_db)):
+    import stage5_service as S
+    q = db.query(JobRole)
+    if domain and domain.strip():
+        d = db.query(IndustryDomain).filter(func.lower(IndustryDomain.name) == domain.strip().lower()).first()
+        if not d:
+            return {"roles": [], "disclaimer": S.DISCLAIMER}
+        q = q.filter(JobRole.domain_id == d.id)
+    if search and search.strip():
+        q = q.filter(JobRole.title.ilike(f"%{search.strip()}%"))
+    out = [S.serialize_role(r, S.role_reqs(db, r.id)) for r in q.order_by(JobRole.title).all()]
+    return {"roles": out, "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/industry/roles/{role_id}")
+def s5_role_one(role_id: int, db: Session = Depends(get_db)):
+    import stage5_service as S
+    role = db.query(JobRole).filter(JobRole.id == role_id).first()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    return {"role": S.serialize_role(role, S.role_reqs(db, role.id)), "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/industry/skills")
+def s5_skills(domain: str | None = None, category: str | None = None, demand: str | None = None, growth: str | None = None, search: str | None = None, limit: int = 100, db: Session = Depends(get_db)):
+    import stage5_service as S
+    dom_id = None
+    if domain and domain.strip():
+        dd = db.query(IndustryDomain).filter(func.lower(IndustryDomain.name) == domain.strip().lower()).first()
+        if not dd:
+            return {"skills": [], "disclaimer": S.DISCLAIMER}
+        dom_id = dd.id
+    q = db.query(Skill, IndustrySkillInsight).outerjoin(IndustrySkillInsight, IndustrySkillInsight.skill_id == Skill.id)
+    if dom_id:
+        q = q.filter((IndustrySkillInsight.domain_id == dom_id) | (IndustrySkillInsight.domain_id.is_(None)) | (IndustrySkillInsight.id.is_(None)))
+    if category and category.strip():
+        q = q.filter(func.lower(Skill.category) == category.strip().lower())
+    if search and search.strip():
+        q = q.filter(Skill.name.ilike(f"%{search.strip()}%"))
+    rows = q.limit(max(min(limit or 100, 200), 1)).all()
+    best = {}
+    for sk, ins in rows:
+        cur = best.get(sk.id)
+        if not cur or (ins and (not cur[1] or (ins.demand_score or 0) > (cur[1].demand_score or 0))):
+            best[sk.id] = (sk, ins)
+    items = []
+    for sk, ins in best.values():
+        dn = None
+        if ins and ins.domain_id:
+            drow = db.query(IndustryDomain).filter(IndustryDomain.id == ins.domain_id).first()
+            dn = drow.name if drow else None
+        item = S.serialize_industry_skill(sk, ins, dn)
+        if demand and demand.strip():
+            b = demand.strip().lower(); sc = item["demand_score"]
+            if b in ("very high", "very_high") and sc < 90:
+                continue
+            if b == "high" and sc < 75:
+                continue
+        if growth and growth.strip():
+            g = growth.strip().lower(); ol = (item["outlook"] or "").lower()
+            if g in ("high", "fastest", "high_growth") and not (ol in ("high_growth", "growing") or (item["growth_rate"] or 0) >= 8):
+                continue
+            if g == "declining" and ol != "declining":
+                continue
+        items.append(item)
+    items.sort(key=lambda x: x["demand_score"], reverse=True)
+    return {"skills": items, "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/industry/insights")
+def s5_insights(domain: str | None = None, limit: int = 50, db: Session = Depends(get_db)):
+    import stage5_service as S
+    data = s5_skills(domain=domain, limit=limit, db=db)["skills"]
+    top = sorted(data, key=lambda x: x["demand_score"], reverse=True)[:10]
+    fast = sorted(data, key=lambda x: x["growth_rate"], reverse=True)[:10]
+    emerging = [s for s in sorted(data, key=lambda x: x["growth_rate"], reverse=True) if (s["growth_rate"] or 0) >= 8][:10]
+    return {"top_skills": top, "fastest_growing": fast, "emerging_skills": emerging, "all": data, "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/skills")
+def s5_skill_search(search: str | None = None, limit: int = 100, db: Session = Depends(get_db)):
+    q = db.query(Skill)
+    if search and search.strip():
+        q = q.filter(Skill.name.ilike(f"%{search.strip()}%"))
+    rows = q.order_by(Skill.name).limit(max(min(limit or 100, 200), 1)).all()
+    return {"skills": [{"id": s.id, "name": s.name, "category": s.category, "description": s.description} for s in rows]}
+
 
 def serialize_admin_request(req: AdminAccessRequest) -> dict:
     return {
@@ -2892,6 +3052,121 @@ def submit_admin_request(data: AdminAccessRequestIn, db: Session = Depends(get_d
     return {"message": "Admin access request submitted", "request": payload}
 
 
+# =========================================================
+# STAGE 6 REGISTRATION
+# =========================================================
+# Additive endpoints only (new paths). Registered BEFORE the
+# "/api/skills/{skill_id}" wildcard below: FastAPI matches routes
+# in registration order, so /api/skills/evidence, /api/skills/
+# evidence/{skill_id} and /api/skills/growth must be declared
+# first or they would be captured by that wildcard (and return
+# 422). get_db and get_current_user_model are already in scope.
+register_stage6(app, get_db, get_current_user_model)
+
+
+@app.get("/api/skills/{skill_id}")
+def s5_skill_one(skill_id: int, db: Session = Depends(get_db)):
+    import stage5_service as S
+    sk = db.query(Skill).filter(Skill.id == skill_id).first()
+    if not sk:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    ins = S.insight_map(db).get(sk.id)
+    dn = None
+    if ins and ins.domain_id:
+        drow = db.query(IndustryDomain).filter(IndustryDomain.id == ins.domain_id).first()
+        dn = drow.name if drow else None
+    refs = []
+    for rs in db.query(RoleSkill).filter(RoleSkill.skill_id == sk.id).all():
+        rr = db.query(JobRole).filter(JobRole.id == rs.role_id).first()
+        refs.append({"role_id": rs.role_id, "title": rr.title if rr else "Unknown", "required_level": rs.required_level, "importance": rs.importance, "skill_type": rs.skill_type})
+    return {"skill": S.serialize_industry_skill(sk, ins, dn), "roles": refs, "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/skill-mapping/me")
+def s5_mapping(role_id: int | None = None, role: str | None = None, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    import stage5_service as S
+    target, src = S.resolve_role(db, current_user, role_id=role_id, role_title=role)
+    gap = S.build_gap(db, current_user.id, target)
+    lv, _, _ = S.student_map(db, current_user.id)
+    gap["target_source"] = src
+    gap["has_skills"] = len(lv) > 0
+    gap["needs_profile"] = len(lv) == 0
+    gap["disclaimer"] = S.DISCLAIMER
+    return gap
+
+
+@app.get("/api/skill-gap/me")
+def s5_gap(role_id: int | None = None, role: str | None = None, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    import stage5_service as S
+    target, src = S.resolve_role(db, current_user, role_id=role_id, role_title=role)
+    gap = S.build_gap(db, current_user.id, target)
+    return {"role": gap["role"], "readiness_score": gap["readiness_score"], "readiness_level": gap["readiness_level"], "reason": gap["reason"], "matched": gap["matched"], "partial": gap["partial"], "missing": gap["missing"], "counts": gap["counts"], "target_source": src, "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/skill-recommendations/me")
+def s5_recs(role_id: int | None = None, role: str | None = None, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    import stage5_service as S
+    target, src = S.resolve_role(db, current_user, role_id=role_id, role_title=role)
+    gap = S.build_gap(db, current_user.id, target)
+    return {"role": gap["role"], "readiness_score": gap["readiness_score"], "readiness_level": gap["readiness_level"], "recommendations": gap["recommendations"], "target_source": src, "disclaimer": S.DISCLAIMER}
+
+
+@app.get("/api/skills/analyze/me")
+def s5_analyze(skill_id: int | None = None, skill: str | None = None, role_id: int | None = None, role: str | None = None, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    import stage5_service as S
+    from skill_engine import level_to_num as _lv, normalize_level as _nl
+    row = None
+    if skill_id is not None:
+        row = db.query(Skill).filter(Skill.id == skill_id).first()
+    elif skill and skill.strip():
+        row = db.query(Skill).filter(func.lower(Skill.name) == skill.strip().lower()).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Skill not found in catalog")
+    mine = db.query(UserSkill).filter(UserSkill.user_id == current_user.id, UserSkill.skill_id == row.id).first()
+    target, src = S.resolve_role(db, current_user, role_id=role_id, role_title=role)
+    req = db.query(RoleSkill).filter(RoleSkill.role_id == target.id, RoleSkill.skill_id == row.id).first()
+    ins = S.insight_map(db).get(row.id)
+    projs = db.query(Project).filter(Project.owner_id == current_user.id).all()
+    pn = row.name.lower()
+    mp = [p for p in projs if pn and pn in f"{p.title or ''} {p.description or ''} {p.tech_stack or ''}".lower()]
+    learns = db.query(LearningRecord).filter(LearningRecord.user_id == current_user.id).all()
+    ml = [x for x in learns if pn and pn in f"{x.title or ''} {x.provider or ''} {x.skill or ''}".lower()]
+    snum = _lv(mine.level) if mine else 0
+    rnum = _lv(req.required_level) if req else None
+    if rnum is None:
+        status, gp = "not_required", 0
+    elif snum <= 0:
+        status, gp = "missing", rnum
+    elif snum >= rnum:
+        status, gp = "matched", 0
+    else:
+        status, gp = "partial", rnum - snum
+    ev = "No evidence"
+    if mine:
+        ev = "Verified" if mine.is_verified else ("Evidence-backed" if (mine.verified_by or mine.source_type) else "Self-reported")
+    return {"skill": S.serialize_industry_skill(row, ins, None), "your_level": _nl(mine.level) if mine else None, "your_level_num": snum, "evidence_status": ev, "role": {"id": target.id, "title": target.title}, "required_level": str(req.required_level).lower() if req else None, "required_level_num": rnum, "importance": str(req.importance).lower() if req else None, "status": status, "gap_levels": gp, "target_source": src, "evidence": {"projects": len(mp), "learning_records": len(ml), "project_titles": [p.title for p in mp[:5]], "learning_titles": [x.title for x in ml[:5]]}, "disclaimer": S.DISCLAIMER}
+
+
+@app.put("/api/skill-mapping/target-role")
+def s5_target(data: dict, current_user=Depends(get_current_user_model), db=Depends(get_db)):
+    rid = data.get("role_id"); title = (data.get("title") or data.get("role") or "").strip()
+    role = None
+    if rid is not None:
+        role = db.query(JobRole).filter(JobRole.id == int(rid)).first()
+    elif title:
+        role = db.query(JobRole).filter(func.lower(JobRole.title) == title.lower()).first()
+    if not role:
+        raise HTTPException(status_code=404, detail="Target role not found")
+    prof = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
+    if not prof:
+        prof = StudentProfile(user_id=current_user.id, target_job_role=role.title)
+        db.add(prof)
+    else:
+        prof.target_job_role = role.title
+    db.commit()
+    return {"message": "Target role updated", "role": {"id": role.id, "title": role.title}}
+
+
 @app.get("/admin/requests")
 @app.get("/api/admin/requests")
 def list_admin_requests(
@@ -2949,3 +3224,8 @@ def reject_admin_request(
 ):
     return _review_admin_request(db, admin, request_id, "rejected")
 
+# =========================================================
+# STAGE 7 REGISTRATION
+# =========================================================
+# Additive endpoints only (new paths under /api/sandbox/*).
+register_stage7(app, get_db, get_current_user_model)
