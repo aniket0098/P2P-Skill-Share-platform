@@ -133,3 +133,33 @@ FRONTEND_URLS = [
     for origin in os.getenv("FRONTEND_URL", "").split(",")
     if origin.strip()
 ]
+
+
+# ---------------------------------------------------------------------------
+# Stage 9 — AI Career Coach provider settings
+# ---------------------------------------------------------------------------
+# The coach is a provider abstraction:
+#   AI_PROVIDER=auto     -> external (if a key is configured) -> local -> rules
+#   AI_PROVIDER=external -> OpenAI-compatible chat API only (needs AI_API_KEY)
+#   AI_PROVIDER=local    -> local/private model server (LM Studio / Ollama)
+#   AI_PROVIDER=rule     -> deterministic rule-based coach (always available)
+#
+# SECURITY: AI keys are server-side ONLY. Never put them in HTML/JS/CSS or
+# localStorage. When no key is configured the coach still works through the
+# deterministic rule-based provider — the application never depends on an AI.
+AI_PROVIDER = (os.getenv("AI_PROVIDER", "auto") or "auto").strip().lower() or "auto"
+AI_API_KEY = os.getenv("AI_API_KEY", "") or ""
+AI_MODEL = (os.getenv("AI_MODEL", "gpt-4o-mini") or "gpt-4o-mini").strip()
+AI_BASE_URL = (os.getenv("AI_BASE_URL", "https://api.openai.com/v1") or "https://api.openai.com/v1").rstrip("/")
+AI_LOCAL_BASE_URL = (os.getenv("AI_LOCAL_BASE_URL", "http://127.0.0.1:1234/v1") or "http://127.0.0.1:1234/v1").rstrip("/")
+
+
+def _ai_int(name: str, fallback: int) -> int:
+    try:
+        return int(os.getenv(name, "") or "")
+    except (TypeError, ValueError):
+        return fallback
+
+
+AI_TIMEOUT_SECONDS = _ai_int("AI_TIMEOUT_SECONDS", 30)
+AI_MAX_TOKENS = _ai_int("AI_MAX_TOKENS", 700)

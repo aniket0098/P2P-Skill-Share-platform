@@ -1,0 +1,73 @@
+/* Innovation Lab — Stage 8 styles. Navy/slate + indigo/violet/cyan. */
+:root { --il-bg:#0f172a; --il-card:#1e293b; --il-line:#334155; }
+.il-hero { background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 55%,#0f172a 100%);
+  border:1px solid #3730a3; border-radius:16px; padding:28px; margin-bottom:20px; }
+.il-hero h1 { color:#f1f5f9; font-size:26px; font-weight:800; margin:0 0 6px; }
+.il-hero h1 span { color:#a78bfa; }
+.il-hero p { color:#94a3b8; margin:0; font-size:14px; max-width:760px; }
+.il-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 16px; }
+.il-tab { background:#1e293b; border:1px solid #334155; color:#cbd5e1;
+  padding:8px 14px; border-radius:999px; font-size:12px; font-weight:600; cursor:pointer; }
+.il-tab.active { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border:none; }
+.il-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.il-card { background:#1e293b; border:1px solid #334155; border-radius:12px;
+  padding:18px; display:flex; flex-direction:column; gap:10px; }
+.il-card:hover { border-color:#8b5cf6; }
+.il-card h3 { color:#f1f5f9; font-size:15px; margin:0; }
+.il-card p { color:#94a3b8; font-size:13px; line-height:1.5; margin:0; }
+.il-meta { display:flex; flex-wrap:wrap; gap:6px; }
+.il-pill { font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px;
+  text-transform:uppercase; letter-spacing:.4px; }
+.il-src-community { background:rgba(56,189,248,.12); color:#38bdf8; }
+.il-src-industry { background:rgba(251,191,36,.12); color:#fbbf24; }
+.il-src-platform { background:rgba(139,92,246,.15); color:#c084fc; }
+.il-src-demo { background:rgba(148,163,184,.15); color:#94a3b8; }
+.il-cat { background:#0f172a; border:1px solid #334155; color:#94a3b8;
+  padding:3px 9px; border-radius:6px; font-size:11px; }
+.il-skills { display:flex; flex-wrap:wrap; gap:4px; }
+.il-skills span { background:#0f172a; border:1px solid #334155; color:#94a3b8;
+  padding:2px 7px; border-radius:4px; font-size:11px; }
+.il-actions { display:flex; gap:8px; margin-top:auto; padding-top:10px;
+  border-top:1px solid #334155; flex-wrap:wrap; }
+.il-detail { display:grid; grid-template-columns:220px 1fr 260px; gap:14px; }
+.il-panel { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:16px; }
+.il-panel h4 { color:#94a3b8; font-size:11px; text-transform:uppercase;
+  letter-spacing:.8px; margin:0 0 10px; }
+.il-nav button { display:block; width:100%; text-align:left; background:transparent;
+  border:1px solid transparent; color:#cbd5e1; padding:9px 10px; border-radius:8px;
+  font-size:13px; cursor:pointer; margin-bottom:4px; }
+.il-nav button.active, .il-nav button:hover { background:rgba(139,92,246,.12);
+  border-color:#8b5cf6; color:#fff; }
+.il-ms { border:1px solid #334155; border-radius:8px; padding:10px; margin-bottom:8px; }
+.il-ms.done { border-color:#22c55e; }
+.il-ms.active-ms { border-color:#f59e0b; }
+.il-bar { height:8px; background:#0f172a; border-radius:99px; overflow:hidden; }
+.il-bar i { display:block; height:100%; background:linear-gradient(90deg,#6366f1,#22d3ee); }
+.il-form { display:grid; gap:10px; }
+.il-form label { color:#cbd5e1; font-size:12px; font-weight:600; }
+.il-form input, .il-form select, .il-form textarea { background:#0f172a;
+  border:1px solid #334155; color:#e2e8f0; padding:9px 12px; border-radius:8px;
+  font-size:13px; width:100%; box-sizing:border-box; }
+.il-form input:focus, .il-form select:focus, .il-form textarea:focus {
+  outline:none; border-color:#8b5cf6; }
+.il-filters { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;
+  background:#1e293b; border:1px solid #334155; padding:12px; border-radius:12px; }
+.il-filters input, .il-filters select { background:#0f172a; border:1px solid #334155;
+  color:#e2e8f0; padding:8px 12px; border-radius:8px; font-size:13px; }
+.il-empty { text-align:center; padding:48px 20px; color:#64748b; }
+.il-empty h3 { color:#94a3b8; margin:0 0 6px; }
+.il-modal { position:fixed; inset:0; background:rgba(2,6,23,.7); display:flex;
+  align-items:center; justify-content:center; z-index:9000; padding:16px; }
+.il-modal-box { background:#1e293b; border:1px solid #8b5cf6; border-radius:14px;
+  padding:22px; max-width:560px; width:100%; max-height:90vh; overflow-y:auto; }
+.il-modal-box h3 { color:#f1f5f9; margin:0 0 12px; }
+.il-steps { display:flex; gap:6px; margin-bottom:12px; }
+.il-steps span { flex:1; height:4px; border-radius:99px; background:#334155; }
+.il-steps span.on { background:#8b5cf6; }
+.il-cov { display:flex; gap:6px; flex-wrap:wrap; }
+.il-cov .ok { background:rgba(34,197,94,.12); color:#4ade80; padding:2px 8px;
+  border-radius:6px; font-size:11px; }
+.il-cov .miss { background:rgba(239,68,68,.12); color:#f87171; padding:2px 8px;
+  border-radius:6px; font-size:11px; }
+@media (max-width:1000px){ .il-detail{grid-template-columns:1fr;} }
+@media (max-width:760px){ .il-grid{grid-template-columns:1fr;} .il-hero{padding:20px;} }

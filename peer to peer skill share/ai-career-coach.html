@@ -1,34 +1,152 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI Career Coach — SkillShare</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
-<link rel="stylesheet" href="portal-shell.css"></head>
+<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal-shell.css">
+<link rel="stylesheet" href="ai-career-coach.css">
+</head>
 <body data-page="ai-career-coach.html" data-role="student">
-<div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
-<main class="page-content">
-<!-- TODO: connect real AI API later. Frontend simulation only. -->
-<header class="portal-head"><span class="eyebrow">Career · evidence-driven (mock)</span>
-<h1>AI Career <span>Coach</span></h1><p>Guidance grounded in your skills, projects and market demand. No real AI connected yet.</p></header>
-<div class="grid-2">
-<section class="panel"><div class="section-head"><h2>Your career context</h2><a href="skill-mapping.html">Skill map →</a></div>
-<div class="row-list">
-<div class="row-item"><div class="grow"><h3>Target: Frontend Developer</h3><p>Readiness 68% · 3 gaps</p></div><span class="badge purple">Focused</span></div>
-<div class="row-item"><div class="grow"><h3>Strength: React + projects</h3><p>4 projects · 2 sandbox completions</p></div></div>
-<div class="row-item"><div class="grow"><h3>Market signal</h3><p>TypeScript demand +32% this quarter (placeholder)</p></div></div>
+<div id="app-sidebar"></div>
+<div class="app-main">
+  <div id="app-topbar"></div>
+  <main class="page-content cc-page">
+
+    <!-- Header -->
+    <header class="cc-header">
+      <span class="eyebrow">Career Intelligence Layer</span>
+      <h1>AI Career <span>Coach</span></h1>
+      <p>Personalized guidance grounded in your skills, evidence, projects, and industry requirements.</p>
+    </header>
+
+    <!-- Loading state -->
+    <div id="cc-loading" class="cc-panel" style="text-align:center;padding:2rem;">
+      <p>Analyzing your career context…</p>
+    </div>
+
+    <!-- Main content (hidden until loaded) -->
+    <div id="cc-content" style="display:none;">
+
+      <!-- Career Snapshot -->
+      <section class="cc-panel" style="margin-bottom:1rem;">
+        <div class="section-head">
+          <h2>Career Snapshot</h2>
+          <span id="cc-provider-badge" class="cc-chip grey">…</span>
+        </div>
+        <div class="cc-grid" style="grid-template-columns:repeat(4,1fr);gap:.5rem;">
+          <div class="cc-stat">
+            <div><div class="label">Target Role</div><div class="value" id="cc-target-role">—</div></div>
+          </div>
+          <div class="cc-stat">
+            <div><div class="label">Readiness</div><div class="value" id="cc-readiness">—</div></div>
+          </div>
+          <div class="cc-stat">
+            <div><div class="label">Top Gap</div><div class="value" id="cc-top-gap">—</div></div>
+          </div>
+          <div class="cc-stat">
+            <div><div class="label">Evidence</div><div class="value" id="cc-evidence-count">—</div></div>
+          </div>
+        </div>
+        <p id="cc-snapshot-msg" class="muted" style="margin-top:.75rem;font-size:.85rem;"></p>
+      </section>
+
+      <div class="cc-grid">
+
+        <!-- Left column -->
+        <div>
+
+          <!-- Coach Modes -->
+          <section class="cc-panel" style="margin-bottom:1rem;">
+            <div class="section-head"><h2>Coach Modes</h2></div>
+            <div id="cc-modes"></div>
+          </section>
+
+          <!-- Next Mission -->
+          <section class="cc-panel" style="margin-bottom:1rem;">
+            <div class="section-head"><h2>Next Mission</h2></div>
+            <div id="cc-next-mission"></div>
+          </section>
+
+          <!-- Career Roadmap -->
+          <section class="cc-panel" style="margin-bottom:1rem;">
+            <div class="section-head"><h2>Career Roadmap</h2></div>
+            <div id="cc-roadmap"></div>
+          </section>
+
+          <!-- Recommended Actions -->
+          <section class="cc-panel" style="margin-bottom:1rem;">
+            <div class="section-head"><h2>Recommended Actions</h2></div>
+            <div id="cc-actions"></div>
+          </section>
+
+        </div>
+
+        <!-- Right column: Chat -->
+        <div>
+          <section class="cc-panel" style="display:flex;flex-direction:column;min-height:600px;">
+            <div class="section-head">
+              <h2>Conversation</h2>
+              <div>
+                <select id="cc-conv-select" style="background:#14151f;color:#e5e7eb;border:1px solid #2a2d44;border-radius:6px;padding:.3rem .5rem;font-size:.8rem;">
+                  <option value="">New conversation</option>
+                </select>
+                <button id="cc-new-conv" class="btn small ghost" style="margin-left:.5rem;">+ New</button>
+              </div>
+            </div>
+
+            <!-- Coach mode selector -->
+            <div style="margin-bottom:.5rem;">
+              <select id="cc-chat-mode" style="background:#14151f;color:#e5e7eb;border:1px solid #2a2d44;border-radius:6px;padding:.3rem .5rem;font-size:.8rem;width:100%;">
+                <option value="general">General Career Planning</option>
+                <option value="skill">Skill Planning</option>
+                <option value="learning">Learning Coach</option>
+                <option value="project">Project Coach</option>
+                <option value="sandbox">Industry Sandbox Coach</option>
+                <option value="innovation">Innovation Coach</option>
+                <option value="opportunity">Opportunity Coach</option>
+                <option value="interview">Interview Prep</option>
+              </select>
+            </div>
+
+            <!-- Suggested prompts -->
+            <div id="cc-suggestions" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem;"></div>
+
+            <!-- Chat messages -->
+            <div id="cc-chat" class="cc-chat" style="flex:1;overflow-y:auto;max-height:450px;padding:.5rem;background:#14151f;border-radius:8px;">
+              <div class="cc-msg bot">Hi! I am your AI Career Coach. Ask me about your career path, skill gaps, what to learn next, or your next mission.</div>
+            </div>
+
+            <!-- Input -->
+            <form id="cc-chat-form" style="display:flex;gap:.5rem;margin-top:.75rem;">
+              <input id="cc-chat-input" type="text" placeholder="Ask about roles, skills, projects, your next step…" style="flex:1;background:#14151f;border:1px solid #2a2d44;border-radius:8px;padding:.6rem .8rem;color:#e5e7eb;font-size:.9rem;">
+              <button class="btn primary small" type="submit">Send</button>
+            </form>
+            <p id="cc-chat-note" class="muted" style="font-size:.75rem;margin-top:.5rem;"></p>
+          </section>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="cc-error" class="cc-panel" style="display:none;text-align:center;padding:2rem;">
+      <p id="cc-error-msg"></p>
+    </div>
+
+  </main>
 </div>
-<div class="section-head mt"><h2>Next actions</h2></div>
-<div class="row-list">
-<div class="row-item"><div class="grow"><h3>Finish TypeScript essentials</h3><p>Highest ROI for your target</p></div><a class="btn small ghost" href="my-learning.html">Learn</a></div>
-<div class="row-item"><div class="grow"><h3>Attempt 1 mock interview</h3><p>Technical · 30 min</p></div><a class="btn small ghost" href="interview-prep.html">Prep</a></div>
-</div></section>
-<section class="panel"><div class="section-head"><h2>Conversation</h2><span class="badge grey">Mock — no AI yet</span></div>
-<div class="chat" id="coachChat">
-<div class="msg bot">Hi! I’m your career coach (demo). Based on your Skill Mapping, TypeScript gives you the biggest readiness jump. Want a 2-week plan?</div>
-<div class="msg user">Yes — I can study 1 hour daily.</div>
-<div class="msg bot">Plan: Days 1–5 TypeScript basics, 6–9 mini project, 10–12 Jest intro, 13–14 mock interview. Track it in My Learning.</div>
-</div>
-<form class="chat-input" id="coachForm"><input id="coachInput" type="text" placeholder="Ask about roles, skills, prep... (demo only)"><button class="btn primary small" type="submit">Send</button></form>
-<p class="muted mt">Recommendations here are static placeholders.</p></section>
-</div>
-</main></div><div id="toast-root"></div>
-<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>
+<div id="toast-root"></div>
+<script src="config.js"></script>
+<script src="api-client.js"></script>
+<script src="auth.js"></script>
+
+<script src="portal-shell.js"></script>
+<script src="portal.js"></script>
+<script src="auth-guard.js"></script>
+<script src="ai-career-coach.js"></script>
+</body>
+</html>

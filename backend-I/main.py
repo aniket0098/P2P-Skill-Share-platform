@@ -3229,3 +3229,27 @@ def reject_admin_request(
 # =========================================================
 # Additive endpoints only (new paths under /api/sandbox/*).
 register_stage7(app, get_db, get_current_user_model)
+
+
+# =========================================================
+# STAGE 8 REGISTRATION — INNOVATION LAB
+# =========================================================
+# Additive endpoints only (new paths under /api/innovation/*).
+# No existing route touched. Auth via existing JWT dependency.
+try:
+    from stage8_api import register_stage8
+    register_stage8(app, get_db, get_current_user_model)
+except Exception as _stage8_err:  # never break boot on additive stage
+    print(f"[stage8] WARNING: innovation routes not registered: {_stage8_err}")
+
+
+# =========================================================
+# STAGE 9 REGISTRATION — AI CAREER COACH
+# =========================================================
+# Additive endpoints only (new paths under /api/career-coach/*).
+# No existing route touched. Auth via existing JWT dependency.
+try:
+    from stage9_api import register_stage9
+    register_stage9(app, get_db, get_current_user_model)
+except Exception as _stage9_err:  # never break boot on additive stage
+    print(f"[stage9] WARNING: career coach routes not registered: {_stage9_err}")

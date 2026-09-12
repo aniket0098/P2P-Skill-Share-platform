@@ -366,6 +366,28 @@ window.SkillShareAPI = (() => {
             }),
         getSandboxDashboard: () => request("/api/sandbox/dashboard"),
         getSandboxRecommendations: () => request("/api/sandbox/recommendations"),
+
+        // --- AI Career Coach (Stage 9) ---
+        getCareerCoachStatus: () => request("/api/career-coach/status"),
+        getCareerContext: () => request("/api/career-coach/context"),
+        getCareerRecommendations: () => request("/api/career-coach/recommendations"),
+        getNextMission: () => request("/api/career-coach/next-mission"),
+        getWeeklyPlan: () => request("/api/career-coach/weekly-plan"),
+        getCareerRoadmap: () => request("/api/career-coach/roadmap"),
+        careerCoachChat: (data) =>
+            request("/api/career-coach/chat", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        getCoachConversations: () => request("/api/career-coach/conversations"),
+        getCoachConversation: (id) => request(`/api/career-coach/conversations/${id}`),
+        createCoachConversation: (data) =>
+            request("/api/career-coach/conversations", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        deleteCoachConversation: (id) =>
+            request(`/api/career-coach/conversations/${id}`, { method: "DELETE" }),
     };
 })();
 
