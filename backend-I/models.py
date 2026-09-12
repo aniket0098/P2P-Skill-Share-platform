@@ -404,6 +404,91 @@ class LearningResource(Base):
     published_date = Column(String, nullable=True)  # Year or date published
     created_at = Column(DateTime, default=func.now(), nullable=False)
 
+class Education(Base):
+    """Structured education records for a user.
+    
+    A user may have multiple education records (10th, 12th, B.Tech, M.Tech, etc.).
+    Each record belongs to exactly one user and is never shared.
+    """
+    __tablename__ = "education"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    institution_name = Column(String, nullable=False)
+    degree = Column(String, nullable=True)  # e.g. "B.Tech", "M.Sc", "10th"
+    field_of_study = Column(String, nullable=True)  # e.g. "Computer Science"
+    education_level = Column(String, nullable=True)  # secondary, higher_secondary, undergraduate, postgraduate, doctorate, certification
+    
+    start_date = Column(String, nullable=True)  # Stored as "YYYY-MM" or "YYYY"
+    end_date = Column(String, nullable=True)
+    currently_studying = Column(Boolean, default=False)
+    
+    grade = Column(String, nullable=True)  # e.g. "8.5 CGPA", "85%", "First Division"
+    cgpa = Column(Float, nullable=True)
+    percentage = Column(Float, nullable=True)
+    
+    description = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
     def __repr__(self):
-        return f"<LearningResource id={self.id} title={self.title!r} provider={self.provider!r}>"
+        return f"<Education id={self.id} user={self.user_id} institution={self.institution_name!r} degree={self.degree!r}>"
+
+
+class Skill(Base):
+    """Master catalog of skills that users can select from.
+    
+    Skills are normalized so that "Python", "python", and "PYTHON"
+    resolve to the same record. UserSkill links users to these
+    catalog entries with their self-assessed level.
+    """
+    __tablename__ = "skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False, index=True)
+    category = Column(String, nullable=True)  # Programming, Web Development, Data Science, AI / Machine Learning, etc.
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<Skill id={self.id} name={self.name!r} category={self.category!r}>"
+
+
+class UserSkill(Base):
+    """Links a user to a skill in the catalog with a self-assessed level.
+    
+    Supports the future skill-evidence system: source_type / source_id
+    can later point to the project, assessment, or sandbox submission
+    that verified this skill.
+    """
+    __tablename__ = "user_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    level = Column(String, nullable=False, default="beginner")  # beginner, intermediate, advanced, expert
+    years_of_experience = Column(Integer, nullable=True)
+    self_rating = Column(Integer, nullable=True)  # 1-5
+    
+    is_verified = Column(Boolean, default=False)
+    verified_by = Column(String, nullable=True)  # e.g. "project", "industry_sandbox", "mentor"
+    source_type = Column(String, nullable=True)  # project, assessment, sandbox, learning, mentor_eval, recruiter_eval
+    source_id = Column(Integer, nullable=True)
+    
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "skill_id", name="uq_user_skill"),
+    )
+
+    skill = relationship("Skill", lazy="joined")
+
+    def __repr__(self):
+        return f"<UserSkill id={self.id} user={self.user_id} skill={self.skill_id} level={self.level!r}>"
+
 
