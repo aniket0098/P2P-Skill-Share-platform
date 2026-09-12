@@ -780,6 +780,103 @@ class SandboxEvaluation(Base):
     criteria = relationship("SandboxEvaluationCriterion", back_populates="evaluation", cascade="all, delete-orphan")
 
 
+# ================================================================
+# STAGE 8 — INNOVATION LAB MODELS (additive only, part 1)
+# ================================================================
+INNOVATION_PROBLEM_SOURCES = ("community", "industry", "platform", "demo")
+INNOVATION_IDEA_STATUSES = (
+    "draft", "idea", "validating", "building",
+    "review", "pitch_ready", "published", "completed", "archived",
+)
+INNOVATION_MEMBER_STATUSES = ("active", "invited", "declined", "left", "removed")
+INNOVATION_MILESTONE_STATUSES = ("todo", "in_progress", "completed")
+INNOVATION_FEEDBACK_TYPES = ("peer", "mentor", "faculty", "industry", "community")
+INNOVATION_PITCH_STATUSES = ("draft", "ready", "submitted", "reviewed")
+INNOVATION_INVITE_STATUSES = ("pending", "accepted", "rejected", "cancelled")
+
+
+class InnovationProblem(Base):
+    __tablename__ = "innovation_problems"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    category = Column(String, nullable=True, index=True)
+    description = Column(Text, nullable=False)
+    impact = Column(Text, nullable=True)
+    difficulty = Column(String, nullable=True)
+    skills_text = Column(String, nullable=True)
+    team_size = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="open", index=True)
+    source = Column(String, nullable=False, default="community", index=True)
+    source_label = Column(String, nullable=True)
+    posted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    poster = relationship("User", lazy="joined")
+
+
+class InnovationIdea(Base):
+    __tablename__ = "innovation_ideas"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    problem_id = Column(Integer, ForeignKey("innovation_problems.id", ondelete="SET NULL"), nullable=True, index=True)
+    title = Column(String, nullable=False)
+    problem_statement = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)
+    target_users = Column(Text, nullable=True)
+    solution_summary = Column(Text, nullable=True)
+    expected_impact = Column(Text, nullable=True)
+    category = Column(String, nullable=True, index=True)
+    domain = Column(String, nullable=True)
+    skills_text = Column(String, nullable=True)
+    reference_links = Column(Text, nullable=True)
+    image_url = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="idea", index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    discussion_id = Column(Integer, ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    owner = relationship("User", lazy="joined")
+    problem = relationship("InnovationProblem", lazy="joined")
+    project = relationship("Project", lazy="joined")
+
+
+class InnovationIdeaSkill(Base):
+    __tablename__ = "innovation_idea_skills"
+    id = Column(Integer, primary_key=True, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    __table_args__ = (UniqueConstraint("idea_id", "skill_id", name="uq_innovation_idea_skill"),)
+    idea = relationship("InnovationIdea", lazy="joined")
+    skill = relationship("Skill", lazy="joined")
+
+
+class InnovationTeam(Base):
+    __tablename__ = "innovation_teams"
+    id = Column(Integer, primary_key=True, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    idea = relationship("InnovationIdea", lazy="joined")
+    members = relationship("InnovationTeamMember", back_populates="team", cascade="all, delete-orphan")
+
+
+class InnovationTeamMember(Base):
+    __tablename__ = "innovation_team_members"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("innovation_teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String, nullable=False, default="member")
+    status = Column(String, nullable=False, default="active", index=True)
+    joined_at = Column(DateTime, default=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("team_id", "user_id", name="uq_innovation_team_user"),)
+    team = relationship("InnovationTeam", back_populates="members")
+    user = relationship("User", lazy="joined")
+
+
 class SandboxEvaluationCriterion(Base):
     __tablename__ = "sandbox_evaluation_criteria"
     id = Column(Integer, primary_key=True, index=True)
@@ -789,3 +886,155 @@ class SandboxEvaluationCriterion(Base):
     max_score = Column(Float, nullable=False, default=100.0)
     comment = Column(Text, nullable=True)
     evaluation = relationship("SandboxEvaluation", back_populates="criteria")
+
+
+# STAGE 8 part 2 — invites / milestones / feedback / pitches / links
+
+
+class InnovationInvite(Base):
+    __tablename__ = "innovation_invites"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("innovation_teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    inviter_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    invitee_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String, nullable=True)
+    message = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="pending", index=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    decided_at = Column(DateTime, nullable=True)
+    team = relationship("InnovationTeam", lazy="joined")
+    invitee = relationship("User", foreign_keys=[invitee_id], lazy="joined")
+    inviter = relationship("User", foreign_keys=[inviter_id], lazy="joined")
+
+
+class InnovationMilestone(Base):
+    __tablename__ = "innovation_milestones"
+    id = Column(Integer, primary_key=True, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="todo", index=True)
+    due_date = Column(DateTime, nullable=True)
+    assignee_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    idea = relationship("InnovationIdea", lazy="joined")
+    assignee = relationship("User", foreign_keys=[assignee_id], lazy="joined")
+
+
+class InnovationFeedback(Base):
+    __tablename__ = "innovation_feedback"
+    id = Column(Integer, primary_key=True, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    author_type = Column(String, nullable=False, default="peer")
+    message = Column(Text, nullable=False)
+    score = Column(Float, nullable=True)
+    category = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    idea = relationship("InnovationIdea", lazy="joined")
+    author = relationship("User", lazy="joined")
+
+
+class InnovationFeedbackRequest(Base):
+    __tablename__ = "innovation_feedback_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    requester_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reviewer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewer_role = Column(String, nullable=True)
+    message = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="pending", index=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    resolved_at = Column(DateTime, nullable=True)
+
+
+class InnovationPitch(Base):
+    __tablename__ = "innovation_pitches"
+    id = Column(Integer, primary_key=True, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    problem = Column(Text, nullable=True)
+    solution = Column(Text, nullable=True)
+    target_users = Column(Text, nullable=True)
+    impact = Column(Text, nullable=True)
+    technology = Column(Text, nullable=True)
+    demo_url = Column(String, nullable=True)
+    github_url = Column(String, nullable=True)
+    presentation_url = Column(String, nullable=True)
+    video_url = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="draft", index=True)
+    submitted_at = Column(DateTime, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    review_note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    idea = relationship("InnovationIdea", lazy="joined")
+
+
+class InnovationProjectLink(Base):
+    __tablename__ = "innovation_project_links"
+    id = Column(Integer, primary_key=True, index=True)
+    idea_id = Column(Integer, ForeignKey("innovation_ideas.id", ondelete="CASCADE"), nullable=False, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    linked_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("idea_id", "project_id", name="uq_innovation_idea_project"),)
+    idea = relationship("InnovationIdea", lazy="joined")
+    project = relationship("Project", lazy="joined")
+
+
+# ================================================================
+# STAGE 9 — AI CAREER COACH MODELS (additive only)
+# ================================================================
+# Persistent per-user AI career-coach threads. These are deliberately
+# SEPARATE from the user-to-user Conversation/Message system: coach
+# threads belong to exactly one user and contain assistant turns, so
+# AI messages never leak into private user-to-user chats.
+# Created idempotently by Base.metadata.create_all() at startup.
+CAREER_COACH_MODES = (
+    "general", "career_planning", "skill_planning", "learning",
+    "projects", "sandbox", "innovation", "opportunity", "interview_prep",
+)
+
+
+class CareerCoachConversation(Base):
+    __tablename__ = "career_coach_conversations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String, nullable=True)
+    mode = Column(String, nullable=False, default="general", index=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    messages = relationship(
+        "CareerCoachMessage",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="CareerCoachMessage.id",
+    )
+
+
+class CareerCoachMessage(Base):
+    __tablename__ = "career_coach_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(
+        Integer, ForeignKey("career_coach_conversations.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    role = Column(String, nullable=False)  # user | assistant
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    conversation = relationship("CareerCoachConversation", back_populates="messages")
+
+    def __repr__(self):
+        return f"<CareerCoachMessage id={self.id} conv={self.conversation_id} role={self.role!r}>"
+

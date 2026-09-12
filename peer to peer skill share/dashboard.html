@@ -428,6 +428,22 @@
          GLOBAL UI CONTAINERS
     ========================== -->
 
+    <!-- AI Career Coach Widget (Stage 9) -->
+    <section class="section" id="dashboardCareerCoach" style="display:none;">
+      <div class="panel">
+        <div class="section-head">
+          <h2>&#129302; AI Career Coach</h2>
+          <a href="ai-career-coach.html">Open Coach</a>
+        </div>
+        <div id="cc-widget-body">
+          <div class="cc-widget-line"><span>Target role:</span><b id="cc-widget-target">—</b></div>
+          <div class="cc-widget-line"><span>Readiness:</span><b id="cc-widget-readiness">—</b></div>
+          <div class="cc-widget-line"><span>Top gap:</span><b id="cc-widget-gap">—</b></div>
+          <div class="cc-widget-mission" id="cc-widget-mission"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- Modal container -->
     <div id="modal-root"></div>
 
@@ -458,7 +474,9 @@
 
     <!-- Dashboard-specific logic -->
     <script src="dashboard.js"></script>
-    <script src="stage5-dashboard-bridge.js">
+    <script src="stage5-dashboard-bridge.js"></script>
+    <script src="stage8-bridges.js"></script>
+    <script src="dashboard-career-coach-widget.js"></script>
 
 </body>
 </html>
