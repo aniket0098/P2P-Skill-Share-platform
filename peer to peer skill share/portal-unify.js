@@ -25,7 +25,22 @@
     return (window.location.pathname.split("/").pop() || "dashboard.html")
       .toLowerCase().split("?")[0].split("#")[0] || "dashboard.html";
   }
+  function ensureDesignSystem(){
+    try{
+      var b=document.body;
+      if(b&&!b.dataset.page){
+        var f=currentFile();
+        b.setAttribute('data-page',f);
+      }
+      if(!document.querySelector('link[data-ds="1"]')){
+        var l=document.createElement('link');l.setAttribute('rel','stylesheet');
+        l.setAttribute('href','design-system.css');l.setAttribute('data-ds','1');
+        document.head.appendChild(l);
+      }
+    }catch(e){}
+  }
   function ensureStyle() {
+    ensureDesignSystem();
     if (document.getElementById("portalUnifyStyle")) return;
     var css = [
       ".portal-active-link{box-shadow:inset 3px 0 0 var(--primary,#7657ff) !important;}",

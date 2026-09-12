@@ -209,7 +209,12 @@ class Project(Base):
     github_url = Column(String, nullable=True)
     demo_url = Column(String, nullable=True)
 
+    # Stage 6: optional explicit skill tag (comma-separated) shown alongside
+    # technologies on the project evidence card. Never auto-created.
+    skills = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=True)
 
 
 class ConnectionRequest(Base):
@@ -438,6 +443,75 @@ class Education(Base):
         return f"<Education id={self.id} user={self.user_id} institution={self.institution_name!r} degree={self.degree!r}>"
 
 
+class IndustryDomain(Base):
+    """Platform-controlled industry domain catalog (Stage 5, additive)."""
+
+    __tablename__ = "industry_domains"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False, index=True)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+
+class JobRole(Base):
+    """Platform-controlled job-role catalog (Stage 5, additive)."""
+
+    __tablename__ = "job_roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, unique=True, nullable=False, index=True)
+    domain_id = Column(Integer, ForeignKey("industry_domains.id"), nullable=True, index=True)
+    description = Column(String, nullable=True)
+    experience_level = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    domain = relationship("IndustryDomain", lazy="joined")
+    role_skills = relationship("RoleSkill", back_populates="role", cascade="all, delete-orphan")
+
+
+class RoleSkill(Base):
+    """Structured ROLE -> SKILL requirement (Stage 5, additive)."""
+
+    __tablename__ = "role_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    role_id = Column(Integer, ForeignKey("job_roles.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    required_level = Column(String, nullable=False, default="intermediate")
+    importance = Column(String, nullable=False, default="medium")
+    skill_type = Column(String, nullable=False, default="required")
+
+    __table_args__ = (
+        UniqueConstraint("role_id", "skill_id", name="uq_role_skill"),
+    )
+
+    role = relationship("JobRole", back_populates="role_skills")
+    skill = relationship("Skill", lazy="joined")
+
+
+class IndustrySkillInsight(Base):
+    """Platform industry-demand dataset (Stage 5, additive, demo-labelled)."""
+
+    __tablename__ = "industry_skill_insights"
+
+    id = Column(Integer, primary_key=True, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    domain_id = Column(Integer, ForeignKey("industry_domains.id"), nullable=True, index=True)
+    demand_score = Column(Integer, nullable=False, default=50)
+    growth_rate = Column(Float, nullable=True)
+    outlook = Column(String, nullable=True)
+    period = Column(String, nullable=True, default="2026")
+    source_type = Column(String, nullable=False, default="platform_sample")
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    skill = relationship("Skill", lazy="joined")
+    domain = relationship("IndustryDomain", lazy="joined")
+
+
+
 class Skill(Base):
     """Master catalog of skills that users can select from.
     
@@ -492,3 +566,226 @@ class UserSkill(Base):
         return f"<UserSkill id={self.id} user={self.user_id} skill={self.skill_id} level={self.level!r}>"
 
 
+# ==========================================================
+# STAGE 6 — SKILL EVIDENCE + SKILL HISTORY (additive only)
+# ==========================================================
+# Generic evidence architecture. Stage 6 populates it from
+# "learning" and "project" sources only. Future stages can
+# add new source_type values without any schema redesign:
+#   sandbox, innovation, coding, aptitude, interview, mentor,
+#   recruiter, live_learning, internship, teaching
+STAGE6_EVIDENCE_SOURCES = (
+    "learning",
+    "project",
+    "self_reported",
+    "sandbox",
+    "innovation",
+    "coding",
+    "aptitude",
+    "interview",
+    "mentor",
+    "recruiter",
+    "live_learning",
+    "internship",
+    "teaching",
+    "verified",
+)
+
+# Honest evidence labels. "verified" is ONLY used when a real
+# verification source exists (never auto-assigned in Stage 6).
+STAGE6_CONFIDENCE_LEVELS = (
+    "self_reported",
+    "learning",
+    "project",
+    "verified",
+)
+
+
+class SkillEvidence(Base):
+    """One explainable piece of proof that a user demonstrated a skill.
+
+    Deduplicated per (user_id, skill_id, source_type, source_id) so the
+    same project / learning record never creates duplicate evidence no
+    matter how often a page refreshes.
+    """
+
+    __tablename__ = "skill_evidence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_type = Column(String, nullable=False, index=True)  # learning | project | ...
+    source_id = Column(Integer, nullable=True, index=True)
+    # Explainable 0-100 contribution score (NOT a mastery claim).
+    score = Column(Float, nullable=False, default=0.0)
+    # Honest label: self_reported | learning | project | verified
+    confidence = Column(String, nullable=False, default="self_reported")
+    evidence_text = Column(String, nullable=True)
+    extra_data = Column(Text, nullable=True)  # JSON string, optional context
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "skill_id", "source_type", "source_id", name="uq_skill_evidence_source"),
+    )
+
+    skill = relationship("Skill", lazy="joined")
+
+    def __repr__(self):
+        return (
+            f"<SkillEvidence id={self.id} user={self.user_id} skill={self.skill_id} "
+            f"source={self.source_type}:{self.source_id} score={self.score}>"
+        )
+
+
+class SkillHistory(Base):
+    """Append-only timeline of meaningful skill events.
+
+    Only created on real events (learning progress/completion,
+    project create/update, evidence evaluation) — never on page views.
+    """
+
+    __tablename__ = "skill_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    from_level = Column(String, nullable=True)
+    to_level = Column(String, nullable=True)
+    evidence_count = Column(Integer, nullable=True)
+    confidence = Column(String, nullable=True)
+    note = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    skill = relationship("Skill", lazy="joined")
+
+    def __repr__(self):
+        return (
+            f"<SkillHistory id={self.id} user={self.user_id} skill={self.skill_id} "
+            f"event={self.event_type!r}>"
+        )
+
+
+
+# ================================================================
+# STAGE 7 — INDUSTRY SANDBOX MODELS
+# ================================================================
+# Additive only. These tables are created by Base.metadata.create_all()
+# if they do not already exist. No existing table is modified.
+
+class SandboxChallenge(Base):
+    __tablename__ = "sandbox_challenges"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    slug = Column(String, unique=True, index=True, nullable=False)
+    description = Column(Text, nullable=False)
+    business_context = Column(Text, nullable=True)
+    expected_outcome = Column(Text, nullable=True)
+    industry = Column(String, nullable=True, index=True)
+    domain = Column(String, nullable=True, index=True)
+    difficulty = Column(String, nullable=False, index=True)
+    estimated_time = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="open", index=True)
+    company_name = Column(String, nullable=True)
+    is_demo = Column(Boolean, default=False, index=True)
+    evaluation_criteria = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    deadline = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    creator = relationship("User", lazy="joined")
+    skills = relationship("SandboxChallengeSkill", back_populates="challenge", cascade="all, delete-orphan")
+    tasks = relationship("SandboxTask", back_populates="challenge", cascade="all, delete-orphan", order_by="SandboxTask.order_index")
+    resources = relationship("SandboxResource", back_populates="challenge", cascade="all, delete-orphan")
+
+
+class SandboxChallengeSkill(Base):
+    __tablename__ = "sandbox_challenge_skills"
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(Integer, ForeignKey("sandbox_challenges.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_level = Column(String, nullable=True)
+    challenge = relationship("SandboxChallenge", back_populates="skills")
+    skill = relationship("Skill", lazy="joined")
+
+class SandboxTask(Base):
+    __tablename__ = "sandbox_tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(Integer, ForeignKey("sandbox_challenges.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    task_type = Column(String, nullable=False, default="text_response")
+    instructions = Column(Text, nullable=True)
+    order_index = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    challenge = relationship("SandboxChallenge", back_populates="tasks")
+
+
+class SandboxResource(Base):
+    __tablename__ = "sandbox_resources"
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(Integer, ForeignKey("sandbox_challenges.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    resource_type = Column(String, nullable=False, default="link")
+    url = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    resource_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    challenge = relationship("SandboxChallenge", back_populates="resources")
+
+
+class SandboxParticipant(Base):
+    __tablename__ = "sandbox_participants"
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(Integer, ForeignKey("sandbox_challenges.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    status = Column(String, nullable=False, default="in_progress", index=True)
+    started_at = Column(DateTime, default=func.now(), nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("challenge_id", "user_id", name="uq_challenge_participant"),)
+    challenge = relationship("SandboxChallenge", lazy="joined")
+    user = relationship("User", lazy="joined")
+
+
+class SandboxSubmission(Base):
+    __tablename__ = "sandbox_submissions"
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(Integer, ForeignKey("sandbox_challenges.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    content = Column(Text, nullable=True)
+    github_url = Column(String, nullable=True)
+    demo_url = Column(String, nullable=True)
+    draft_data = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="draft", index=True)
+    attempt = Column(Integer, nullable=False, default=1)
+    submitted_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("challenge_id", "user_id", "attempt", name="uq_submission_attempt"),)
+    challenge = relationship("SandboxChallenge", lazy="joined")
+
+
+class SandboxEvaluation(Base):
+    __tablename__ = "sandbox_evaluations"
+    id = Column(Integer, primary_key=True, index=True)
+    submission_id = Column(Integer, ForeignKey("sandbox_submissions.id", ondelete="CASCADE"), nullable=False, index=True)
+    overall_score = Column(Float, nullable=True)
+    feedback = Column(Text, nullable=True)
+    evaluated_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    evaluation_type = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    submission = relationship("SandboxSubmission", lazy="joined")
+    criteria = relationship("SandboxEvaluationCriterion", back_populates="evaluation", cascade="all, delete-orphan")
+
+
+class SandboxEvaluationCriterion(Base):
+    __tablename__ = "sandbox_evaluation_criteria"
+    id = Column(Integer, primary_key=True, index=True)
+    evaluation_id = Column(Integer, ForeignKey("sandbox_evaluations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    score = Column(Float, nullable=False)
+    max_score = Column(Float, nullable=False, default=100.0)
+    comment = Column(Text, nullable=True)
+    evaluation = relationship("SandboxEvaluation", back_populates="criteria")

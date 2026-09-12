@@ -91,6 +91,12 @@ try { window.SkillShareProfileDropdown.init("#profileDropdownContainer"); } catc
 function render(role, page) {
 role = role || resolveRole();
 page = String(page || currentFile()).split("?")[0].split("#")[0];
+try{
+if(!document.querySelector('link[data-ds="1"]')){
+var ds=document.createElement('link');ds.rel='stylesheet';ds.href='design-system.css';ds.setAttribute('data-ds','1');
+document.head.appendChild(ds);
+}
+}catch(e){}
 try { localStorage.setItem(STORE, role); } catch (e) {}
 const sections = window.PortalShellNavs[role] || window.PortalShellNavs.student;
 const side = document.getElementById("app-sidebar");

@@ -2,33 +2,39 @@
 <title>Industry Sandbox — SkillShare</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
-<link rel="stylesheet" href="portal-shell.css"></head>
+<link rel="stylesheet" href="portal-shell.css"><link rel="stylesheet" href="industry-sandbox.css"></head>
 <body data-page="industry-sandbox.html" data-role="student">
 <div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
 <main class="page-content">
-<!-- TODO: Replace with backend API data -->
-<header class="portal-head"><span class="eyebrow">Build · simulations</span>
-<h1>Industry <span>Sandbox</span></h1><p>Real-world company simulations. Complete challenges to earn skill evidence.</p></header>
-<section class="grid-4">
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🏭</span></div><b>6</b><span>Active challenges</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b>3</b><span>Recommended</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">✅</span></div><b>4</b><span>Completed</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🛡</span></div><b>12</b><span>Evidence badges</span></div>
+<div class="sandbox-hero"><span class="eyebrow" style="color:#38bdf8;">Build · Simulations · Real-world Problems</span>
+<h1>Industry <span>Sandbox</span></h1><p>Solve realistic industry challenges. Submit your solution. Earn credible skill evidence.</p></div>
+<section class="sandbox-stats" id="sb-stats">
+    <div class="sandbox-stat"><b id="stat-joined">0</b><span>Joined</span></div>
+    <div class="sandbox-stat"><b id="stat-progress">0</b><span>In Progress</span></div>
+    <div class="sandbox-stat"><b id="stat-completed">0</b><span>Completed</span></div>
+    <div class="sandbox-stat"><b id="stat-skills">0</b><span>Skills Demonstrated</span></div>
 </section>
-<div class="tabs mt"><button class="active" data-tab="t-active">Active</button><button data-tab="t-rec">Recommended</button><button data-tab="t-done">Completed</button><button data-tab="t-ev">Skill evidence</button></div>
-<div class="tab-pane active" id="t-active"><section class="grid-3">
-<div class="panel"><span class="badge amber">Due in 4 days</span><h3 class="mt">Checkout bug hunt — EdgeTech</h3><p class="muted">Reproduce and fix a race condition in a mock payments API.</p><div class="mt"><span class="tag">Node.js</span><span class="tag">API</span></div><div class="progress mt"><i style="width:45%"></i></div><p class="muted mt">45% · workspace synced</p><div class="mt"><button class="btn small primary" data-toast="Workspace opens (frontend only).">Enter workspace</button></div></div>
-<div class="panel"><span class="badge blue">Team · 3/4 seats</span><h3 class="mt">Support copilot prompts — DocuWise</h3><p class="muted">Design safe prompts for a helpdesk assistant.</p><div class="mt"><span class="tag">Prompting</span><span class="tag">UX</span></div><div class="progress mt"><i style="width:20%"></i></div><div class="mt"><button class="btn small primary" data-toast="Workspace opens (frontend only).">Enter workspace</button></div></div>
-<div class="panel"><span class="badge purple">New</span><h3 class="mt">Demand forecast notebook — InsightLabs</h3><p class="muted">Clean a messy sales CSV and forecast demand.</p><div class="mt"><span class="tag">Python</span><span class="tag">SQL</span></div><div class="mt"><button class="btn small primary" data-toast="Workspace opens (frontend only).">Enter workspace</button></div></div>
-</section></div>
-<div class="tab-pane" id="t-rec"><section class="panel"><div class="row-list">
-<div class="row-item"><div class="grow"><h3>Accessibility audit — FormStudio</h3><p>Matches your CSS + UX skills · 2 hrs</p></div><button class="btn small" data-toast="Added to active (frontend only).">Start</button></div>
-<div class="row-item"><div class="grow"><h3>API rate-limit design — EdgeTech</h3><p>Matches backend skills · 3 hrs</p></div><button class="btn small" data-toast="Added to active (frontend only).">Start</button></div>
-</div></section></div>
-<div class="tab-pane" id="t-done"><section class="panel"><div class="row-list">
-<div class="row-item"><div class="grow"><h3>Landing page revamp — PixelCraft</h3><p>Reviewed by mentor · score 8.6/10</p></div><span class="badge green">Completed</span></div>
-<div class="row-item"><div class="grow"><h3>SQL cleanup sprint — InsightLabs</h3><p>Evidence added to Skill Passport</p></div><span class="badge green">Completed</span></div>
-</div></section></div>
-<div class="tab-pane" id="t-ev"><section class="panel"><p class="muted">Evidence from sandbox completions appears here and feeds your <a href="skill-passport.html">Skill Passport</a>. (Placeholder.)</p></section></div>
+<div class="sandbox-filters">
+    <input type="text" id="sb-search" placeholder="Search challenges...">
+    <select id="sb-domain"><option value="">All Domains</option></select>
+    <select id="sb-difficulty"><option value="">All Levels</option>
+        <option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+    <select id="sb-status"><option value="">All Status</option>
+        <option value="open" selected>Open</option><option value="closed">Closed</option></select>
+    <button class="btn small ghost" id="sb-reset">Reset</button>
+</div>
+<h2 style="color:#f1f5f9;font-size:18px;margin:0 0 12px 0;">Discover Challenges</h2>
+<div id="sb-challenges-container" class="sandbox-challenges-grid">
+    <div class="sandbox-loading">Loading challenges...</div>
+</div>
+<h2 style="color:#f1f5f9;font-size:18px;margin:28px 0 12px 0;">Recommended For You</h2>
+<div id="sb-recommendations">
+    <div class="sandbox-loading">Loading recommendations...</div>
+</div>
+<h2 style="color:#f1f5f9;font-size:18px;margin:28px 0 12px 0;">Your Active Challenges</h2>
+<div id="sb-my-challenges">
+    <div class="sandbox-loading">Loading your activity...</div>
+</div>
 </main></div><div id="toast-root"></div>
-<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>
+<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script>
+<script src="industry-sandbox.js"></script></body></html>

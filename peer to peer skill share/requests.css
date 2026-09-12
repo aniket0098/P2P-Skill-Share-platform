@@ -7,7 +7,7 @@
     --bg: #f4f6fb;
     --surface: #ffffff;
     --surface-soft: #f8f9fd;
-    --text: #141b2d;
+    --text: #121725;
     --muted: #6b7689;
     --border: #e4e8f1;
 
@@ -146,7 +146,7 @@ button { font-family: inherit; }
     place-items: center;
     border-radius: 999px;
     background: var(--danger);
-    color: #fff;
+    color: #ce5b5b;
     font-size: 10.5px;
     font-weight: 700;
     border: 2px solid var(--surface);
@@ -171,7 +171,7 @@ button { font-family: inherit; }
     border-radius: 50%;
     object-fit: cover;
     background: linear-gradient(135deg, var(--primary), #8f7bff);
-    color: #fff;
+    color: #f59f9f;
     display: grid;
     place-items: center;
     font-size: 12px;

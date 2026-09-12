@@ -199,7 +199,7 @@
 
                     <div class="donut">
 
-                        <strong>—</strong>
+                        <strong id="overallProgressPct">—</strong>
 
                         <small>
                             Completed
@@ -210,7 +210,7 @@
 
                     <div class="metric">
 
-                        <b>—</b>
+                        <b id="skillsEnrolledVal">—</b>
 
                         <small>
                             Skills Enrolled
@@ -221,7 +221,7 @@
 
                     <div class="metric">
 
-                        <b>—</b>
+                        <b id="skillsCompletedVal">—</b>
 
                         <small>
                             Skills Completed
@@ -232,7 +232,7 @@
 
                     <div class="metric">
 
-                        <b>—</b>
+                        <b id="learningHoursVal">—</b>
 
                         <small>
                             Learning Hours
@@ -379,7 +379,7 @@
 
 
                     <div class="courses">
-            <div class="empty-state">Your in-progress courses will appear here once connected to the backend.</div>
+            <div class="empty-state" id="continueLearningList">Your in-progress courses will appear here once connected to the backend.</div>
         </div>
 
                 </section>
@@ -404,7 +404,7 @@
 
 
                     <div class="completed">
-            <div class="empty-state">Your completed courses will appear here once connected to the backend.</div>
+            <div class="empty-state" id="recentCompletedList">Your completed courses will appear here once connected to the backend.</div>
         </div>
 
                 </section>
@@ -445,6 +445,45 @@
                     <!-- Session 3 -->
                     
 
+                </section>
+
+
+                <!-- =========================
+                     RECENT ACTIVITY (Stage 6, real data)
+                ========================== -->
+                <section class="panel sessions">
+                    <div class="sectionhead">
+                        <h2>Recent Activity</h2>
+                    </div>
+                    <div class="courses" id="recentActivityList">
+                        <div class="empty-state">No activity yet.</div>
+                    </div>
+                </section>
+
+
+                <!-- =========================
+                     SKILLS IN PROGRESS (Stage 6, real data)
+                ========================== -->
+                <section class="panel sessions">
+                    <div class="sectionhead">
+                        <h2>Skills in Progress</h2>
+                    </div>
+                    <div class="courses" id="skillsInProgressList">
+                        <div class="empty-state">Start learning a skill to see progress here.</div>
+                    </div>
+                </section>
+
+
+                <!-- =========================
+                     LEARNING EVIDENCE (Stage 6, real data)
+                ========================== -->
+                <section class="panel sessions">
+                    <div class="sectionhead">
+                        <h2>Learning Evidence</h2>
+                    </div>
+                    <div class="courses" id="learningEvidenceList">
+                        <div class="empty-state">Completed learning builds evidence for your skills.</div>
+                    </div>
                 </section>
 
 
@@ -563,6 +602,9 @@
     <!-- JavaScript -->
     <script src="my-learning.js"></script>
     <script src="profile-quick.js" defer></script>
+
+    <!-- STAGE 6 real-learning dashboard (auth-guarded, additive) -->
+    <script src="stage6-my-learning.js"></script>
 
     <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
     <script src="portal-unify.js"></script>

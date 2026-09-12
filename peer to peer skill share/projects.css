@@ -1911,6 +1911,171 @@ a {
 
 .impact-icon.orange {
     background: #9b6524;
+
+/* =========================================================
+   STAGE 6 — My Projects (Mine) Section
+========================================================= */
+
+.mine-projects-section {
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border, rgba(255,255,255,0.08));
+    border-radius: 14px;
+    background: rgba(255,255,255,0.02);
+}
+
+.mine-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 1rem 0 1.5rem;
+}
+
+.mine-stat {
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.mine-stat b {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #e8ecf5;
+}
+
+.mine-stat small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.7rem;
+    color: #8f98b5;
+}
+
+.mine-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.project-card-mine {
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.project-card-mine:hover {
+    border-color: rgba(113, 53, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.card-mine-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.card-mine-head h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e8ecf5;
+    margin: 0;
+    flex: 1;
+}
+
+.status-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-badge.published {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+}
+
+.status-badge.draft {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+}
+
+.status-badge.progress {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
+.card-mine-desc {
+    font-size: 12px;
+    color: #8f98b5;
+    line-height: 1.5;
+    margin: 0 0 10px;
+}
+
+.ev-skills-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+    font-size: 11px;
+}
+
+.ev-label {
+    color: #68708f;
+    font-weight: 500;
+}
+
+.ev-chip {
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.12);
+    color: #c4b5fd;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.ev-indicator {
+    margin: 8px 0;
+}
+
+.card-mine-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.empty-state-mine {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #8f98b5;
+}
+
+.empty-state-mine p {
+    margin: 0.3rem 0;
+    font-size: 13px;
+}
+
+.empty-state-mine .btn-sm {
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .mine-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .mine-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 }
 
 .impact-icon.purple {

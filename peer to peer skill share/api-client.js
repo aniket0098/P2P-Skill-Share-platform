@@ -153,6 +153,78 @@ window.SkillShareAPI = (() => {
         searchSkills: (q) =>
             request("/api/skills/catalog" + (q ? `?q=${encodeURIComponent(q)}` : "")),
 
+        // --- Stage 5: skill mapping + industry insights (backend-owned) ---
+        getIndustryDomains: () => request("/api/industry/domains"),
+        getIndustryRoles: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.domain) query.set("domain", params.domain);
+            if (params.search) query.set("search", params.search);
+            const qs = query.toString();
+            return request("/api/industry/roles" + (qs ? `?${qs}` : ""));
+        },
+        getIndustryRole: (id) => request(`/api/industry/roles/${id}`),
+        getIndustrySkills: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.domain) query.set("domain", params.domain);
+            if (params.category) query.set("category", params.category);
+            if (params.demand) query.set("demand", params.demand);
+            if (params.growth) query.set("growth", params.growth);
+            if (params.search) query.set("search", params.search);
+            if (params.limit) query.set("limit", params.limit);
+            const qs = query.toString();
+            return request("/api/industry/skills" + (qs ? `?${qs}` : ""));
+        },
+        getIndustryInsights: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.domain) query.set("domain", params.domain);
+            if (params.limit) query.set("limit", params.limit);
+            const qs = query.toString();
+            return request("/api/industry/insights" + (qs ? `?${qs}` : ""));
+        },
+        searchSkillCatalog: (search, limit) => {
+            const query = new URLSearchParams();
+            if (search) query.set("search", search);
+            if (limit) query.set("limit", limit);
+            const qs = query.toString();
+            return request("/api/skills" + (qs ? `?${qs}` : ""));
+        },
+        getSkillDetail: (id) => request(`/api/skills/${id}`),
+        getSkillMapping: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.role_id) query.set("role_id", params.role_id);
+            if (params.role) query.set("role", params.role);
+            const qs = query.toString();
+            return request("/api/skill-mapping/me" + (qs ? `?${qs}` : ""));
+        },
+        getSkillGap: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.role_id) query.set("role_id", params.role_id);
+            if (params.role) query.set("role", params.role);
+            const qs = query.toString();
+            return request("/api/skill-gap/me" + (qs ? `?${qs}` : ""));
+        },
+        getSkillRecommendations: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.role_id) query.set("role_id", params.role_id);
+            if (params.role) query.set("role", params.role);
+            const qs = query.toString();
+            return request("/api/skill-recommendations/me" + (qs ? `?${qs}` : ""));
+        },
+        analyzeMySkill: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.skill_id) query.set("skill_id", params.skill_id);
+            if (params.skill) query.set("skill", params.skill);
+            if (params.role_id) query.set("role_id", params.role_id);
+            if (params.role) query.set("role", params.role);
+            const qs = query.toString();
+            return request("/api/skills/analyze/me" + (qs ? `?${qs}` : ""));
+        },
+        updateTargetRole: (data) =>
+            request("/api/skill-mapping/target-role", {
+                method: "PUT",
+                body: JSON.stringify(data || {}),
+            }),
+
         // Public, aggregated platform statistics (no auth required).
         getStats: () => request("/api/stats"),
 
@@ -216,6 +288,23 @@ window.SkillShareAPI = (() => {
                 method: "POST",
                 body: JSON.stringify(data || {}),
             }),
+        getProject: (id) => request(`/api/projects/${id}`),
+        updateProject: (id, data) =>
+            request(`/api/projects/${id}`, {
+                method: "PUT",
+                body: JSON.stringify(data || {}),
+            }),
+        deleteProject: (id) =>
+            request(`/api/projects/${id}`, { method: "DELETE" }),
+
+        // --- Learning Overview (Stage 6 aggregation) ---
+        getLearningOverview: () => request("/api/learning/overview"),
+
+        // --- Skill Evidence / Growth (Stage 6) ---
+        getSkillEvidence: () => request("/api/skills/evidence"),
+        getSkillEvidenceBySkill: (skillId) =>
+            request(`/api/skills/evidence/${skillId}`),
+        getSkillGrowth: () => request("/api/skills/growth"),
 
         // --- Activity Timeline (PostgreSQL events) ---
         getMyActivity: () => request("/api/users/me/activity"),
@@ -244,6 +333,39 @@ window.SkillShareAPI = (() => {
             return request("/api/learning-resources" + (qs ? `?${qs}` : ""));
         },
         getLearningResource: (id) => request(`/api/learning-resources/${id}`),
+
+        // --- Industry Sandbox (Stage 7) ---
+        getSandboxChallenges: (params = {}) => {
+            const q = new URLSearchParams();
+            if (params.search) q.set("search", params.search);
+            if (params.domain) q.set("domain", params.domain);
+            if (params.difficulty) q.set("difficulty", params.difficulty);
+            if (params.status) q.set("status", params.status);
+            if (params.skill) q.set("skill", params.skill);
+            const qs = q.toString();
+            return request("/api/sandbox/challenges" + (qs ? `?${qs}` : ""));
+        },
+        getSandboxChallenge: (id) => request(`/api/sandbox/challenges/${id}`),
+        startSandboxChallenge: (id) =>
+            request(`/api/sandbox/challenges/${id}/start`, { method: "POST" }),
+        getMySandboxChallenges: () => request("/api/sandbox/my-challenges"),
+        getMySandboxChallenge: (id) => request(`/api/sandbox/my-challenges/${id}`),
+        getSandboxWorkspace: (id) => request(`/api/sandbox/workspace/${id}`),
+        saveSandboxDraft: (id, data) =>
+            request(`/api/sandbox/workspace/${id}/draft`, {
+                method: "PUT", body: JSON.stringify(data || {}),
+            }),
+        submitSandbox: (id, data) =>
+            request(`/api/sandbox/workspace/${id}/submit`, {
+                method: "POST", body: JSON.stringify(data || {}),
+            }),
+        getSandboxSubmission: (id) => request(`/api/sandbox/submissions/${id}`),
+        evaluateSandboxSubmission: (id, data) =>
+            request(`/api/sandbox/submissions/${id}/evaluate`, {
+                method: "POST", body: JSON.stringify(data || {}),
+            }),
+        getSandboxDashboard: () => request("/api/sandbox/dashboard"),
+        getSandboxRecommendations: () => request("/api/sandbox/recommendations"),
     };
 })();
 
