@@ -1068,34 +1068,72 @@ function renderSectionPlaceholders() {
 
 
 /* ---------------------------------------------------------
-   CONTINUE LEARNING — no learning-session records exist in
-   the database yet, so a meaningful empty state is shown
-   instead of hardcoded demo data.
+   CONTINUE LEARNING — same backend learning system as
+   my-learning.html (GET /api/learning/me, JWT user only).
+   Shows real active records, links to my-learning.html.
    --------------------------------------------------------- */
 
-function renderLearning() {
+async function renderLearning() {
 
     const container =
         document.getElementById("continueLearning");
 
     if (!container) return;
 
-    container.innerHTML = `
-
+    const emptyHTML = `
         <div class="empty-state">
-
             <div class="empty-icon">📚</div>
-
             <h3>Nothing in progress yet</h3>
-
             <p>
-                Accept a connection request or join a live
-                session and your learning will appear here.
+                Explore skills and start your first learning path —
+                your progress will appear here.
             </p>
-
+            <a class="btn primary" href="explore.html" style="margin-top:12px;display:inline-block;">
+                Explore Skills
+            </a>
         </div>
-
     `;
+
+    if (!window.SkillShareAPI || !window.SkillShareAPI.getToken()) {
+        container.innerHTML = emptyHTML;
+        return;
+    }
+
+    container.innerHTML = '<div class="empty-state">Loading your learning…</div>';
+
+    try {
+        const data = await window.SkillShareAPI.getLearningMe();
+        const items = data.active || data.items || data.records || [];
+        const list = (items || []).filter((r) => (r.status || "").toLowerCase() === "in_progress").slice(0, 3);
+        if (!list.length) {
+            const done = (data.completed || []).length || 0;
+            container.innerHTML = done ? `
+                <div class="empty-state">
+                    <div class="empty-icon">✅</div>
+                    <h3>${escapeHTML(String(done))} completed — nothing in progress</h3>
+                    <p>Start a new resource to keep your streak going.</p>
+                    <a class="btn primary" href="my-learning.html" style="margin-top:12px;display:inline-block;">
+                        Open My Learning
+                    </a>
+                </div>
+            ` : emptyHTML;
+            return;
+        }
+        container.innerHTML = list.map((r) => `
+            <a href="my-learning.html" class="learning-row" style="display:block;padding:10px 0;border-bottom:1px solid var(--border);">
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+                    <strong style="font-size:13px;">${escapeHTML(r.resource_title || r.skill_name || "Learning")}</strong>
+                    <span style="font-size:12px;color:var(--text-secondary);">${escapeHTML(String(Math.round(r.progress || 0)))}%</span>
+                </div>
+                <div style="height:6px;border-radius:99px;background:rgba(255,255,255,.08);margin-top:8px;overflow:hidden;">
+                    <div style="height:100%;width:${Math.max(0, Math.min(100, Number(r.progress || 0)))}%;background:var(--gradient);border-radius:99px;"></div>
+                </div>
+                <small style="color:var(--text-muted);font-size:11px;">${escapeHTML(r.skill_name || "")}</small>
+            </a>
+        `).join("");
+    } catch (error) {
+        container.innerHTML = emptyHTML;
+    }
 
 }
 
