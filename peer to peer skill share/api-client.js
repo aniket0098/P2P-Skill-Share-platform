@@ -334,15 +334,32 @@ window.SkillShareAPI = (() => {
         },
         getLearningResource: (id) => request(`/api/learning-resources/${id}`),
 
+        // --- My Learning canonical overview (one efficient call) ---
+        getLearningMe: () => request("/api/learning/me"),
+        getLearningHistory: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.status) query.set("status", params.status);
+            if (params.skill) query.set("skill", params.skill);
+            if (params.q) query.set("q", params.q);
+            if (params.sort) query.set("sort", params.sort);
+            const qs = query.toString();
+            return request("/api/learning/history" + (qs ? `?${qs}` : ""));
+        },
+        getLearningRecommendations: (limit) =>
+            request(`/api/learning/recommendations${limit ? "?limit=" + limit : ""}`),
+        getLearningRoadmap: () => request("/api/learning/roadmap"),
+        getLearningActivity: (limit) =>
+            request(`/api/learning/activity${limit ? "?limit=" + limit : ""}`),
+
         // --- My Learning Core System ---
         getMyLearningRecords: () => request("/api/learning/me"),
         getActiveLearning: () => request("/api/learning/active"),
         getCompletedLearning: () => request("/api/learning/completed"),
         getLearningStats: () => request("/api/learning/stats"),
-        updateLearningProgress: (recordId, progress) =>
+        updateLearningProgress: (recordId, progress, extra = {}) =>
             request(`/api/learning/${recordId}/progress`, {
                 method: "PATCH",
-                body: JSON.stringify({ progress }),
+                body: JSON.stringify({ progress_percentage: progress, ...(extra || {}) }),
             }),
         addLearningTime: (recordId, seconds) =>
             request(`/api/learning/${recordId}/time`, {

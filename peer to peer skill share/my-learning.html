@@ -1,63 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkillShare - My Learning</title>
-    <link rel="stylesheet" href="my-learning.css">
-    <link rel="stylesheet" href="components/profile-dropdown.css">
-    <script src="config.js"></script>
-    <script src="api-client.js"></script>
-    <script src="auth.js"></script>
-    <script src="components/profile-dropdown.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Learning — SkillShare</title>
+<link rel="stylesheet" href="my-learning.css">
+<link rel="stylesheet" href="components/profile-dropdown.css">
+<script src="config.js"></script>
+<script src="api-client.js"></script>
+<script src="auth.js"></script>
+<script src="components/profile-dropdown.js"></script>
 </head>
-<body>
-<header class="topbar">
-    <a href="dashboard.html" class="brand"><span class="logo">&#10022;</span><span><b>SkillShare</b><small>Share Skills. Grow Together.</small></span></a>
-    <nav class="top-navigation"><a href="explore.html">Explore Skills</a><a href="community.html">Community</a><a href="messages.html">Messages</a></nav>
-    <div class="actions"><button class="icon" aria-label="Search">&#8981;</button><button class="icon" id="theme">&#9790;</button><button class="icon" aria-label="Notif">&#9831;</button><button class="profile"><div id="profileDropdownContainer"></div></button></div>
-</header>
-<aside class="sidebar"><nav class="side">
-    <a href="dashboard.html"><span>&#8962;</span><span>Dashboard</span></a>
-    <a href="my-learning.html" class="active"><span>&#9671;</span><span>My Learning</span></a>
-    <a href="live-learning.html"><span>&#9831;</span><span>Live Learning</span></a>
-    <a href="requests.html"><span>&#10148;</span><span>Requests</span></a>
-    <a href="messages.html"><span>&#9635;</span><span>Messages</span></a>
-    <a href="bookmarks.html"><span>&#9825;</span><span>Bookmarks</span></a>
-    <a href="setting.html"><span>&#9881;</span><span>Settings</span></a>
-</nav></aside>
-<main class="main-content">
-<section class="page-header"><div class="page-title"><h1>My Learning</h1><p>Track your progress, build skills, and advance your career.</p></div><div class="page-actions"><a href="explore.html" class="btn btn-primary">+ Find Resources</a></div></section>
-<div id="learningLoading" class="loading-container"><div class="loading-spinner"></div><p>Loading your learning data...</p></div>
-<div id="learningError" class="error-container" style="display:none;"><div class="error-icon">&#9888;</div><h3>Unable to load learning data</h3><p id="learningErrorMsg">Something went wrong. Please try again.</p><button class="btn btn-primary" onclick="window.location.reload()">Retry</button></div>
-<div id="learningEmpty" class="empty-state-container" style="display:none;"><div class="empty-illustration">&#9671;</div><h2>No learning activity yet</h2><p>Start learning a skill to build your industry profile and track your progress.</p><div class="empty-actions"><a href="explore.html" class="btn btn-primary">Explore Skills</a><a href="skill-mapping.html" class="btn btn-ghost">View Skill Map</a></div></div>
-<div id="learningDashboard" style="display:none;">
-<section class="stats-grid">
-    <div class="stat-card stat-progress"><div class="stat-icon">&#9678;</div><div class="stat-info"><span class="stat-value" id="statOverallProgress">&mdash;</span><span class="stat-label">Overall Progress</span></div></div>
-    <div class="stat-card stat-active"><div class="stat-icon">&#9655;</div><div class="stat-info"><span class="stat-value" id="statActive">&mdash;</span><span class="stat-label">Active Learning</span></div></div>
-    <div class="stat-card stat-completed"><div class="stat-icon">&#10003;</div><div class="stat-info"><span class="stat-value" id="statCompleted">&mdash;</span><span class="stat-label">Completed</span></div></div>
-    <div class="stat-card stat-time"><div class="stat-icon">&#9659;</div><div class="stat-info"><span class="stat-value" id="statTime">&mdash;</span><span class="stat-label">Learning Time</span></div></div>
-    <div class="stat-card stat-skills"><div class="stat-icon">&#11041;</div><div class="stat-info"><span class="stat-value" id="statSkills">&mdash;</span><span class="stat-label">Skills Developing</span></div></div>
-    <div class="stat-card stat-streak"><div class="stat-icon">&#128293;</div><div class="stat-info"><span class="stat-value" id="statStreak">&mdash;</span><span class="stat-label">Day Streak</span></div></div>
+<body data-page="my-learning.html" data-role="student">
+<div id="app-sidebar"></div>
+<div class="app-main">
+<div id="app-topbar"></div>
+<main class="page-content">
+<section class="ml-head">
+<div>
+<p class="eyebrow">Learn &middot; Track &middot; Grow</p>
+<h1>My Learning</h1>
+<p class="sub" id="mlSubtitle">Your personal learning operating system.</p>
+</div>
+<div class="ml-head-actions">
+<div class="ml-search"><span>&#8981;</span>
+<input id="mlSearch" type="text" placeholder="Search title, skill, type..." autocomplete="off">
+</div>
+<a class="btn primary" href="explore.html">+ Start Learning</a>
+</div>
 </section>
-<div class="dashboard-grid">
-<div class="dashboard-left">
-    <section class="panel panel-active-learning"><div class="panel-header"><h2>Continue Learning</h2><span class="panel-badge" id="activeCount">0</span></div><div class="panel-body" id="activeLearningList"></div></section>
-    <section class="panel panel-analytics"><div class="panel-header"><h2>Learning Activity</h2><span class="panel-subtitle">Last 7 days</span></div><div class="panel-body"><div class="chart-container" id="weeklyChart"></div><div class="chart-summary"><span id="weeklyTotal">0 min this week</span><span id="completionRate">0% completion rate</span></div></div></section>
+<div id="mlLoading" class="state-card"><p class="muted center">Loading your learning data...</p></div>
+<div id="mlError" class="state-card center" hidden>
+<div class="state-icon">!</div>
+<h2>Unable to load your learning data.</h2>
+<p class="muted" id="mlErrorMsg">Something went wrong. Please try again.</p>
+<button class="btn primary" id="mlRetry" type="button">Retry</button>
 </div>
-<div class="dashboard-right">
-    <section class="panel panel-skills"><div class="panel-header"><h2>Skills in Progress</h2></div><div class="panel-body" id="skillsProgressList"></div></section>
-    <section class="panel panel-milestones"><div class="panel-header"><h2>Recent Milestones</h2></div><div class="panel-body" id="milestonesList"></div></section>
-    <section class="panel panel-history"><div class="panel-header"><h2>Learning History</h2><div class="panel-filters"><button class="filter-btn active" data-filter="all">All</button><button class="filter-btn" data-filter="in_progress">In Progress</button><button class="filter-btn" data-filter="completed">Completed</button><button class="filter-btn" data-filter="started">Not Started</button></div></div><div class="search-bar"><input type="text" id="learningSearch" placeholder="Search by title or skill..."></div><div class="panel-body" id="historyList"></div></section>
+<div id="mlEmpty" class="state-card center" hidden>
+<div class="state-icon">◍</div>
+<h2>You haven&apos;t started learning yet.</h2>
+<p class="muted">Explore skills and start your first learning path.</p>
+<div class="row center gap">
+<a class="btn primary" href="explore.html">Explore Skills</a>
+<a class="btn ghost" href="skill-mapping.html">View Skill Map</a>
 </div>
 </div>
+<div id="mlApp" hidden>
+<section class="stat-grid" aria-label="Learning overview">
+<div class="stat"><span class="k">Learning Items</span><strong id="stTotal">—</strong><small>resources started</small></div>
+<div class="stat"><span class="k">In Progress</span><strong id="stActive">—</strong><small>active records</small></div>
+<div class="stat"><span class="k">Completed</span><strong id="stDone">—</strong><small>finished records</small></div>
+<div class="stat"><span class="k">Overall Progress</span><strong id="stAvg">—</strong><small>across all records</small></div>
+<div class="stat"><span class="k">Learning Time</span><strong id="stTime">—</strong><small>tracked active time</small></div>
+<div class="stat"><span class="k">Skills Learning</span><strong id="stSkills">—</strong><small>distinct skills</small></div>
+</section>
+<section class="panel">
+<div class="panel-head"><div><h2>Current Learning</h2><p class="muted">Pick up where you left off.</p></div><span class="pill" id="activeCount">0 active</span></div>
+<div id="activeList" class="card-grid"></div>
+</section>
+<div class="two-col">
+<section class="panel"><div class="panel-head"><div><h2>Recommended For You</h2><p class="muted" id="recoSub">Based on target role and gaps.</p></div></div><div id="recoList" class="stack"></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Learning Roadmap</h2><p class="muted" id="roadSub">Derived from required skills.</p></div></div><div id="roadList" class="stack"></div></section>
 </div>
-<footer class="page-footer">&#169; 2026 SkillShare &middot; My Learning</footer>
+<div class="two-col">
+<section class="panel"><div class="panel-head"><div><h2>Recent Activity</h2><p class="muted">Real learning events only.</p></div></div><div id="activityList" class="stack"></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Skills Developing</h2><p class="muted">From your learning records.</p></div></div><div id="skillList" class="stack"></div></section>
+</div>
+<section class="panel">
+<div class="panel-head wrap"><div><h2>Learning History</h2><p class="muted">Every record belongs to you.</p></div>
+<div class="filters">
+<select id="fStatus"><option value="all">All statuses</option><option value="not_started">Not Started</option><option value="in_progress">In Progress</option><option value="completed">Completed</option></select>
+<select id="fSkill"><option value="">All skills</option></select>
+<select id="fType"><option value="">All types</option></select>
+<select id="fSort"><option value="recent">Recently accessed</option><option value="progress">Progress (high first)</option><option value="newest">Newest</option><option value="time">Learning time</option><option value="alpha">Alphabetical</option></select>
+</div></div>
+<div id="historyList" class="stack"></div>
+</section>
+<section class="panel">
+<div class="panel-head"><div><h2>Browse Learning Resources</h2><p class="muted">Starting one creates your record — no duplicates.</p></div></div>
+<div id="resourceList" class="card-grid"></div>
+</section>
+</div>
 </main>
-<div id="toast"></div>
+</div>
+<div id="progressModal" class="modal" hidden>
+<div class="modal-card"><h3>Update progress</h3><p class="muted" id="pmSub"></p>
+<input id="pmRange" type="range" min="0" max="100" step="1" value="0">
+<div class="row between"><strong id="pmVal">0%</strong><small class="muted">0 = Not started · 100 = Completed</small></div>
+<div class="row end gap"><button class="btn ghost" id="pmCancel" type="button">Cancel</button><button class="btn primary" id="pmSave" type="button">Save Progress</button></div>
+</div>
+</div>
+<div id="toast" role="status"></div>
+<script src="portal-shell.js"></script>
+<script src="portal.js"></script>
 <script src="my-learning.js"></script>
-<script src="profile-quick.js" defer></script>
-<script src="portal-unify.js"></script>
-<script>document.addEventListener("DOMContentLoaded",function(){if(window.SkillShareProfileDropdown){SkillShareProfileDropdown.init("#profileDropdownContainer");}});</script>
 </body>
 </html>
