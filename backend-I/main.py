@@ -2784,16 +2784,412 @@ def add_or_update_learning(
 
 
 # =========================================================
-# LEARNING RESOURCES API (Curated real learning content)
+# MY LEARNING CORE SYSTEM — ADDITIVE ENDPOINTS
 # =========================================================
 
-def serialize_learning_resource(resource: LearningResource) -> dict:
-    """Serialise one curated learning resource for Explore Skills.
+def _serialize_learning_record(record: LearningRecord) -> dict:
+    """Serialize a LearningRecord for API responses."""
+    res_url = None
+    res_desc = None
+    res_difficulty = None
+    res_duration = None
+    res_provider = None
+    res_platform = None
+    if getattr(record, "resource", None) is not None:
+        res_url = record.resource.url
+        res_desc = record.resource.description
+        res_difficulty = record.resource.difficulty
+        res_duration = record.resource.estimated_duration
+        res_provider = record.resource.provider
+        res_platform = record.resource.source_platform
+    return {
+        "id": record.id,
+        "user_id": record.user_id,
+        "skill_name": record.skill_name,
+        "resource_id": record.resource_id,
+        "resource_title": record.resource_title,
+        "resource_type": record.resource_type,
+        "resource_url": res_url,
+        "resource_description": res_desc,
+        "difficulty": res_difficulty,
+        "estimated_duration": res_duration,
+        "provider": res_provider,
+        "source_platform": res_platform,
+        "progress": record.progress_percentage,
+        "status": record.status,
+        "time_spent_seconds": record.time_spent_seconds or 0,
+        "last_accessed": record.last_accessed.isoformat() if record.last_accessed else None,
+        "started_at": record.created_at.isoformat() if record.created_at else None,
+        "completed_at": record.updated_at.isoformat() if record.status == "completed" and record.updated_at else None,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
+        "updated_at": record.updated_at.isoformat() if record.updated_at else None,
+    }
 
-    Both ``id`` and ``resource_id`` are returned (same value) so the
-    exact requested schema field ``resource_id`` exists on every
-    payload while old clients reading ``id`` keep working.
-    """
+
+class UpdateProgressSchema(BaseModel):
+    progress: int
+
+    @field_validator("progress")
+    @classmethod
+    def validate_progress(cls, v):
+        v = int(v or 0)
+        if v < 0 or v > 100:
+            raise ValueError("Progress must be between 0 and 100")
+        return v
+
+
+class AddTimeSchema(BaseModel):
+    seconds: int
+
+    @field_validator("seconds")
+    @classmethod
+    def validate_seconds(cls, v):
+        v = int(v or 0)
+        if v < 0 or v > 28800:
+            raise ValueError("Time increment must be between 0 and 28800 seconds (8 hours)")
+        return v
+
+
+@app.get("/api/learning/me")
+def get_my_learning_records(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Return all learning records for the authenticated user."""
+    records = (
+        db.query(LearningRecord)
+        .filter(LearningRecord.user_id == current_user.id)
+        .order_by(LearningRecord.updated_at.desc())
+        .all()
+    )
+    return {
+        "records": [_serialize_learning_record(r) for r in records],
+        "total": len(records),
+    }
+
+
+@app.get("/api/learning/active")
+def get_active_learning(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Return currently active (not completed) learning records."""
+    records = (
+        db.query(LearningRecord)
+        .filter(
+            LearningRecord.user_id == current_user.id,
+            LearningRecord.status.in_(["started", "in_progress"]),
+        )
+        .order_by(LearningRecord.updated_at.desc())
+        .all()
+    )
+    return {
+        "records": [_serialize_learning_record(r) for r in records],
+        "total": len(records),
+    }
+
+
+@app.get("/api/learning/completed")
+def get_completed_learning(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Return completed learning records."""
+    records = (
+        db.query(LearningRecord)
+        .filter(
+            LearningRecord.user_id == current_user.id,
+            LearningRecord.status == "completed",
+        )
+        .order_by(LearningRecord.updated_at.desc())
+        .all()
+    )
+    return {
+        "records": [_serialize_learning_record(r) for r in records],
+        "total": len(records),
+    }
+
+
+@app.get("/api/learning/stats")
+def get_learning_stats(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Return learning analytics for the authenticated user."""
+    records = (
+        db.query(LearningRecord)
+        .filter(LearningRecord.user_id == current_user.id)
+        .all()
+    )
+
+    total = len(records)
+    if total == 0:
+        return {
+            "total": 0, "active": 0, "completed": 0, "not_started": 0,
+            "average_progress": 0, "overall_progress": 0,
+            "total_time_seconds": 0, "total_time_formatted": "0h 0m",
+            "skills_developing": 0, "skills_list": [],
+            "weekly_time": [], "weekly_time_total_seconds": 0,
+            "current_streak": 0, "longest_streak": 0,
+            "completion_rate": 0, "recent_milestones": [],
+            "has_activity": False,
+        }
+
+    active = sum(1 for r in records if r.status in ("started", "in_progress"))
+    completed = sum(1 for r in records if r.status == "completed")
+    not_started = sum(1 for r in records if r.status == "started")
+    avg_progress = round(sum(r.progress_percentage for r in records) / total)
+
+    total_time = sum(r.time_spent_seconds or 0 for r in records)
+    time_h = total_time // 3600
+    time_m = (total_time % 3600) // 60
+    time_formatted = f"{time_h}h {time_m}m" if time_h > 0 else f"{time_m}m"
+
+    skills_set = set()
+    for r in records:
+        name = (r.skill_name or "").strip()
+        if name:
+            skills_set.add(name)
+
+    now = datetime.utcnow()
+    weekly_time = []
+    weekly_total = 0
+    for i in range(6, -1, -1):
+        day_start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        day_label = day_start.strftime("%a")
+        day_seconds = 0
+        for r in records:
+            if r.last_accessed and r.last_accessed >= day_start and r.last_accessed < day_end:
+                day_seconds += min(r.time_spent_seconds or 0, 7200)
+        weekly_time.append({"day": day_label, "seconds": day_seconds, "minutes": round(day_seconds / 60)})
+        weekly_total += day_seconds
+
+    active_dates = set()
+    for r in records:
+        ref = r.last_accessed or r.updated_at
+        if ref:
+            active_dates.add(ref.strftime("%Y-%m-%d"))
+
+    current_streak = 0
+    check_date = datetime.utcnow().date()
+    if check_date.strftime("%Y-%m-%d") not in active_dates:
+        check_date -= timedelta(days=1)
+    while check_date.strftime("%Y-%m-%d") in active_dates:
+        current_streak += 1
+        check_date -= timedelta(days=1)
+
+    longest_streak = 0
+    if active_dates:
+        sorted_dates = sorted(active_dates)
+        streak = 1
+        for idx in range(1, len(sorted_dates)):
+            prev = datetime.strptime(sorted_dates[idx - 1], "%Y-%m-%d").date()
+            curr = datetime.strptime(sorted_dates[idx], "%Y-%m-%d").date()
+            if (curr - prev).days == 1:
+                streak += 1
+            else:
+                longest_streak = max(longest_streak, streak)
+                streak = 1
+        longest_streak = max(longest_streak, streak)
+
+    completion_rate = round((completed / total) * 100) if total > 0 else 0
+
+    recent_milestones = []
+    completed_sorted = sorted([r for r in records if r.status == "completed"], key=lambda x: x.updated_at or datetime.min, reverse=True)
+    for r in completed_sorted[:5]:
+        recent_milestones.append({
+            "skill_name": r.skill_name,
+            "resource_title": r.resource_title,
+            "completed_at": r.updated_at.isoformat() if r.updated_at else None,
+        })
+
+    return {
+        "total": total, "active": active, "completed": completed,
+        "not_started": not_started, "average_progress": avg_progress,
+        "overall_progress": avg_progress,
+        "total_time_seconds": total_time,
+        "total_time_formatted": time_formatted,
+        "skills_developing": len(skills_set),
+        "skills_list": sorted(skills_set),
+        "weekly_time": weekly_time,
+        "weekly_time_total_seconds": weekly_total,
+        "current_streak": current_streak,
+        "longest_streak": longest_streak,
+        "completion_rate": completion_rate,
+        "recent_milestones": recent_milestones,
+        "has_activity": True,
+    }
+
+
+@app.patch("/api/learning/{record_id}/progress")
+def update_learning_progress(
+    record_id: int,
+    data: UpdateProgressSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Update progress on a specific learning record. Syncs evidence + career events."""
+    import stage6_service as stage6
+    from careerverse_service import record_career_event
+
+    record = db.get(LearningRecord, record_id)
+    if not record or record.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Learning record not found")
+
+    old_progress = record.progress_percentage
+    old_status = record.status
+    new_progress = max(0, min(100, data.progress))
+    record.progress_percentage = new_progress
+
+    if new_progress >= 100:
+        record.status = "completed"
+    elif new_progress > 0:
+        record.status = "in_progress"
+    else:
+        record.status = "started"
+
+    record.last_accessed = func.now()
+    record.updated_at = func.now()
+
+    was_completed = old_status == "completed"
+    is_now_completed = record.status == "completed"
+
+    # Sync skill evidence
+    stage6.sync_learning_evidence(db, record)
+
+    # Record career events (deduplicated via record_career_event)
+    if is_now_completed and not was_completed:
+        record_career_event(
+            db,
+            user_id=current_user.id,
+            event_type="learning_completed",
+            title=f"Completed: {record.resource_title or record.skill_name}",
+            description=f"Finished learning resource with skill {record.skill_name}",
+            source_type="learning",
+            source_id=record.id,
+        )
+    elif new_progress > old_progress and new_progress < 100:
+        milestone_thresholds = [25, 50, 75]
+        for threshold in milestone_thresholds:
+            if old_progress < threshold <= new_progress:
+                record_career_event(
+                    db,
+                    user_id=current_user.id,
+                    event_type="learning_progress",
+                    title=f"{record.skill_name} — {threshold}% reached",
+                    description=f"Reached {threshold}% progress in {record.resource_title or record.skill_name}",
+                    source_type="learning",
+                    source_id=record.id,
+                    extra={"threshold": threshold, "progress": new_progress},
+                )
+                break
+
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "record": _serialize_learning_record(record),
+        "message": "Progress updated",
+        "was_completed": is_now_completed and not was_completed,
+    }
+
+
+@app.patch("/api/learning/{record_id}/time")
+def add_learning_time(
+    record_id: int,
+    data: AddTimeSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Add time spent on a learning record."""
+    record = db.get(LearningRecord, record_id)
+    if not record or record.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Learning record not found")
+
+    increment = max(0, min(28800, int(data.seconds or 0)))
+    record.time_spent_seconds = (record.time_spent_seconds or 0) + increment
+    record.last_accessed = func.now()
+    record.updated_at = func.now()
+
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "record": _serialize_learning_record(record),
+        "added_seconds": increment,
+        "message": "Time recorded",
+    }
+
+
+@app.post("/api/learning/start/{resource_id}")
+def start_learning_resource(
+    resource_id: int,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Start learning a curated resource. Reuses existing upsert logic."""
+    resource = db.get(LearningResource, resource_id)
+    if not resource:
+        raise HTTPException(status_code=404, detail="Learning resource not found")
+
+    existing = (
+        db.query(LearningRecord)
+        .filter(
+            LearningRecord.user_id == current_user.id,
+            LearningRecord.resource_id == resource.id,
+        )
+        .first()
+    )
+
+    if existing:
+        existing.last_accessed = func.now()
+        existing.updated_at = func.now()
+        if existing.status == "completed":
+            existing.status = "in_progress"
+            existing.progress_percentage = max(existing.progress_percentage, 1)
+        db.commit()
+        return {
+            "record": _serialize_learning_record(existing),
+            "message": "Resumed learning",
+            "is_new": False,
+        }
+
+    record = LearningRecord(
+        user_id=current_user.id,
+        skill_name=resource.skill,
+        resource_id=resource.id,
+        resource_title=resource.title,
+        resource_type=resource.resource_type,
+        progress_percentage=0,
+        status="started",
+        last_accessed=func.now(),
+        time_spent_seconds=0,
+    )
+    db.add(record)
+
+    db.add(
+        Activity(
+            user_id=current_user.id,
+            activity_type="learning_started",
+            title=f"Started learning {resource.skill}",
+            description=f"Enrolled in {resource.title}",
+            icon="◇",
+        )
+    )
+
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "record": _serialize_learning_record(record),
+        "message": "Learning started",
+        "is_new": True,
+    }
+
+
+def serialize_learning_resource(resource: LearningResource) -> dict:
+    """Serialise one curated learning resource for Explore Skills."""
     return {
         "id": resource.id,
         "resource_id": resource.id,
@@ -3253,3 +3649,13 @@ try:
     register_stage9(app, get_db, get_current_user_model)
 except Exception as _stage9_err:  # never break boot on additive stage
     print(f"[stage9] WARNING: career coach routes not registered: {_stage9_err}")
+
+# ================================================================
+# STAGE 10 — CareerVerse aggregation endpoints (/api/careerverse/*).
+# Additive only. No existing route touched. Auth via existing JWT.
+# ================================================================
+try:
+    from careerverse_api import register_careerverse
+    register_careerverse(app, get_db, get_current_user_model)
+except Exception as _cv_err:  # never break boot on additive stage
+    print(f"[careerverse] WARNING: CareerVerse routes not registered: {_cv_err}")

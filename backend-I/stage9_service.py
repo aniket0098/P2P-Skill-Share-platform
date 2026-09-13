@@ -20,6 +20,7 @@ from models import (
     InnovationIdea,
     InnovationIdeaSkill,
     InnovationMilestone,
+    InnovationTeam,
     InnovationTeamMember,
     LearningRecord,
     LearningResource,
@@ -206,9 +207,13 @@ def _sandbox_dict(db, user_id):
 def _innovation_dict(db, user_id):
     owned_ids = [i.id for i in db.query(InnovationIdea).filter(
         InnovationIdea.owner_id == user_id).all()]
-    joined_ids = [r[0] for r in db.query(InnovationTeamMember.idea_id).filter(
+    joined_ids = [row[0] for row in db.query(InnovationTeam.idea_id).join(
+        InnovationTeamMember, InnovationTeam.id == InnovationTeamMember.team_id
+    ).filter(
         InnovationTeamMember.user_id == user_id,
-        InnovationTeamMember.status == "active").all() if r[0]]
+        InnovationTeamMember.status == "active",
+        InnovationTeam.idea_id.isnot(None),
+    ).distinct().all() if row[0]]
     idea_ids = list(dict.fromkeys(owned_ids + joined_ids))
     items = []
     for iid in idea_ids[:6]:
@@ -725,6 +730,38 @@ class RuleBasedCareerProvider(CareerAIProvider):
         return "\n".join(lines)
 
 
+FRONTEND_MODE_ALIASES = {
+    # Frontend ai-career-coach.js mode ids -> backend CAREER_COACH_MODES.
+    "general": "general",
+    "career": "general",
+    "career_planning": "career_planning",
+    "skill": "skill_planning",
+    "skill_planning": "skill_planning",
+    "learning": "learning",
+    "project": "projects",
+    "projects": "projects",
+    "sandbox": "sandbox",
+    "innovation": "innovation",
+    "opportunity": "opportunity",
+    "interview": "interview_prep",
+    "interview_prep": "interview_prep",
+}
+
+
+def normalize_mode(mode):
+    """Map any frontend/backend coach-mode id to a valid CAREER_COACH_MODES value.
+
+    Unknown / empty values fall back to "general" (never raises, never 500s).
+    """
+    if not mode:
+        return "general"
+    key = str(mode).strip().lower()
+    mapped = FRONTEND_MODE_ALIASES.get(key, key)
+    if mapped in CAREER_COACH_MODES:
+        return mapped
+    return "general"
+
+
 def provider_name():
     prov = config.AI_PROVIDER
     if prov == "auto":
@@ -735,9 +772,62 @@ def provider_name():
 
 
 def any_ai_available():
+    """True only when a real (non-deterministic) AI backend can be attempted.
+
+    NOTE: the deterministic rule-based coach is *always* available as a
+    fallback, but it is NOT "AI" — conflating the two made the UI report
+    misleading online/offline states. Use fallback_available() / status_payload()
+    to distinguish "AI Online" from "Fallback Mode".
+    """
     if config.AI_API_KEY:
         return True
-    return config.AI_PROVIDER in ("local", "rule")
+    return config.AI_PROVIDER == "local"
+
+
+def fallback_available():
+    """The deterministic rule-based coach never needs network/keys."""
+    return True
+
+
+def local_server_reachable(timeout=1.0):
+    """Best-effort TCP check for the LM Studio / Ollama base URL.
+
+    Opens a socket only — never sends prompts, so status checks stay free.
+    Never raises; unreachable -> False.
+    """
+    try:
+        from urllib.parse import urlparse
+        import socket
+        parts = urlparse(config.AI_LOCAL_BASE_URL or "")
+        host = parts.hostname or "127.0.0.1"
+        port = parts.port or (443 if (parts.scheme or "") == "https" else 80)
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except Exception:
+        return False
+    return False
+
+
+def status_payload():
+    """Cheap health payload for GET /api/career-coach/status.
+
+    Never calls the AI provider (no cost). The optional local TCP probe is
+    socket-only and bounded to ~1s; any failure degrades to False.
+    """
+    prov = provider_name()
+    ai = any_ai_available()
+    local_ok = None
+    if prov == "local":
+        local_ok = local_server_reachable()
+    return {
+        "backend": "online",
+        "provider": prov,
+        "ai_available": ai and (local_ok if local_ok is not None else True),
+        "fallback_available": fallback_available(),
+        "local_reachable": local_ok,
+        "ai_configured": bool(config.AI_API_KEY),
+        # Never expose the secret itself — presence only.
+    }
 
 
 def get_provider():
@@ -771,8 +861,35 @@ def coach_chat(user_message, context, history=None):
     ctx_summary = json.dumps(compact_ctx, ensure_ascii=False, default=str)
     full_system = system_prompt + "\n\n---\nCAREER CONTEXT (use only this data):\n" + ctx_summary
     result = provider.chat(full_system, user_message, compact_ctx, history)
-    result["provider_name"] = provider_name()
+    configured = provider_name()
+    actual = (result.get("provider") or configured or "rule")
+    # Stage 9 fallback architecture: if the configured AI provider fails
+    # (missing key, timeout, connection error, empty reply), degrade to the
+    # deterministic rule-based coach so chat NEVER hard-fails. The response
+    # is honest fallback output built from real platform data — never fake AI.
+    fallback_used = False
+    provider_error = result.get("error")
+    if not result.get("content") and configured in ("external", "local") and actual != "rule":
+        try:
+            fallback = RuleBasedCareerProvider().chat(
+                full_system, user_message, compact_ctx, history)
+            if fallback.get("content"):
+                result = fallback
+                actual = "rule"
+                fallback_used = True
+                # Preserve the original provider error for backend logs /
+                # status reporting, but chat still returns a useful answer.
+        except Exception:
+            pass
+    result["provider"] = actual
+    result["provider_name"] = configured
+    # AI counts as "used" only when a non-rule provider returned content.
+    result["ai_used"] = bool(actual in ("external", "local") and result.get("content") and not fallback_used)
     result["ai_available"] = any_ai_available()
+    result["fallback_used"] = bool(fallback_used or actual == "rule")
+    result["fallback_available"] = fallback_available()
+    if fallback_used and provider_error and not result.get("error"):
+        result["error"] = provider_error
     return result
 
 
@@ -929,8 +1046,7 @@ def get_conversation(db, user_id, conv_id):
 
 
 def create_conversation(db, user_id, mode="general", title=None):
-    if mode not in CAREER_COACH_MODES:
-        mode = "general"
+    mode = normalize_mode(mode)
     conv = CareerCoachConversation(user_id=user_id, mode=mode,
                                    title=title or "New conversation")
     db.add(conv)

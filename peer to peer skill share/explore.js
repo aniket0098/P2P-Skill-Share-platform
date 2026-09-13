@@ -1046,17 +1046,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 const resourceType = btn.dataset.type || "course";
                 if (!skill) return;
 
-                btn.disabled = true;
+                                btn.disabled = true;
                 btn.textContent = "Adding…";
                 try {
-                    LR.myLearning = await API.addOrUpdateLearning({
-                        skill_name: skill,
-                        resource_id: Number.isFinite(resourceId) ? resourceId : undefined,
-                        resource_title: title,
-                        resource_type: resourceType,
-                        progress_percentage: 0,
-                        status: "started",
-                    });
+                    if (Number.isFinite(resourceId)) {
+                        // Use dedicated start endpoint when resource_id available
+                        LR.myLearning = await API.startLearning(resourceId);
+                    } else {
+                        // Fallback: add by skill name (no resource_id)
+                        LR.myLearning = await API.addOrUpdateLearning({
+                            skill_name: skill,
+                            resource_title: title,
+                            resource_type: resourceType,
+                            progress_percentage: 0,
+                            status: "started",
+                        });
+                    }
                     lrToast('"' + title + '" added to My Learning (0%).');
                     lrRenderResources(); // refresh the real progress line
                 } catch (err) {

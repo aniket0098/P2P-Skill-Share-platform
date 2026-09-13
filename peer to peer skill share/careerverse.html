@@ -2,36 +2,11 @@
 <title>CareerVerse — SkillShare</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
-<link rel="stylesheet" href="portal-shell.css"></head>
+<link rel="stylesheet" href="portal-shell.css"><link rel="stylesheet" href="careerverse.css"></head>
 <body data-page="careerverse.html" data-role="student">
 <div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
 <main class="page-content">
-<!-- TODO: Replace with backend API data -->
-<header class="portal-head"><span class="eyebrow">Career · journey</span>
-<h1>Career<span>Verse</span></h1><p>Current position, target, progress and what-if scenarios. Placeholder timeline.</p></header>
-<section class="grid-3">
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📍</span></div><b>Explorer</b><span>Current position</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b>Frontend Dev</b><span>Target career</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">📈</span></div><b>46%</b><span>Journey progress</span></div>
-</section>
-<div class="grid-2 mt">
-<section class="panel"><div class="section-head"><h2>Timeline</h2></div>
-<div class="timeline">
-<div class="tl-item done"><h3>Started Web basics</h3><p>HTML/CSS · completed</p></div>
-<div class="tl-item done"><h3>First React project</h3><p>Shipped + reviewed · achievement unlocked</p></div>
-<div class="tl-item"><h3>Sandbox: Checkout bug hunt</h3><p>In progress · 45%</p></div>
-<div class="tl-item"><h3>Internship → Offer</h3><p>Target: next 6 months</p></div>
-</div></section>
-<section class="panel"><div class="section-head"><h2>Achievements</h2></div>
-<div class="row-list">
-<div class="row-item"><div class="grow"><h3>🏅 Consistent learner — 7-day streak</h3></div></div>
-<div class="row-item"><div class="grow"><h3>🚀 First deployment</h3></div></div>
-</div>
-<div class="section-head mt"><h2>What-if scenarios</h2></div>
-<div class="row-list">
-<div class="row-item"><div class="grow"><h3>+ TypeScript → 79% readiness</h3><p>Est. 2 weeks at 1 hr/day</p></div><a class="btn small ghost" href="skill-mapping.html">Compare</a></div>
-<div class="row-item"><div class="grow"><h3>+ Backend basics → Full-stack path</h3><p>Opens 24 more roles</p></div><a class="btn small ghost" href="ai-career-coach.html">Ask coach</a></div>
-</div></section>
-</div>
+<!-- All content rendered by careerverse.js from real /api/careerverse/* data -->
+<div class="cv-empty">Loading your career journey…</div>
 </main></div><div id="toast-root"></div>
-<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>
+<script src="config.js"></script><script src="api-client.js"></script><script src="auth.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script><script src="careerverse.js"></script></body></html>

@@ -1,0 +1,107 @@
+/* =========================================================
+   CAREERVERSE (Stage 10) — page-specific styles.
+   Deep navy/slate foundation consistent with the platform.
+   ========================================================= */
+
+.cv-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: .95rem;
+}
+
+.cv-empty::before {
+  content: "🌌";
+  display: block;
+  font-size: 2rem;
+  margin-bottom: .75rem;
+}
+
+/* Readiness summary */
+.cv-readiness {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .5rem;
+  font-size: 1.4rem;
+}
+
+.cv-readiness b { color: #38bdf8; }
+
+/* Roadmap */
+.cv-roadmap { display: flex; flex-direction: column; gap: .5rem; }
+
+.cv-stage {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem .75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, .15);
+  background: rgba(15, 23, 42, .35);
+}
+
+.cv-stage .grow { min-width: 0; }
+.cv-stage b { font-size: .85rem; }
+.cv-stage p { margin: .1rem 0 0; font-size: .75rem; }
+
+.cv-stage__icon {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: .75rem;
+  font-weight: 700;
+  background: rgba(148, 163, 184, .15);
+  color: #94a3b8;
+}
+
+.cv-stage--completed .cv-stage__icon { background: rgba(34, 197, 94, .18); color: #4ade80; }
+.cv-stage--current { border-color: rgba(56, 189, 248, .4); }
+.cv-stage--current .cv-stage__icon { background: rgba(56, 189, 248, .18); color: #38bdf8; }
+
+/* Next mission */
+.cv-mission {
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, .3);
+  background: linear-gradient(135deg, rgba(56, 189, 248, .1), rgba(45, 212, 191, .06));
+}
+
+.cv-mission h3 {
+  margin: 0 0 .4rem;
+  font-size: .7rem;
+  letter-spacing: .12em;
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+.cv-mission .title { font-size: 1rem; font-weight: 700; }
+.cv-mission .reason { margin-top: .25rem; font-size: .8rem; color: #cbd5e1; }
+
+/* Simulation result */
+.cv-sim-result {
+  padding: .75rem .9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, .2);
+  background: rgba(15, 23, 42, .4);
+  font-size: .85rem;
+}
+
+.cv-sim-result p { margin: .15rem 0; }
+.cv-sim-result b { color: #38bdf8; }
+
+#cv-sim-controls select {
+  padding: .35rem .5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, .3);
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: .8rem;
+}
+
+@media (max-width: 720px) {
+  .cv-stage { flex-wrap: wrap; }
+}
