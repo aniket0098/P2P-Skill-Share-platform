@@ -1,0 +1,18 @@
+{
+  "login_status": 200,
+  "token_present": true,
+  "user": {
+    "id": 116,
+    "public_id": "SC-L2EX4P",
+    "name": "Test User",
+    "email": "testfix@example.com",
+    "role": "student",
+    "account_status": "active"
+  },
+  "status_status": 200,
+  "status_body": "{\"backend\":\"online\",\"provider\":\"rule\",\"ai_available\":false,\"fallback_available\":true,\"local_reachable\":null,\"ai_configured\":false}",
+  "context_status": 500,
+  "context_body": "{\"detail\":\"Failed to build career context: type object 'InnovationTeamMember' has no attribute 'idea_id'\"}",
+  "chat_status": 500,
+  "chat_body": "{\"detail\":\"Chat failed: type object 'InnovationTeamMember' has no attribute 'idea_id'\"}"
+}

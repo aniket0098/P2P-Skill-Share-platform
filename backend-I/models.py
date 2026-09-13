@@ -1038,3 +1038,235 @@ class CareerCoachMessage(Base):
     def __repr__(self):
         return f"<CareerCoachMessage id={self.id} conv={self.conversation_id} role={self.role!r}>"
 
+
+# ================================================================
+# CAREER JOURNEY — progress tracking through the career pipeline
+# ================================================================
+# Additive ONLY. These tables define the ordered stages of the
+# student -> career pipeline (Profile ... Career) and record each
+# user's progress through them. Seeded idempotently at startup.
+
+# Stage slugs — single source of truth for the pipeline order.
+CAREER_JOURNEY_STAGES = (
+    "profile",                      # 1  Student profile completeness
+    "skills_evidence",              # 2  Skills mapped + evidence attached
+    "skill_gaps",                   # 3  Gap analysis vs target role
+    "target_role",                  # 4  Target role selected/resolved
+    "learning",                     # 5  Learning records / resources
+    "sandbox",                      # 6  Industry sandbox challenges
+    "innovation",                   # 7  Innovation ideas / pitches
+    "projects",                     # 8  Project gallery
+    "industry_readiness",           # 9  Readiness score computed
+    "career_simulation",            # 10 AI career-coach conversations
+    "internship_placement_readiness",  # 11 Internship & placement prep
+    "career",                       # 12 Final career outcome
+)
+
+JOURNEY_STATUS_CHOICES = (
+    "locked",        # prerequisites not yet met
+    "available",     # ready for the user to begin
+    "in_progress",   # user is actively working this stage
+    "completed",     # stage finished
+)
+
+
+class CareerJourneyStage(Base):
+    """Definition of a single stage in the career journey.
+
+    One row per stage slug. ``order`` drives left-to-right rendering
+    of the journey timeline. Seeded idempotently by seed_career_journey.py.
+    """
+
+    __tablename__ = "career_journey_stages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String, unique=True, nullable=False, index=True)      # e.g. "skills_evidence"
+    name = Column(String, nullable=False)                               # human title
+    description = Column(Text, nullable=True)
+    order = Column(Integer, nullable=False, unique=True)                # 1-based ordering
+    icon = Column(String, nullable=True)                                # emoji or icon key
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+
+class UserJourneyProgress(Base):
+    """Per-user, per-stage progress record.
+
+    Unique on (user_id, stage_id) so a user has exactly one progress
+    row per stage. ``status`` moves locked -> available -> in_progress
+    -> completed. ``metadata_json`` is a free-form JSON blob for
+    stage-specific references (e.g. last evidence id, readiness score).
+    """
+
+    __tablename__ = "user_journey_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    stage_id = Column(
+        Integer, ForeignKey("career_journey_stages.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    status = Column(String, nullable=False, default="locked", index=True)
+    progress_pct = Column(Float, nullable=False, default=0.0)          # 0-100
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    metadata_json = Column(Text, nullable=True)                        # JSON string
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "stage_id", name="uq_user_journey_stage"),
+    )
+
+    user = relationship("User", lazy="joined")
+    stage = relationship("CareerJourneyStage", lazy="joined")
+
+    def __repr__(self):
+        return (
+            f"<UserJourneyProgress user={self.user_id} "
+            f"stage_id={self.stage_id} status={self.status!r}>"
+        )
+
+
+class CareerOutcome(Base):
+    """Final placement / internship / higher-studies outcome for a user.
+
+    Tied 1:1 to the User. Drives the final **Career** stage and the
+    faculty placement-analytics view.
+    """
+
+    __tablename__ = "career_outcomes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True, nullable=False, index=True,
+    )
+    status = Column(
+        String, nullable=False, default="seeking", index=True,
+        # seeking | placed | internship | higher_studies | employed | other
+    )
+    company_name = Column(String, nullable=True)
+    role = Column(String, nullable=True)
+    package_lpa = Column(Float, nullable=True)                         # CTC in LPA
+    placement_date = Column(DateTime, nullable=True)
+    internship_name = Column(String, nullable=True)
+    internship_start = Column(DateTime, nullable=True)
+    internship_end = Column(DateTime, nullable=True)
+    higher_studies_institute = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    user = relationship("User", lazy="joined")
+
+    def __repr__(self):
+        return f"<CareerOutcome user={self.user_id} status={self.status!r}>"
+
+
+# ================================================================
+# STAGE 10 — CAREERVERSE: career events + career goals
+# ================================================================
+# Additive ONLY. CareerVerse is an aggregation layer over existing
+# platform data. These tables record career-level progress events
+# (broader than SkillHistory, which is per-skill) and lightweight
+# career goals that formalize the student's target trajectory.
+
+# Career event types — recorded ONLY from real user actions.
+CAREER_EVENT_TYPES = (
+    "profile_completed",
+    "skill_analyzed",            # skill mapping / evidence computed
+    "skill_improved",            # skill level progressed
+    "learning_started",
+    "learning_completed",
+    "project_created",
+    "project_completed",
+    "sandbox_started",
+    "sandbox_submitted",
+    "sandbox_evaluated",
+    "innovation_created",
+    "innovation_milestone",
+    "innovation_completed",
+    "career_goal_set",
+    "readiness_updated",
+    "achievement",               # notable milestone (streak, first X)
+    "mentor_session",
+    "interview_prep_activity",
+)
+
+CAREER_EVENT_SOURCES = (
+    "profile", "skill", "learning", "project", "sandbox",
+    "innovation", "career_goal", "readiness", "mentor",
+    "interview_prep", "system",
+)
+
+CAREER_GOAL_STATUS = (
+    "active", "achieved", "paused", "archived",
+)
+
+
+class CareerEvent(Base):
+    """Persistent career-level event log for CareerVerse.
+
+    Every row is traceable to a real source (source_type + source_id
+    point at the originating row in its home table). Events are
+    generated by recording hooks at real user actions — never fabricated.
+    """
+
+    __tablename__ = "career_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    event_type = Column(String, nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    source_type = Column(String, nullable=False, default="system", index=True)
+    source_id = Column(Integer, nullable=True)      # id within source_type table
+    metadata_json = Column(Text, nullable=True)     # JSON blob for extra context
+    created_at = Column(DateTime, default=func.now(), nullable=False, index=True)
+
+    __table_args__ = (
+        # Prevent duplicate events for the same source action.
+        UniqueConstraint(
+            "user_id", "event_type", "source_type", "source_id",
+            name="uq_career_event_source",
+        ),
+    )
+
+
+class CareerGoal(Base):
+    """Lightweight career goal formalizing the student's target.
+
+    target_role / target_domain are free-text (students may aim at roles
+    not yet in the JobRole catalog). status tracks progress. Created
+    idempotently so re-saving an active goal updates rather than duplicates.
+    """
+
+    __tablename__ = "career_goals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    target_role = Column(String, nullable=False)
+    target_domain = Column(String, nullable=True)
+    target_level = Column(String, nullable=True)        # e.g. Entry, Mid, Senior
+    target_date = Column(DateTime, nullable=True)
+    status = Column(String, nullable=False, default="active", index=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    def __repr__(self):
+        return (
+            f"<CareerGoal user={self.user_id} "
+            f"role={self.target_role!r} status={self.status!r}>"
+        )
+

@@ -334,6 +334,24 @@ window.SkillShareAPI = (() => {
         },
         getLearningResource: (id) => request(`/api/learning-resources/${id}`),
 
+        // --- My Learning Core System ---
+        getMyLearningRecords: () => request("/api/learning/me"),
+        getActiveLearning: () => request("/api/learning/active"),
+        getCompletedLearning: () => request("/api/learning/completed"),
+        getLearningStats: () => request("/api/learning/stats"),
+        updateLearningProgress: (recordId, progress) =>
+            request(`/api/learning/${recordId}/progress`, {
+                method: "PATCH",
+                body: JSON.stringify({ progress }),
+            }),
+        addLearningTime: (recordId, seconds) =>
+            request(`/api/learning/${recordId}/time`, {
+                method: "PATCH",
+                body: JSON.stringify({ seconds }),
+            }),
+        startLearning: (resourceId) =>
+            request(`/api/learning/start/${resourceId}`, { method: "POST" }),
+
         // --- Industry Sandbox (Stage 7) ---
         getSandboxChallenges: (params = {}) => {
             const q = new URLSearchParams();
@@ -388,6 +406,24 @@ window.SkillShareAPI = (() => {
             }),
         deleteCoachConversation: (id) =>
             request(`/api/career-coach/conversations/${id}`, { method: "DELETE" }),
+
+        // --- CareerVerse (Stage 10) ---
+        getCareerOverview: () => request("/api/careerverse/overview"),
+        getCareerTimeline: (limit) =>
+            request(`/api/careerverse/timeline${limit ? "?limit=" + limit : ""}`),
+        getCareerRoadmap: () => request("/api/careerverse/roadmap"),
+        getCareerNextMission: () => request("/api/careerverse/next-mission"),
+        getCareerGoals: () => request("/api/careerverse/goals"),
+        setCareerGoal: (data) =>
+            request("/api/careerverse/goals", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        simulate: (data) =>
+            request("/api/careerverse/simulate", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
     };
 })();
 

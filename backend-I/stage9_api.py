@@ -66,20 +66,51 @@ def register_stage9(app, get_db, me_dep):
             ctx = s9.build_career_context(db, user.id)
             history = None
             conv_id = payload.conversation_id
+            mode = s9.normalize_mode(payload.mode)
             if conv_id:
                 conv = s9.get_conversation(db, user.id, conv_id)
                 if not conv:
-                    raise HTTPException(status_code=404, detail="Conversation not found")
-                history = conv.get("messages", [])
+                    # Graceful recovery: stale/deleted thread id from the UI
+                    # starts a fresh thread instead of failing the chat turn.
+                    fresh = s9.create_conversation(
+                        db, user.id, mode,
+                        title=payload.message.strip()[:60])
+                    conv_id = fresh.get("id")
+                    history = []
+                else:
+                    history = conv.get("messages", [])
+            else:
+                # No thread yet — create one so the turn is persisted and the
+                # frontend can keep continuity via the returned id.
+                fresh = s9.create_conversation(
+                    db, user.id, mode,
+                    title=payload.message.strip()[:60])
+                conv_id = fresh.get("id")
+                history = []
             result = s9.coach_chat(payload.message.strip(), ctx, history)
-            if conv_id:
+            content = (result.get("content") or "").strip()
+            if not content:
+                # Deterministic coach must always answer; this is a bug guard.
+                content = (
+                    "I couldn't generate guidance just now, but your data is "
+                    "safe. Try asking about a skill gap, your readiness, or "
+                    "what to do this week."
+                )
+            try:
                 s9.add_message(db, conv_id, user.id, "user", payload.message.strip())
-                s9.add_message(db, conv_id, user.id, "assistant", result.get("content", ""))
+                s9.add_message(db, conv_id, user.id, "assistant", content)
+            except Exception:
+                pass  # persistence failure must not fail the chat turn
             return {
-                "content": result.get("content", ""),
+                "content": content,
+                "conversation_id": conv_id,
+                "mode": mode,
                 "provider": result.get("provider_name", "rule"),
+                "actual_provider": result.get("provider", "rule"),
                 "ai_used": result.get("ai_used", False),
                 "ai_available": result.get("ai_available", False),
+                "fallback_used": result.get("fallback_used", False),
+                "fallback_available": result.get("fallback_available", True),
                 "error": result.get("error"),
             }
         except HTTPException:
@@ -100,7 +131,7 @@ def register_stage9(app, get_db, me_dep):
 
     @app.post("/api/career-coach/conversations")
     def new_conversation(payload: ConversationIn, db: Session = Depends(get_db), user=Depends(me_dep)):
-        return s9.create_conversation(db, user.id, payload.mode or "general", payload.title)
+        return s9.create_conversation(db, user.id, s9.normalize_mode(payload.mode or "general"), payload.title)
 
     @app.delete("/api/career-coach/conversations/{conv_id}")
     def delete_conversation(conv_id: int, db: Session = Depends(get_db), user=Depends(me_dep)):
@@ -111,7 +142,8 @@ def register_stage9(app, get_db, me_dep):
 
     @app.get("/api/career-coach/status")
     def coach_status():
-        return {
-            "provider": s9.provider_name(),
-            "ai_available": s9.any_ai_available(),
-        }
+        # Cheap health check: never calls the AI provider (no per-check cost).
+        # Backend reachable + provider online        -> "AI Online"
+        # Backend reachable + provider offline       -> "Fallback Mode"
+        # (Backend unreachable is detected client-side as status 0.)
+        return s9.status_payload()

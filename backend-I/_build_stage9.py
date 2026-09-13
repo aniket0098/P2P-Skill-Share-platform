@@ -164,9 +164,13 @@ def _sandbox_dict(db: Session, user_id: int):
 def _innovation_dict(db: Session, user_id: int):
     owned_ids = [i.id for i in db.query(InnovationIdea).filter(
         InnovationIdea.owner_id == user_id).all()]
-    joined_ids = [r[0] for r in db.query(InnovationTeamMember.idea_id).filter(
+    joined_ids = [r[0] for r in db.query(InnovationTeam.idea_id).join(
+        InnovationTeamMember, InnovationTeam.id == InnovationTeamMember.team_id
+    ).filter(
         InnovationTeamMember.user_id == user_id,
-        InnovationTeamMember.status == "active").all() if r[0]]
+        InnovationTeamMember.status == "active",
+        InnovationTeam.idea_id.isnot(None),
+    ).distinct().all() if r[0]]
 
 # Block 2b-ii: industry, resources, sandbox targets, build_career_context, ai_context
 with open('stage9_service.py', 'a', encoding='utf-8') as f:

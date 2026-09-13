@@ -51,9 +51,13 @@ def _sandbox_dict(db, user_id):
 def _innovation_dict(db, user_id):
     owned_ids = [i.id for i in db.query(InnovationIdea).filter(
         InnovationIdea.owner_id == user_id).all()]
-    joined_ids = [r[0] for r in db.query(InnovationTeamMember.idea_id).filter(
+    joined_ids = [r[0] for r in db.query(InnovationTeam.idea_id).join(
+        InnovationTeamMember, InnovationTeam.id == InnovationTeamMember.team_id
+    ).filter(
         InnovationTeamMember.user_id == user_id,
-        InnovationTeamMember.status == "active").all() if r[0]]
+        InnovationTeamMember.status == "active",
+        InnovationTeam.idea_id.isnot(None),
+    ).distinct().all() if r[0]]
     idea_ids = list(dict.fromkeys(owned_ids + joined_ids))
     items = []
     for iid in idea_ids[:6]:

@@ -1,0 +1,9 @@
+LOGIN: 200
+TOKEN_LEN: 121
+STATUS:
+{"backend":"online","provider":"rule","ai_available":false,"fallback_available":true,"local_reachable":null,"ai_configured":false}
+CONTEXT:
+500 {"detail":"Failed to build career context: type object 'InnovationTeamMember' has no attribute 'idea_id'"}
+CHAT:
+STATUS: 500
+{"detail":"Chat failed: type object 'InnovationTeamMember' has no attribute 'idea_id'"}
