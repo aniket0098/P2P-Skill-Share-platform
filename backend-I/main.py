@@ -111,6 +111,16 @@ def _run_startup_migrations():
         "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS resource_id INTEGER",
         "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS last_accessed TIMESTAMP",
         "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS time_spent_seconds INTEGER DEFAULT 0",
+        "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS watched_seconds INTEGER DEFAULT 0",
+        "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS last_position_seconds INTEGER DEFAULT 0",
+        "ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS total_duration_seconds INTEGER",
+        "ALTER TABLE learning_resources ADD COLUMN IF NOT EXISTS duration_seconds INTEGER",
+        "ALTER TABLE learning_resources ADD COLUMN IF NOT EXISTS media_url VARCHAR",
+        "ALTER TABLE learning_resources ADD COLUMN IF NOT EXISTS course_key VARCHAR",
+        "ALTER TABLE learning_resources ADD COLUMN IF NOT EXISTS course_title VARCHAR",
+        "ALTER TABLE learning_resources ADD COLUMN IF NOT EXISTS lecture_order INTEGER DEFAULT 0",
+        "ALTER TABLE learning_resources ADD COLUMN IF NOT EXISTS is_lecture BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE learning_resources ADD COLUMN IF NOT EXISTS category VARCHAR",
         # Stage 6: Project model gained demo_url/skills/status/image_url.
         # create_all() covers fresh DBs; these ALTERs cover existing DBs.
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS demo_url VARCHAR",

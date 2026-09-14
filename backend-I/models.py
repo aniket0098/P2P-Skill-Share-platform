@@ -347,6 +347,41 @@ class LearningRecord(Base):
     # ORM relationship to the curated resource (LEFT JOIN friendly:
     # rows with resource_id NULL simply expose ``resource`` as None).
     resource = relationship("LearningResource", lazy="joined")
+    watched_seconds = Column(Integer, default=0, nullable=False)
+    last_position_seconds = Column(Integer, default=0, nullable=False)
+    total_duration_seconds = Column(Integer, nullable=True)
+
+
+class LearningBookmark(Base):
+    """Saved courses/lectures per user. Additive; unique per (user, resource)."""
+
+    __tablename__ = "learning_bookmarks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    resource_id = Column(Integer, ForeignKey("learning_resources.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    __table_args__ = (UniqueConstraint("user_id", "resource_id", name="uq_learning_bookmark"),)
+
+    resource = relationship("LearningResource", lazy="joined")
+
+
+class LearningWatchSegment(Base):
+    """Unique watched ranges per learning record for cheat-resistant progress.
+
+    Each row is a [start_sec, end_sec) interval of actually-watched video.
+    Unique watched time = merged union length. Additive only.
+    """
+
+    __tablename__ = "learning_watch_segments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    record_id = Column(Integer, ForeignKey("learning_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    start_sec = Column(Integer, nullable=False, default=0)
+    end_sec = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class Activity(Base):
@@ -405,6 +440,13 @@ class LearningResource(Base):
     thumbnail_url = Column(String, nullable=True)
     difficulty = Column(String, nullable=False)  # beginner, intermediate, advanced
     estimated_duration = Column(String, nullable=True)  # e.g., "10 hours", "6 weeks"
+    duration_seconds = Column(Integer, nullable=True)  # canonical watchable length; peer-hosted sample content only
+    media_url = Column(String, nullable=True)  # direct playable file (project-hosted sample MP4) when available
+    course_key = Column(String, nullable=True, index=True)  # groups lectures into a course, e.g. "python-fundamentals"
+    course_title = Column(String, nullable=True)  # display title of the parent course
+    lecture_order = Column(Integer, nullable=True, default=0)  # 1-based order inside a course
+    is_lecture = Column(Boolean, nullable=False, default=False)  # True when this row is a watchable lecture
+    category = Column(String, nullable=True, index=True)  # Technology | Communication | Career | Business
     source_platform = Column(String, nullable=True)  # YouTube, Coursera, edX, Udacity, Pluralsight, etc.
     published_date = Column(String, nullable=True)  # Year or date published
     created_at = Column(DateTime, default=func.now(), nullable=False)

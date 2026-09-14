@@ -5,7 +5,7 @@ window.PortalShellNavs = {
 // [sectionLabel, [[name, icon, url]]] — exact IA filenames, no renames.
 student: [
 [null, [["Dashboard", "&#127968;", "dashboard.html"]]],
-["Discover", [["Explore", "&#128269;", "explore.html"], ["Industry Insights", "&#129518;", "industry-skills.html"], ["Opportunities", "&#128188;", "opportunities.html"]]],
+["Discover", [["Explore Skills", "&#128269;", "explore-skills.html"], ["Industry Insights", "&#129518;", "industry-skills.html"], ["Opportunities", "&#128188;", "opportunities.html"]]],
 ["Learn", [["My Learning", "&#128218;", "my-learning.html"], ["Live Learning", "&#128308;", "live-learning.html"], ["Discussions", "&#129309;", "live-discussions.html"]]],
 ["Build", [["Industry Sandbox", "&#127981;", "industry-sandbox.html"], ["Innovation Lab", "&#128161;", "innovation-lab.html"], ["Projects", "&#128187;", "projects.html"]]],
 ["Career", [["Skill Mapping", "&#128506;", "skill-mapping.html"], ["AI Career Coach", "&#129302;", "ai-career-coach.html"], ["CareerVerse", "&#128640;", "careerverse.html"], ["Interview Prep", "&#127908;", "interview-prep.html"], ["DSA", "&#9000;", "dsa.html"], ["Aptitude", "&#129518;", "aptitude.html"]]],

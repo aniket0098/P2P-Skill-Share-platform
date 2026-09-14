@@ -1,3 +1,4 @@
+
 GET /api/learning-resources/skills: 200
   skills: ['AI', 'Cloud', 'Data Science', 'FastAPI', 'JavaScript', 'Machine Learning', 'Python']
 

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Details — SkillShare</title>
+<link rel="stylesheet" href="explore-skills.css">
+<link rel="stylesheet" href="components/profile-dropdown.css">
+<script src="config.js"></script>
+<script src="api-client.js"></script>
+<script src="auth.js"></script>
+<script src="components/profile-dropdown.js"></script>
+<script src="thumbnails.js"></script>
+</head>
+<body data-page="course-details.html" data-role="student">
+<div id="app-sidebar"></div>
+<div class="app-main">
+<div id="app-topbar"></div>
+<main class="page-content">
+<p class="muted"><a href="explore-skills.html" style="color:#93c5fd">← Back to Explore Skills</a></p>
+<div id="cdLoading" class="state-card"><p class="muted">Loading course...</p></div>
+<div id="cdError" class="state-card center" hidden><h2>Course not found.</h2><p class="muted" id="cdErrorMsg"></p><a class="btn primary" href="explore-skills.html">Explore Skills</a></div>
+<div id="cdApp" hidden>
+<section class="panel"><div id="cdHero" style="padding:16px 16px 0"></div><div style="padding:8px 20px 20px" id="cdHead"></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Curriculum</h2><p class="muted" id="cdSub"></p></div></div><div id="cdList" class="stack"></div></section>
+</div>
+</main>
+</div>
+<div id="toast" role="status"></div>
+<script src="portal-shell.js"></script>
+<script src="portal.js"></script>
+<script src="course-details.js"></script>
+</body>
+</html>
