@@ -228,6 +228,29 @@ window.SkillShareAPI = (() => {
         // Public, aggregated platform statistics (no auth required).
         getStats: () => request("/api/stats"),
 
+        // --- Explore Skills catalog (public discovery; personal fields when JWT present) ---
+        getLearningCatalog: () => request("/api/learning/catalog"),
+        getLearningCourse: (key) => request(`/api/learning/courses/${encodeURIComponent(key)}`),
+        getLearningResource: (id) => request(`/api/learning/resources/${id}`),
+        startLearning: (resourceId) =>
+            request(`/api/learning/start/${resourceId}`, { method: "POST" }),
+        saveWatchProgress: (recordId, data) =>
+            request(`/api/learning/${recordId}/watch`, {
+                method: "POST", body: JSON.stringify(data || {}),
+            }),
+        // Persist the REAL runtime duration read from the actual media player
+        // for resources that have no pre-seeded duration (YouTube lectures).
+        initLearningRecord: (recordId, durationSeconds) =>
+            request(`/api/learning/${recordId}/init`, {
+                method: "POST",
+                body: JSON.stringify({ duration_seconds: durationSeconds }),
+            }),
+        getLearningBookmarks: () => request("/api/learning/bookmarks"),
+        addLearningBookmark: (resourceId) =>
+            request(`/api/learning/bookmarks/${resourceId}`, { method: "POST" }),
+        removeLearningBookmark: (resourceId) =>
+            request(`/api/learning/bookmarks/${resourceId}`, { method: "DELETE" }),
+
         // Fetch the authenticated user's live PostgreSQL record.
         // The user is resolved server-side from the JWT "sub" claim.
         getMe: () => request("/users/me"),

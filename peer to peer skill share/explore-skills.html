@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explore Skills — SkillShare</title>
+<link rel="stylesheet" href="explore-skills.css">
+<link rel="stylesheet" href="components/profile-dropdown.css">
+<script src="config.js"></script>
+<script src="api-client.js"></script>
+<script src="auth.js"></script>
+<script src="components/profile-dropdown.js"></script>
+<script src="thumbnails.js"></script>
+</head>
+<body data-page="explore-skills.html" data-role="student">
+<div id="app-sidebar"></div>
+<div class="app-main">
+<div id="app-topbar"></div>
+<main class="page-content">
+<section class="xs-hero">
+<div class="xs-hero-copy">
+<p class="eyebrow">Discover &middot; Learn &middot; Evidence</p>
+<h1>Build Skills That Move Your Career Forward</h1>
+<p class="sub">Explore industry-relevant skills, structured courses and practical learning resources.</p>
+<div class="xs-hero-stats" id="xsStats">
+<div class="hstat"><strong id="hsSkills">—</strong><span>skills</span></div>
+<div class="hstat"><strong id="hsCourses">—</strong><span>courses</span></div>
+<div class="hstat"><strong id="hsLectures">—</strong><span>lectures</span></div>
+<div class="hstat"><strong id="hsResources">—</strong><span>resources</span></div>
+</div>
+<div class="xs-hero-cta">
+<a class="btn primary" href="my-learning.html">Open My Learning</a>
+<a class="btn ghost" href="skill-mapping.html">View Skill Map</a>
+</div>
+</div>
+<div class="xs-hero-side">
+<div class="xs-search-card">
+<label for="xsSearch">Search skills, courses, lectures</label>
+<div class="xs-search"><span>&#8981;</span><input id="xsSearch" type="text" placeholder="Try: English, Python, Resume..." autocomplete="off"></div>
+<div class="xs-filter-row">
+<select id="fCategory" aria-label="Category"><option value="">All categories</option><option>Technology</option><option>Communication</option><option>Career</option><option>Business</option></select>
+<select id="fDifficulty" aria-label="Difficulty"><option value="">All levels</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+<select id="fType" aria-label="Content type"><option value="">Courses + Lectures</option><option value="course">Courses</option><option value="lecture">Lectures</option></select>
+<select id="fProgress" aria-label="Progress"><option value="">Any progress</option><option value="not_started">Not started</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select>
+</div>
+<div class="xs-filter-row">
+<button class="chipbtn" type="button" id="btnSaved">&#9825; Saved only</button>
+<button class="chipbtn" type="button" id="btnClear">Clear filters</button>
+</div>
+<p class="muted small" id="xsResultCount"></p>
+</div>
+</div>
+</section>
+<div id="xsLoading" class="state-card"><div class="skel" style="height:18px;width:40%"></div><div class="skel" style="height:14px;width:70%;margin-top:10px"></div><div class="skel" style="height:14px;width:55%;margin-top:8px"></div><p class="muted">Loading real learning catalog...</p></div>
+<div id="xsError" class="state-card center" hidden><div class="state-icon">!</div><h2>Unable to load learning content.</h2><p class="muted" id="xsErrorMsg">Please try again.</p><button class="btn primary" id="xsRetry" type="button">Retry</button></div>
+<div id="xsApp" hidden>
+<section class="panel" id="secContinue" hidden>
+<div class="panel-head"><div><h2>Continue Learning</h2><p class="muted">Pick up where you left off — real progress.</p></div><a href="my-learning.html">My Learning &rarr;</a></div>
+<div id="continueList" class="card-grid"></div>
+</section>
+<section class="panel" id="secReco">
+<div class="panel-head"><div><h2>Recommended For You</h2><p class="muted" id="recoSub">Based on your career goal and skill gaps.</p></div><a href="skill-mapping.html">Skill Map &rarr;</a></div>
+<div id="recoList" class="stack"></div>
+</section>
+<section class="panel">
+<div class="panel-head wrap"><div><h2>Featured Skills</h2><p class="muted">From the real catalog — no duplicates.</p></div><div class="tabs" id="skillTabs"><button type="button" class="active" data-cat="">All</button><button type="button" data-cat="Technology">Technology</button><button type="button" data-cat="Communication">Communication</button><button type="button" data-cat="Career">Career</button><button type="button" data-cat="Business">Business</button></div></div>
+<div id="skillGrid" class="skill-grid"></div>
+</section>
+<section class="panel">
+<div class="panel-head"><div><h2>Popular Courses</h2><p class="muted">Course progress comes from real lecture progress.</p></div><button class="btn ghost sm" type="button" id="viewAllCourses">View all courses</button></div>
+<div id="courseGrid" class="card-grid"></div>
+</section>
+<section class="panel">
+<div class="panel-head"><div><h2>Popular Lectures</h2><p class="muted">Watchable lectures track unique watched time.</p></div><button class="btn ghost sm" type="button" id="viewAllLectures">View all lectures</button></div>
+<div id="lectureGrid" class="card-grid"></div>
+</section>
+<section class="panel" id="secLibrary">
+<div class="panel-head"><div><h2>Learning Library</h2><p class="muted">Every real resource in the catalog — video lectures, courses and reading.</p></div><button class="btn ghost sm" type="button" id="viewAllLibrary">View all resources</button></div>
+<div id="libraryGrid" class="card-grid"></div>
+</section>
+<section class="panel" id="secSaved">
+<div class="panel-head"><div><h2>Saved</h2><p class="muted">Your bookmarked courses and lectures.</p></div><a href="bookmarks.html">Bookmarks &rarr;</a></div>
+<div id="savedList" class="card-grid"></div>
+</section>
+</div>
+</main>
+</div>
+<div id="toast" role="status"></div>
+<script src="portal-shell.js"></script>
+<script src="portal.js"></script>
+<script src="explore-skills.js"></script>
+</body>
+</html>
