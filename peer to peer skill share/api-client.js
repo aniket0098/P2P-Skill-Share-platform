@@ -84,6 +84,41 @@ window.SkillShareAPI = (() => {
         return response.json();
     }
 
+    // Multipart request wrapper (file uploads) — does not force JSON headers.
+    async function requestForm(path, formData) {
+        const headers = {};
+        const token = getToken();
+        if (token) headers["Authorization"] = "Bearer " + token;
+        let response;
+        try {
+            response = await fetch(baseUrl + path, {
+                method: "POST",
+                headers,
+                body: formData,
+                credentials: "include",
+            });
+        } catch (error) {
+            const networkError = new Error("Server unavailable. Please check that the backend is running.");
+            networkError.status = 0;
+            throw networkError;
+        }
+        if (response.status === 401) {
+            clearSession();
+            window.dispatchEvent(new CustomEvent("skillshare:auth-expired", { detail: { status: 401 } }));
+        }
+        if (!response.ok) {
+            let detail = null;
+            let body = null;
+            try { body = await response.json(); } catch (error) { /* ignore */ }
+            if (body) detail = body.detail || body.message || null;
+            const error = new Error(detail || `Request failed (${response.status})`);
+            error.status = response.status;
+            error.detail = detail;
+            throw error;
+        }
+        return response.json();
+    }
+
     /* -------------------------------------------------
        PUBLIC API
     ------------------------------------------------- */
@@ -251,9 +286,9 @@ window.SkillShareAPI = (() => {
         removeLearningBookmark: (resourceId) =>
             request(`/api/learning/bookmarks/${resourceId}`, { method: "DELETE" }),
 
-        // Fetch the authenticated user's live PostgreSQL record.
-        // The user is resolved server-side from the JWT "sub" claim.
-        getMe: () => request("/users/me"),
+        // (Duplicate getMe removed: the canonical getMe above returns the
+        // live user object; a second definition here overwrote it and
+        // broke messages.js state.me.id comparisons.)
 
         // Update the AUTHENTICATED user's own profile. The user is
         // derived from the JWT server-side; no user_id is sent.
@@ -265,9 +300,17 @@ window.SkillShareAPI = (() => {
 
         // --- Users ---
         listUsers: () => request("/api/users"),
-        searchUsers: (query) =>
-            request("/api/users/search?q=" + encodeURIComponent(query || "")),
-        getUserProfile: (id) => request(`/api/users/${id}`),
+        searchUsers: (query, limit, options = {}) => {
+            const params = new URLSearchParams();
+            params.set("q", query || "");
+            // Keep type-ahead dropdown small/fast; backend caps at 50.
+            params.set("limit", String(limit || 8));
+            return request(`/api/users/search?${params.toString()}`, {
+                signal: options.signal,
+            });
+        },
+        getUserProfile: (id, options = {}) =>
+            request(`/api/users/${id}`, { signal: options.signal }),
 
         // --- Requests ---
         sendRequest: (receiverId, message, skill, rating) =>
@@ -283,6 +326,8 @@ window.SkillShareAPI = (() => {
             return request("/api/requests" + (qs ? `?${qs}` : ""));
         },
         getConnections: () => request("/api/requests/connections"),
+        removeConnection: (userId) =>
+            request(`/api/connections/${userId}`, { method: "DELETE" }),
         acceptRequest: (id) =>
             request(`/api/requests/${id}/accept`, { method: "PATCH" }),
         rejectRequest: (id) =>
@@ -464,6 +509,113 @@ window.SkillShareAPI = (() => {
                 method: "POST",
                 body: JSON.stringify(data || {}),
             }),
+
+        // =====================================================
+        // --- Communication Hub (Messages rebuild) ---
+        // Realtime + groups + reactions + attachments + calls.
+        // All endpoints are JWT-protected; membership enforced
+        // server-side (comm_api.py).
+        // =====================================================
+        commListConversations: () => request("/api/communication/conversations"),
+        commGetConversation: (id) => request(`/api/communication/conversations/${id}`),
+        commEnsureDirect: (userId) =>
+            request(`/api/communication/direct/${userId}`, { method: "POST" }),
+        commCreateGroup: (data) =>
+            request("/api/communication/groups", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        commPatchGroup: (conversationId, data) =>
+            request(`/api/communication/groups/${conversationId}`, {
+                method: "PATCH",
+                body: JSON.stringify(data || {}),
+            }),
+        commAddMembers: (conversationId, userIds) =>
+            request(`/api/communication/groups/${conversationId}/members`, {
+                method: "POST",
+                body: JSON.stringify({ user_ids: userIds || [] }),
+            }),
+        commRemoveMember: (conversationId, userId) =>
+            request(`/api/communication/groups/${conversationId}/members/${userId}`, { method: "DELETE" }),
+        commPromoteAdmin: (conversationId, userId) =>
+            request(`/api/communication/groups/${conversationId}/admins/${userId}`, { method: "POST" }),
+        commDemoteAdmin: (conversationId, userId) =>
+            request(`/api/communication/groups/${conversationId}/admins/${userId}`, { method: "DELETE" }),
+        commGetMessages: (conversationId, beforeId) =>
+            request(`/api/communication/conversations/${conversationId}/messages` +
+                (beforeId ? `?before_id=${beforeId}` : "")),
+        commSendMessage: (conversationId, content, replyToId) =>
+            request(`/api/communication/conversations/${conversationId}/messages`, {
+                method: "POST",
+                body: JSON.stringify({ content, reply_to_id: replyToId || null }),
+            }),
+        commEditMessage: (messageId, content) =>
+            request(`/api/communication/messages/${messageId}`, {
+                method: "PATCH",
+                body: JSON.stringify({ content }),
+            }),
+        commDeleteMessage: (messageId) =>
+            request(`/api/communication/messages/${messageId}`, { method: "DELETE" }),
+        commToggleReaction: (messageId, emoji) =>
+            request(`/api/communication/messages/${messageId}/reactions`, {
+                method: "POST",
+                body: JSON.stringify({ emoji }),
+            }),
+        commPinMessage: (messageId) =>
+            request(`/api/communication/messages/${messageId}/pin`, { method: "POST" }),
+        commForwardMessage: (messageId, conversationId) =>
+            request(`/api/communication/messages/${messageId}/forward`, {
+                method: "POST",
+                body: JSON.stringify({ conversation_id: conversationId }),
+            }),
+        commSetPreferences: (conversationId, data) =>
+            request(`/api/communication/conversations/${conversationId}/preferences`, {
+                method: "PATCH",
+                body: JSON.stringify(data || {}),
+            }),
+        commMarkRead: (conversationId) =>
+            request(`/api/communication/conversations/${conversationId}/read`, { method: "POST" }),
+        commSearch: (q, limit) =>
+            request(`/api/communication/search?q=${encodeURIComponent(q || "")}` +
+                (limit ? `&limit=${limit}` : "")),
+        commGetMedia: (conversationId) =>
+            request(`/api/communication/conversations/${conversationId}/media`),
+        commPeople: (q, limit) =>
+            request(`/api/communication/people?q=${encodeURIComponent(q || "")}` +
+                (limit ? `&limit=${limit}` : "")),
+        commUserProfile: (userId) => request(`/api/communication/users/${userId}`),
+        commUploadAttachment: (conversationId, file) => {
+            const fd = new FormData();
+            fd.append("file", file);
+            return requestForm(`/api/communication/conversations/${conversationId}/attachments`, fd);
+        },
+        attachmentUrl: (pathOrUrl) => {
+            if (!pathOrUrl) return "";
+            if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+            if (pathOrUrl.startsWith("/")) return baseUrl + pathOrUrl;
+            return pathOrUrl;
+        },
+        commCalls: (limit) =>
+            request(`/api/communication/calls${limit ? `?limit=${limit}` : ""}`),
+        commStartCall: (conversationId, callType) =>
+            request(`/api/communication/conversations/${conversationId}/calls`, {
+                method: "POST",
+                body: JSON.stringify({ call_type: callType || "voice" }),
+            }),
+        commUpdateCall: (callId, status, durationSeconds) =>
+            request(`/api/communication/calls/${callId}`, {
+                method: "POST",
+                body: JSON.stringify({
+                    status,
+                    duration_seconds: durationSeconds == null ? null : durationSeconds,
+                }),
+            }),
+        commPresence: (userIds) =>
+            request(`/api/communication/presence?user_ids=${encodeURIComponent((userIds || []).join(","))}`),
+        commWsUrl: () => {
+            const wsBase = baseUrl.replace(/^http/i, "ws");
+            return `${wsBase}/ws/communication?token=${encodeURIComponent(getToken() || "")}`;
+        },
     };
 })();
 
