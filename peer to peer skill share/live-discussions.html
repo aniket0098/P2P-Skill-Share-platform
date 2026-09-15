@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SkillConnect - Discussion</title>
+    <title>SkillConnect — Live Discussions</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,12 +13,12 @@
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <link rel="stylesheet" href="live-discussions.css">
-    <link rel="stylesheet" href="components/profile-dropdown.css">
-    <script src="config.js"></script>
-    <script src="api-client.js"></script>
-    <script src="auth.js"></script>
-    <script src="components/profile-dropdown.js"></script>
+    <link rel="stylesheet" href="live-discussions.css?v=20260916c">
+    <link rel="stylesheet" href="components/profile-dropdown.css?v=20260916c">
+    <script src="config.js?v=20260916c"></script>
+    <script src="api-client.js?v=20260916c"></script>
+    <script src="auth.js?v=20260916c"></script>
+    <script src="components/profile-dropdown.js?v=20260916c"></script>
 </head>
 
 <body>
@@ -65,7 +65,6 @@
             <a href="messages.html">
                 <i class="fa-regular fa-message"></i>
                 <span>Messages</span>
-                <b class="nav-badge">0</b>
             </a>
 
             <a href="community.html">
@@ -75,7 +74,7 @@
 
             <a href="live-discussions.html" class="active">
                 <i class="fa-regular fa-comments"></i>
-                <span>Discussion</span>
+                <span>Discussions</span>
             </a>
 
             <a href="setting.html">
@@ -89,21 +88,15 @@
 
         <div class="teach-card">
 
-            <h3>Teach a skill.<br>Inspire the world.</h3>
+            <h3>Host a room.<br>Lead the conversation.</h3>
 
             <p>
-                Join thousands of people sharing
-                their knowledge.
+                Create a live discussion and learn together
+                in real time.
             </p>
 
-            <div class="people-illustration">
-                <i class="fa-solid fa-user"></i>
-                <i class="fa-solid fa-user"></i>
-                <i class="fa-solid fa-user"></i>
-            </div>
-
-            <button onclick="openCreateRoom()">
-                Share Your Skill
+            <button type="button" onclick="openCreateRoom()">
+                Create Room
                 <i class="fa-solid fa-arrow-right"></i>
             </button>
 
@@ -127,8 +120,8 @@
                 </div>
 
                 <div>
-                    <h1>Discussion</h1>
-                    <p>Join live discussions, share ideas and learn together.</p>
+                    <h1>Live Discussions</h1>
+                    <p>Discover rooms, join conversations and learn together.</p>
                 </div>
 
             </div>
@@ -136,100 +129,22 @@
 
             <div class="top-actions">
 
-                <!-- Credits -->
+                <button class="create-top-btn" onclick="openCreateRoom()">
 
-                <a href="credits.html" class="credits-box">
-
-                    <div class="coin">
-                        <i class="fa-solid fa-coins"></i>
-                    </div>
-
-                    <div>
-                        <strong id="topCredits">0</strong>
-                        <span>Credits</span>
-                    </div>
-
-                </a>
-
-
-                <!-- Notification -->
-
-                <button class="notification-btn" id="notificationBtn">
-
-                    <i class="fa-regular fa-bell"></i>
-
-                    <span id="notificationCount">4</span>
+                    <i class="fa-solid fa-plus"></i>
+                    Create Room
 
                 </button>
 
-
-                <!-- Profile -->
-
-                <div class="profile-wrapper">
-
-                    <button class="profile-btn" id="profileBtn">
-
-                        <div class="avatar">
-                            A
-                        </div>
-
-                        <div class="profile-info">
-                            <strong id="profileName">
-                                Anonymous
-                            </strong>
-
-                            <span>Learner</span>
-                        </div>
-
-                        <i class="fa-solid fa-chevron-down"></i>
-
-                    </button>
-
-
-                    <div class="profile-menu" id="profileMenu">
-
-                        <a href="profile.html">
-                            <i class="fa-regular fa-user"></i>
-                            View Profile
-                        </a>
-
-                        <a href="my-learning.html">
-                            <i class="fa-solid fa-book-open"></i>
-                            My Learning
-                        </a>
-
-                        <a href="credits.html">
-                            <i class="fa-solid fa-coins"></i>
-                            Credits
-                        </a>
-
-                        <a href="notifications.html">
-                            <i class="fa-regular fa-bell"></i>
-                            Notifications
-                        </a>
-
-                        <a href="setting.html">
-                            <i class="fa-solid fa-gear"></i>
-                            Settings
-                        </a>
-
-                        <div class="menu-line"></div>
-
-                        <button onclick="logout()">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                            Logout
-                        </button>
-
-                    </div>
-
-                </div>
+                <!-- Shared profile dropdown -->
+                <div id="profileDropdownContainer"></div>
 
             </div>
 
         </header>
 
 
-        <!-- SEARCH -->
+        <!-- SEARCH + FILTERS -->
 
         <section class="search-section">
 
@@ -240,23 +155,28 @@
                 <input
                     type="text"
                     id="searchInput"
-                    placeholder="Search discussion rooms, topics or people..."
+                    placeholder="Search by title, topic, host or category..."
+                    autocomplete="off"
                 >
-
-                <button onclick="performSearch()">
-                    Search
-                </button>
 
             </div>
 
 
-            <button class="create-top-btn" onclick="openCreateRoom()">
+            <div class="filters">
 
-                <i class="fa-solid fa-plus"></i>
+                <select id="categoryFilter" aria-label="Filter by category">
 
-                Create Discussion Room
+                    <option value="">All Categories</option>
+                    <option value="Programming">Programming</option>
+                    <option value="Design">Design</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Communication">Communication</option>
+                    <option value="Career">Career</option>
+                    <option value="Data Science">Data Science</option>
 
-            </button>
+                </select>
+
+            </div>
 
         </section>
 
@@ -265,58 +185,31 @@
 
         <section class="room-controls">
 
-            <div class="tabs">
+            <div class="tabs" role="tablist">
 
-                <button class="tab active" data-tab="all">
-                    All Rooms
+                <button class="tab active" data-tab="all" role="tab">
+                    All
                 </button>
 
-                <button class="tab" data-tab="mine">
+                <button class="tab" data-tab="live" role="tab">
+                    <span class="live-dot"></span> Live Now
+                </button>
+
+                <button class="tab" data-tab="upcoming" role="tab">
+                    Upcoming
+                </button>
+
+                <button class="tab" data-tab="mine" role="tab">
                     My Rooms
                 </button>
 
-                <button class="tab" data-tab="joined">
+                <button class="tab" data-tab="joined" role="tab">
                     Joined
                 </button>
 
-                <button class="tab" data-tab="saved">
-                    Saved
-                    <span id="savedCount">0</span>
-                </button>
-
             </div>
 
-
-            <div class="filters">
-
-                <select id="categoryFilter">
-
-                    <option value="all">Category</option>
-                    <option value="Design">Design</option>
-                    <option value="Programming">Programming</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Communication">Communication</option>
-
-                </select>
-
-
-                <select id="sortFilter">
-
-                    <option value="upcoming">Sort By: Upcoming</option>
-                    <option value="popular">Most Popular</option>
-                    <option value="newest">Newest</option>
-
-                </select>
-
-                <button class="view-btn active">
-                    <i class="fa-solid fa-grip"></i>
-                </button>
-
-                <button class="view-btn">
-                    <i class="fa-solid fa-list"></i>
-                </button>
-
-            </div>
+            <span class="result-count" id="resultCount"></span>
 
         </section>
 
@@ -326,274 +219,92 @@
         <section class="content-layout">
 
 
-            <!-- CENTER -->
+            <!-- CENTER: ROOMS -->
 
             <div class="rooms-area">
 
-                <div class="section-title">
+                <div class="rooms-grid" id="roomsContainer">
 
-                    <div>
+                    <!-- Loading skeleton (replaced by JS) -->
 
-                        <h2>
-                            Choose a Room to Join
+                    <div class="state-card" id="loadingState">
 
-                            <span class="live-count">
-                                <i class="fa-solid fa-circle"></i>
-                                <span id="liveCount">0</span> Live Rooms
-                            </span>
+                        <div class="spinner"></div>
 
-                        </h2>
+                        <p>Loading discussions...</p>
 
                     </div>
-
-                    <button class="filter-button">
-                        <i class="fa-solid fa-sliders"></i>
-                        Filters
-                    </button>
-
-                </div>
-
-
-                <!-- ROOMS -->
-
-                <div id="roomsContainer"></div>
-
-
-                <!-- CREATE ROOM BOTTOM -->
-
-                <div class="bottom-create">
-
-                    <div class="bottom-create-icon">
-                        <i class="fa-regular fa-comments"></i>
-                    </div>
-
-                    <div class="bottom-create-text">
-
-                        <h3>Create Your Own Discussion Room</h3>
-
-                        <p>
-                            Start a room, invite learners and have meaningful discussions.
-                        </p>
-
-                    </div>
-
-
-                    <div class="room-size-options">
-
-                        <button class="size-option" data-size="5">
-
-                            <i class="fa-solid fa-user-group"></i>
-
-                            <span>
-                                <b>5 Members</b>
-                                Small Group
-                            </span>
-
-                        </button>
-
-
-                        <button class="size-option selected" data-size="10">
-
-                            <i class="fa-solid fa-users"></i>
-
-                            <span>
-                                <b>10 Members</b>
-                                Medium Group
-                            </span>
-
-                        </button>
-
-
-                        <button class="size-option" data-size="15">
-
-                            <i class="fa-solid fa-users"></i>
-
-                            <span>
-                                <b>15 Members</b>
-                                Large Group
-                            </span>
-
-                        </button>
-
-                    </div>
-
-
-                    <button class="create-room-bottom"
-                            onclick="openCreateRoom()">
-
-                        Create Room
-                        <i class="fa-solid fa-arrow-right"></i>
-
-                    </button>
 
                 </div>
 
             </div>
 
 
-            <!-- RIGHT SIDEBAR -->
+            <!-- RIGHT PANEL -->
 
             <aside class="right-panel">
 
-
-                <!-- FEATURED -->
-
                 <div class="side-card">
 
                     <div class="side-card-header">
-
-                        <h3>Featured Rooms</h3>
-
-                        <a href="#">View All</a>
-
+                        <h3>Overview</h3>
                     </div>
 
+                    <div class="stat-row">
 
-                    <div class="featured-room">
-
-                        <div class="mini-image uiux">
-                            UI/UX
+                        <div class="stat-box">
+                            <strong id="statTotal">0</strong>
+                            <span>Rooms</span>
                         </div>
 
-                        <div class="mini-info">
-
-                            <strong>Web Development Talk</strong>
-
-                            <span class="green">
-                                15 / 15 Live
-                            </span>
-
+                        <div class="stat-box live">
+                            <strong id="statLive">0</strong>
+                            <span>Live</span>
                         </div>
 
-                        <button onclick="joinRoomByTitle('Web Development Talk')">
-                            Join
-                        </button>
-
-                    </div>
-
-
-                    <div class="featured-room">
-
-                        <div class="mini-image ai">
-                            AI
+                        <div class="stat-box">
+                            <strong id="statUpcoming">0</strong>
+                            <span>Upcoming</span>
                         </div>
 
-                        <div class="mini-info">
-
-                            <strong>AI Tools & Productivity</strong>
-
-                            <span class="green">
-                                9 / 10 Live
-                            </span>
-
+                        <div class="stat-box">
+                            <strong id="statJoined">0</strong>
+                            <span>Joined</span>
                         </div>
-
-                        <button onclick="joinRoomByTitle('AI Tools & Productivity')">
-                            Join
-                        </button>
-
-                    </div>
-
-
-                    <div class="featured-room">
-
-                        <div class="mini-image english">
-                            ENG
-                        </div>
-
-                        <div class="mini-info">
-
-                            <strong>English Speaking Practice</strong>
-
-                            <span class="green">
-                                10 / 10 Live
-                            </span>
-
-                        </div>
-
-                        <button onclick="joinRoomByTitle('English Speaking Practice')">
-                            Join
-                        </button>
 
                     </div>
 
                 </div>
 
-
-                <!-- UPCOMING -->
-
                 <div class="side-card">
 
                     <div class="side-card-header">
-
-                        <h3>My Upcoming</h3>
-
-                        <a href="#">View All</a>
-
+                        <h3>Your Rooms</h3>
+                        <button class="link-btn" type="button" onclick="setTab('mine')">
+                            View all
+                        </button>
                     </div>
 
+                    <div id="myRoomsList">
 
-                    <div class="upcoming-item">
-
-                        <div class="upcoming-icon purple">
-                            UI
-                        </div>
-
-                        <div>
-                            <strong>UI/UX Design Discussion</strong>
-                            <span>Today, 06:00 PM</span>
-                        </div>
-
-                        <b class="joined">Joined</b>
-
-                    </div>
-
-
-                    <div class="upcoming-item">
-
-                        <div class="upcoming-icon green-icon">
-                            PY
-                        </div>
-
-                        <div>
-                            <strong>Python Programming Help</strong>
-                            <span>Today, 07:30 PM</span>
-                        </div>
-
-                        <b class="joined">Joined</b>
-
-                    </div>
-
-
-                    <div class="upcoming-item">
-
-                        <div class="upcoming-icon orange">
-                            DM
-                        </div>
-
-                        <div>
-                            <strong>Digital Marketing Trends</strong>
-                            <span>Tomorrow, 06:00 PM</span>
-                        </div>
-
-                        <b class="reminder">Reminder</b>
+                        <p class="side-empty">You haven't created any rooms yet.</p>
 
                     </div>
 
                 </div>
 
+                <div class="side-card help-card">
 
-                <!-- ACTIVITY -->
+                    <h3>Good discussions need people</h3>
 
-                <div class="side-card">
+                    <p>
+                        Share your room link with friends or open it to
+                        the community — participants join with one click.
+                    </p>
 
-                    <div class="side-card-header">
-
-                        <h3>Recent Activity</h3>
-
-                    </div>
-
-                    <div id="activityList"></div>
+                    <button type="button" class="secondary-btn" onclick="openCreateRoom()">
+                        Start a room
+                    </button>
 
                 </div>
 
@@ -608,11 +319,11 @@
 
 <!-- ================= CREATE ROOM MODAL ================= -->
 
-<div class="modal-overlay" id="createModal">
+<div class="modal-overlay" id="createModal" hidden>
 
-    <div class="modal">
+    <div class="modal compact" role="dialog" aria-modal="true" aria-labelledby="createTitle">
 
-        <button class="close-modal" onclick="closeCreateRoom()">
+        <button class="close-modal" type="button" onclick="closeCreateRoom()" aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
         </button>
 
@@ -620,80 +331,136 @@
             <i class="fa-regular fa-comments"></i>
         </div>
 
-        <h2>Create Discussion Room</h2>
+        <h2 id="createTitle">Create Discussion Room</h2>
 
-        <p>
-            Create a room and invite other learners to discuss and learn together.
-        </p>
+        <p class="modal-sub">Small group, real topic, real people. Only title, topic, size and time are required.</p>
 
 
-        <form id="createRoomForm">
+        <form id="createRoomForm" novalidate>
 
-            <label>Room Name</label>
-
+            <label for="roomTitle">Room title *</label>
             <input
                 type="text"
-                id="roomName"
-                placeholder="e.g. JavaScript Beginners Discussion"
+                id="roomTitle"
+                maxlength="200"
+                placeholder="e.g. AI Engineering Discussion"
                 required
             >
 
 
-            <label>Category</label>
-
-            <select id="roomCategory" required>
-
-                <option value="">Select Category</option>
-                <option value="Programming">Programming</option>
-                <option value="Design">Design</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Communication">Communication</option>
-
-            </select>
+            <label for="roomTopic">Topic</label>
+            <input
+                type="text"
+                id="roomTopic"
+                maxlength="160"
+                placeholder="e.g. Large Language Models"
+            >
 
 
-            <label>Description</label>
+            <div class="form-row">
 
-            <textarea
-                id="roomDescription"
-                placeholder="What will learners discuss?"
-                required
-            ></textarea>
+                <div>
+                    <label for="roomMax">Maximum participants *</label>
+                    <select id="roomMax" required>
+                        <option value="5">5 participants</option>
+                        <option value="10" selected>10 participants</option>
+                        <option value="15">15 participants</option>
+                        <option value="20">20 participants</option>
+                        <option value="25">25 participants</option>
+                        <option value="50">50 participants</option>
+                    </select>
+                </div>
 
-
-            <label>Room Size</label>
-
-            <div class="modal-room-size">
-
-                <button type="button" data-modal-size="5">
-                    5 Members
-                </button>
-
-                <button type="button"
-                        data-modal-size="10"
-                        class="active">
-                    10 Members
-                </button>
-
-                <button type="button" data-modal-size="15">
-                    15 Members
-                </button>
+                <div>
+                    <label for="roomCategory">Category <span class="opt">(optional)</span></label>
+                    <select id="roomCategory">
+                        <option value="">Select Category</option>
+                        <option value="Programming">Programming</option>
+                        <option value="Design">Design</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Communication">Communication</option>
+                        <option value="Career">Career</option>
+                        <option value="Data Science">Data Science</option>
+                    </select>
+                </div>
 
             </div>
 
 
-            <label>Start Time</label>
-
-            <input type="datetime-local" id="roomTime">
+            <p class="form-hint" id="scheduleHint">Enter the date and time in your local timezone. The room shows the same local time to everyone.</p>
 
 
-            <button class="submit-room" type="submit">
+            <label for="roomDescription">Description <span class="opt">(optional)</span></label>
+            <textarea
+                id="roomDescription"
+                maxlength="4000"
+                placeholder="What will you discuss? Who should join?"
+            ></textarea>
+
+
+            <div class="form-row">
+
+                <div>
+                    <label for="roomDate">Date *</label>
+                    <input type="date" id="roomDate" required>
+                </div>
+
+                <div>
+                    <label for="roomTime">Time *</label>
+                    <input type="time" id="roomTime" required>
+                </div>
+
+            </div>
+
+
+            <details class="advanced">
+                <summary>More options (room type, duration, agenda)</summary>
+
+                <div>
+                    <label for="roomType">Room Type</label>
+                    <select id="roomType">
+                        <option value="TECH_DISCUSSION">Tech Discussion</option>
+                        <option value="STUDY_GROUP">Study Group</option>
+                        <option value="MENTORSHIP">Mentorship</option>
+                        <option value="PROJECT_DISCUSSION">Project Discussion</option>
+                        <option value="INDUSTRY_EVENT">Industry Event</option>
+                        <option value="TECH_TALK">Tech Talk</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="roomDuration">Duration</label>
+                    <select id="roomDuration">
+                        <option value="">Not set</option>
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="45">45 minutes</option>
+                        <option value="60" selected>60 minutes</option>
+                        <option value="90">90 minutes</option>
+                        <option value="120">2 hours</option>
+                    </select>
+                </div>
+
+            <label for="roomAgenda">Agenda / Discussion Points</label>
+            <textarea
+                id="roomAgenda"
+                maxlength="4000"
+                placeholder="Optional: list the points you plan to cover"
+            ></textarea>
+            </details>
+
+
+            <p class="form-error" id="createFormError" hidden></p>
+
+            <div class="form-actions">
+                <button class="ghost-btn" type="button" onclick="closeCreateRoom()">Cancel</button>
+                <button class="submit-room" type="submit" id="createSubmitBtn">
 
                 <i class="fa-solid fa-plus"></i>
-
                 Create Room
 
             </button>
+            </div>
 
         </form>
 
@@ -704,23 +471,19 @@
 
 <!-- TOAST -->
 
-<div class="toast" id="toast">
+<div class="toast" id="toast" role="status">
 
     <i class="fa-solid fa-circle-check"></i>
-
-    <span id="toastText">
-        Done
-    </span>
+    <span id="toastText">Done</span>
 
 </div>
 
 
-<script src="live-discussions.js"></script>
+<script src="live-discussions.js?v=20260916c"></script>
 
     <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
-    <script src="portal-unify.js"></script>
-</body>
-</html>
+    <script src="portal-unify.js?v=20260916c"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         if (window.SkillShareProfileDropdown) {
@@ -728,3 +491,7 @@
         }
     });
 </script>
+</body>
+</html>
+
+
