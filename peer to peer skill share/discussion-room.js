@@ -1,1552 +1,925 @@
 /* =========================================================
-   SKILLCONNECT DISCUSSION ROOM
-   Vanilla JavaScript
-========================================================= */
+   SKILLCONNECT — DISCUSSION ROOM (real backend + LiveKit Cloud)
 
+   Flow: ?room=<id> -> auth check -> GET room -> verify
+   access -> render room + participants + chat (PostgreSQL) ->
+   POST /api/livekit/token -> LiveKit Cloud mic/camera/screen.
+   The app-room UI always renders even if LiveKit disconnects.
+   ========================================================= */
 
-/* =========================================================
-   DEMO ROOM DATA
-========================================================= */
+"use strict";
 
-const defaultParticipants = [];
-
-
-
-/* =========================================================
-   STATE
-========================================================= */
-
-let participants =
-    JSON.parse(
-        localStorage.getItem("skillconnect_room_participants")
-    ) || [];
-
-let roomStartTime =
-    localStorage.getItem("skillconnect_room_start");
-
-if (!roomStartTime) {
-
-    roomStartTime = Date.now();
-
-    localStorage.setItem(
-        "skillconnect_room_start",
-        roomStartTime
-    );
+/* ================= MEDIA LAYER (LiveKit Cloud — real) ================= */
+/* Provided by livekit-room.js (+parts 2-4) via window.DiscussionMedia.
+   discussion-room.js runs FIRST, so bind lazily at call time. */
+function liveMedia() {
+    return window.DiscussionMedia || {
+        connected: false,
+        getRoomName(roomId) { return "skillshare_discussion_" + roomId; },
+        async connect() {},
+        async disconnect() {},
+        async toggleMic() {},
+        async toggleCam() {},
+        async toggleScreen() {},
+        setAppCount() {},
+        syncButtons() {},
+    };
 }
 
-let isHost = true;
+/* ================= STATE ================= */
 
-let selectedParticipant = null;
+let roomId = null;
+let currentUser = null;
+let room = null;
+let participants = [];
+let messages = [];
+let lastMessageId = 0;
+let pollTimer = null;
+let pollTick = 0;
+let sending = false;
 
-let timerInterval;
+/* ================= DOM (null-safe: one bad id can never blank the page) ================= */
 
-let micOn = true;
-let cameraOn = true;
-let recording = false;
-let handRaised = false;
-let screenSharing = false;
+const $ = (id) => document.getElementById(id);
 
-
-
-/* =========================================================
-   DOM
-========================================================= */
-
-const videoGrid =
-    document.getElementById("videoGrid");
-
-const participantCount =
-    document.getElementById("participantCount");
-
-const participantSmallCount =
-    document.getElementById("participantSmallCount");
-
-const timer =
-    document.getElementById("timer");
-
-const miniParticipants =
-    document.getElementById("miniParticipants");
-
-const participantMenu =
-    document.getElementById("participantMenu");
-
-const moreMenu =
-    document.getElementById("moreMenu");
-
-const toast =
-    document.getElementById("toast");
-
-
-
-/* =========================================================
-   RECEIVE SELECTED DISCUSSION TOPIC
-   (added: Live Discussion -> matching -> room flow)
-
-   The Live Discussion page stores the joined room in
-   localStorage["skillconnect_current_room"] before the
-   matching experience runs. Apply its title here so the
-   room header reflects the topic the user actually chose.
-
-   BACKEND HOOK (Flask/PostgreSQL later): replace this
-   localStorage read with the real room payload from the
-   API/WebSocket — the DOM update stays the same.
-========================================================= */
-
-function applyCurrentRoomTopic() {
-
-    try {
-
-        const raw =
-            localStorage.getItem("skillconnect_current_room");
-
-        if (!raw) return;
-
-        const room = JSON.parse(raw);
-
-        const titleElement =
-            document.getElementById("roomTitle");
-
-        if (room && room.title && titleElement) {
-
-            titleElement.textContent = room.title;
-
-        }
-
-    } catch (error) {
-
-        /* Corrupted or missing data: keep the default title. */
-
-        console.warn(
-            "Could not apply the selected discussion topic.",
-            error
-        );
-
-    }
-
+function safeText(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value == null ? "" : String(value);
+    return el;
 }
 
-applyCurrentRoomTopic();
-
-
-
-/* =========================================================
-   INIT
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        renderParticipants();
-
-        renderMiniParticipants();
-
-        updateParticipantCount();
-
-        startTimer();
-
-        setupControls();
-
-        setupChat();
-
-        setupGlobalEvents();
-
-    }
-);
-
-
-
-/* =========================================================
-   RENDER PARTICIPANTS
-========================================================= */
-
-function renderParticipants() {
-
-    videoGrid.innerHTML = "";
-
-    participants.forEach(
-        participant => {
-
-            const tile =
-                document.createElement("div");
-
-            tile.className =
-                "video-tile" +
-                (participant.host ? " host" : "");
-
-            tile.dataset.id =
-                participant.id;
-
-
-            tile.innerHTML = `
-
-                <div class="person">
-                    ${participant.initials}
-                </div>
-
-                ${
-                    participant.host
-                    ?
-                    `<div class="host-badge">
-                        Host
-                    </div>`
-                    :
-                    ""
-                }
-
-                <button
-                    class="tile-menu-btn"
-                    data-menu-id="${participant.id}"
-                    aria-label="Participant options"
-                >
-                    ⋮
-                </button>
-
-                <div class="person-name">
-
-                    ${participant.name}
-
-                    <span
-                        class="${
-                            participant.muted
-                            ? "mic-muted"
-                            : "mic-status"
-                        }"
-                    >
-                        ${
-                            participant.muted
-                            ? "♩"
-                            : "🎙"
-                        }
-                    </span>
-
-                </div>
-            `;
-
-
-            videoGrid.appendChild(tile);
-
-        }
-    );
-
-
-    document
-        .querySelectorAll(".tile-menu-btn")
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    event => {
-
-                        event.stopPropagation();
-
-                        const id =
-                            Number(
-                                button.dataset.menuId
-                            );
-
-                        openParticipantMenu(
-                            id,
-                            button
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+function safeHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+    return el;
 }
 
-
-
-/* =========================================================
-   PARTICIPANT COUNT
-========================================================= */
-
-function updateParticipantCount() {
-
-    const count =
-        participants.length;
-
-    participantCount.textContent =
-        `${count} / 10`;
-
-    participantSmallCount.textContent =
-        count;
-
-    renderMiniParticipants();
-
-    saveParticipants();
-
-}
-
-
-
-/* =========================================================
-   MINI PARTICIPANTS
-========================================================= */
-
-function renderMiniParticipants() {
-
-    miniParticipants.innerHTML = "";
-
-    const visible =
-        participants.slice(0, 5);
-
-    visible.forEach(
-        participant => {
-
-            const avatar =
-                document.createElement("div");
-
-            avatar.className =
-                "mini-avatar";
-
-            avatar.textContent =
-                participant.initials;
-
-            miniParticipants.appendChild(
-                avatar
-            );
-
-        }
-    );
-
-
-    if (participants.length > 5) {
-
-        const more =
-            document.createElement("div");
-
-        more.className =
-            "mini-avatar more-avatar";
-
-        more.textContent =
-            `+${participants.length - 5}`;
-
-        miniParticipants.appendChild(
-            more
-        );
-
-    }
-
-}
-
-
-
-/* =========================================================
-   LOCAL STORAGE
-========================================================= */
-
-function saveParticipants() {
-
-    localStorage.setItem(
-        "skillconnect_room_participants",
-        JSON.stringify(participants)
-    );
-
-}
-
-
-
-/* =========================================================
-   PARTICIPANT MENU
-========================================================= */
-
-function openParticipantMenu(
-    id,
-    button
-) {
-
-    selectedParticipant =
-        participants.find(
-            p => p.id === id
-        );
-
-    if (!selectedParticipant) {
-        return;
-    }
-
-
-    const rect =
-        button.getBoundingClientRect();
-
-
-    participantMenu.style.left =
-        `${Math.min(
-            rect.left,
-            window.innerWidth - 200
-        )}px`;
-
-    participantMenu.style.top =
-        `${rect.bottom + 5}px`;
-
-
-    participantMenu.classList.add(
-        "show"
-    );
-
-
-    /*
-        Host cannot kick themselves.
-    */
-
-    const kickButton =
-        document.getElementById(
-            "kickButton"
-        );
-
-    if (
-        selectedParticipant.host ||
-        !isHost
-    ) {
-
-        kickButton.style.display =
-            "none";
-
-    } else {
-
-        kickButton.style.display =
-            "block";
-
-    }
-
-}
-
-
-
-/* =========================================================
-   PARTICIPANT MENU ACTIONS
-========================================================= */
-
-participantMenu.addEventListener(
-    "click",
-    event => {
-
-        const button =
-            event.target.closest(
-                "button"
-            );
-
-        if (!button) {
-            return;
-        }
-
-        const action =
-            button.dataset.action;
-
-
-        if (!selectedParticipant) {
-            return;
-        }
-
-
-        /* FULLSCREEN */
-
-        if (
-            action === "fullscreen"
-        ) {
-
-            fullscreenParticipant(
-                selectedParticipant.id
-            );
-
-        }
-
-
-        /* MUTE */
-
-        if (
-            action === "mute"
-        ) {
-
-            selectedParticipant.muted =
-                !selectedParticipant.muted;
-
-            saveParticipants();
-
-            renderParticipants();
-
-            showToast(
-                selectedParticipant.muted
-                ?
-                `${selectedParticipant.name} muted`
-                :
-                `${selectedParticipant.name} unmuted`
-            );
-
-        }
-
-
-        /* PROFILE */
-
-        if (
-            action === "profile"
-        ) {
-
-            showToast(
-                `Opening ${selectedParticipant.name}'s profile`
-            );
-
-        }
-
-
-        /* KICK */
-
-        if (
-            action === "kick"
-        ) {
-
-            kickParticipant(
-                selectedParticipant.id
-            );
-
-        }
-
-
-        participantMenu.classList.remove(
-            "show"
-        );
-
-    }
-);
-
-
-
-/* =========================================================
-   FULLSCREEN PARTICIPANT
-========================================================= */
-
-function fullscreenParticipant(id) {
-
-    const tile =
-        document.querySelector(
-            `.video-tile[data-id="${id}"]`
-        );
-
-    if (!tile) {
-        return;
-    }
-
-
-    /*
-        Browser Fullscreen API
-    */
-
-    if (
-        tile.requestFullscreen
-    ) {
-
-        tile.requestFullscreen();
-
-        showToast(
-            `${getParticipant(id).name} is now fullscreen`
-        );
-
-    } else {
-
-        showToast(
-            "Fullscreen is not supported by this browser"
-        );
-
-    }
-
-}
-
-
-
-/* =========================================================
-   KICK PARTICIPANT
-========================================================= */
-
-function kickParticipant(id) {
-
-    const participant =
-        getParticipant(id);
-
-    if (!participant) {
-        return;
-    }
-
-
-    if (participant.host) {
-
-        showToast(
-            "The host cannot be removed."
-        );
-
-        return;
-
-    }
-
-
-    if (!isHost) {
-
-        showToast(
-            "Only the host can remove participants."
-        );
-
-        return;
-
-    }
-
-
-    const confirmed =
-        confirm(
-            `Remove ${participant.name} from this discussion room?`
-        );
-
-
-    if (!confirmed) {
-        return;
-    }
-
-
-    participants =
-        participants.filter(
-            p => p.id !== id
-        );
-
-
-    saveParticipants();
-
-    renderParticipants();
-
-    updateParticipantCount();
-
-
-    showToast(
-        `${participant.name} has been removed from the room`
-    );
-
-}
-
-
-
-/* =========================================================
-   GET PARTICIPANT
-========================================================= */
-
-function getParticipant(id) {
-
-    return participants.find(
-        p => p.id === id
-    );
-
-}
-
-
-
-/* =========================================================
-   TIMER
-========================================================= */
-
-function startTimer() {
-
-    updateTimer();
-
-    timerInterval =
-        setInterval(
-            updateTimer,
-            1000
-        );
-
-}
-
-
-function updateTimer() {
-
-    const elapsed =
-        Math.floor(
-            (
-                Date.now()
-                -
-                Number(roomStartTime)
-            )
-            /
-            1000
-        );
-
-
-    const hours =
-        Math.floor(
-            elapsed / 3600
-        );
-
-    const minutes =
-        Math.floor(
-            (elapsed % 3600) / 60
-        );
-
-    const seconds =
-        elapsed % 60;
-
-
-    timer.textContent =
-        `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-
-}
-
-
-function pad(number) {
-
-    return String(number)
-        .padStart(2, "0");
-
-}
-
-
-
-/* =========================================================
-   CONTROL BUTTONS
-========================================================= */
-
-function setupControls() {
-
-    const micBtn =
-        document.getElementById("micBtn");
-
-    const cameraBtn =
-        document.getElementById("cameraBtn");
-
-    const screenBtn =
-        document.getElementById("screenBtn");
-
-    const participantsBtn =
-        document.getElementById("participantsBtn");
-
-    const chatBtn =
-        document.getElementById("chatBtn");
-
-    const raiseHandBtn =
-        document.getElementById("raiseHandBtn");
-
-    const recordBtn =
-        document.getElementById("recordBtn");
-
-    const moreBtn =
-        document.getElementById("moreBtn");
-
-
-
-    /* MIC */
-
-    micBtn.addEventListener(
-        "click",
-        async () => {
-
-            micOn = !micOn;
-
-            micBtn.classList.toggle(
-                "active",
-                micOn
-            );
-
-
-            if (micOn) {
-
-                try {
-
-                    await navigator.mediaDevices
-                        .getUserMedia({
-                            audio: true
-                        });
-
-                    showToast(
-                        "Microphone turned on"
-                    );
-
-                } catch {
-
-                    showToast(
-                        "Microphone permission was not granted"
-                    );
-
-                }
-
-            } else {
-
-                showToast(
-                    "Microphone muted"
-                );
-
-            }
-
-        }
-    );
-
-
-
-    /* CAMERA */
-
-    cameraBtn.addEventListener(
-        "click",
-        async () => {
-
-            cameraOn =
-                !cameraOn;
-
-
-            cameraBtn.classList.toggle(
-                "active",
-                cameraOn
-            );
-
-
-            if (cameraOn) {
-
-                try {
-
-                    await navigator.mediaDevices
-                        .getUserMedia({
-                            video: true
-                        });
-
-                    showToast(
-                        "Camera turned on"
-                    );
-
-                } catch {
-
-                    showToast(
-                        "Camera permission was not granted"
-                    );
-
-                }
-
-            } else {
-
-                showToast(
-                    "Camera turned off"
-                );
-
-            }
-
-        }
-    );
-
-
-
-    /* SCREEN SHARE */
-
-    screenBtn.addEventListener(
-        "click",
-        async () => {
-
-            if (
-                !navigator.mediaDevices ||
-                !navigator.mediaDevices.getDisplayMedia
-            ) {
-
-                showToast(
-                    "Screen sharing is not supported"
-                );
-
-                return;
-
-            }
-
-
-            try {
-
-                await navigator.mediaDevices
-                    .getDisplayMedia({
-                        video: true
-                    });
-
-                screenSharing = true;
-
-                screenBtn.classList.add(
-                    "active"
-                );
-
-                showToast(
-                    "Screen sharing started"
-                );
-
-            } catch {
-
-                showToast(
-                    "Screen sharing cancelled"
-                );
-
-            }
-
-        }
-    );
-
-
-
-    /* PARTICIPANTS */
-
-    participantsBtn.addEventListener(
-        "click",
-        () => {
-
-            showToast(
-                `${participants.length} people are currently in the room`
-            );
-
-        }
-    );
-
-
-
-    /* CHAT */
-
-    chatBtn.addEventListener(
-        "click",
-        openChat
-    );
-
-
-
-    /* RAISE HAND */
-
-    raiseHandBtn.addEventListener(
-        "click",
-        () => {
-
-            handRaised =
-                !handRaised;
-
-            raiseHandBtn.classList.toggle(
-                "active",
-                handRaised
-            );
-
-
-            showToast(
-                handRaised
-                ?
-                "✋ You raised your hand"
-                :
-                "Your hand is lowered"
-            );
-
-        }
-    );
-
-
-
-    /* RECORD */
-
-    recordBtn.addEventListener(
-        "click",
-        () => {
-
-            recording =
-                !recording;
-
-            recordBtn.classList.toggle(
-                "active",
-                recording
-            );
-
-
-            showToast(
-                recording
-                ?
-                "Recording started"
-                :
-                "Recording stopped"
-            );
-
-        }
-    );
-
-
-
-    /* MORE */
-
-    moreBtn.addEventListener(
-        "click",
-        event => {
-
-            event.stopPropagation();
-
-            moreMenu.classList.toggle(
-                "show"
-            );
-
-
-            const rect =
-                moreBtn.getBoundingClientRect();
-
-
-            moreMenu.style.left =
-                `${rect.left}px`;
-
-            moreMenu.style.top =
-                `${rect.top - 150}px`;
-
-        }
-    );
-
-}
-
-
-
-/* =========================================================
-   MORE MENU
-========================================================= */
-
-document
-    .getElementById("speakerBtn")
-    .addEventListener(
-        "click",
-        () => {
-
-            showToast(
-                "Speaker settings opened"
-            );
-
-            moreMenu.classList.remove(
-                "show"
-            );
-
-        }
-    );
-
-
-document
-    .getElementById("settingsBtn")
-    .addEventListener(
-        "click",
-        () => {
-
-            showToast(
-                "Audio & video settings opened"
-            );
-
-            moreMenu.classList.remove(
-                "show"
-            );
-
-        }
-    );
-
-
-document
-    .getElementById("layoutBtn")
-    .addEventListener(
-        "click",
-        () => {
-
-            videoGrid.classList.toggle(
-                "compact-layout"
-            );
-
-            showToast(
-                "Layout changed"
-            );
-
-            moreMenu.classList.remove(
-                "show"
-            );
-
-        }
-    );
-
-
-
-/* =========================================================
-   CHAT
-========================================================= */
-
-function setupChat() {
-
-    const send =
-        document.getElementById(
-            "sendMessageBtn"
-        );
-
-    const input =
-        document.getElementById(
-            "messageInput"
-        );
-
-
-    send.addEventListener(
-        "click",
-        () => {
-
-            sendMessage(
-                input.value
-            );
-
-            input.value = "";
-
-        }
-    );
-
-
-    input.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                send.click();
-
-            }
-
-        }
-    );
-
-}
-
-
-
-function sendMessage(text) {
-
-    text =
-        text.trim();
-
-    if (!text) {
-        return;
-    }
-
-
-    const messages =
-        document.getElementById(
-            "messages"
-        );
-
-
-    const message =
-        document.createElement(
-            "div"
-        );
-
-    message.className =
-        "message";
-
-
-    message.innerHTML = `
-
-        <div class="message-avatar">
-            AD
-        </div>
-
-        <div>
-
-            <strong>
-                Anonymous
-            </strong>
-
-            <small>
-                Now
-            </small>
-
-            <p>
-                ${escapeHTML(text)}
-            </p>
-
-            <span class="like">
-                ♡ 0
-            </span>
-
-        </div>
-    `;
-
-
-    messages.appendChild(
-        message
-    );
-
-
-    messages.scrollTop =
-        messages.scrollHeight;
-
-
-    showToast(
-        "Message sent"
-    );
-
-}
-
-
-
-function escapeHTML(text) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-    div.textContent =
-        text;
-
+const stateEl = $("roomState");
+const stateIcon = $("stateIcon");
+const stateSpinner = $("stateSpinner");
+const stateTitle = $("stateTitle");
+const stateText = $("stateText");
+const stateActions = $("stateActions");
+const retryBtn = $("retryBtn");
+
+const roomBody = $("roomBody");
+
+/* ================= HELPERS ================= */
+
+function escapeHTML(value) {
+    const div = document.createElement("div");
+    div.textContent = value == null ? "" : String(value);
     return div.innerHTML;
-
 }
 
+function initialsOf(name) {
+    return String(name || "?").trim().split(/\s+/).map((w) => w[0]).join("")
+        .slice(0, 2).toUpperCase() || "?";
+}
 
-
-/* =========================================================
-   MOBILE CHAT
-========================================================= */
-
-function openChat() {
-
-    const mobileChat =
-        document.getElementById(
-            "mobileChat"
-        );
-
-
-    if (
-        window.innerWidth <= 600
-    ) {
-
-        mobileChat.style.display =
-            "flex";
-
-    } else {
-
-        const chatPanel =
-            document.querySelector(
-                ".chat-panel"
-            );
-
-        chatPanel.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest"
-        });
-
-        showToast(
-            "Room chat opened"
-        );
-
+function avatarHTML(user, cls) {
+    const name = user && user.name ? user.name : "?";
+    const url = user && user.avatar_url;
+    if (url) {
+        return `<span class="${cls}"><img src="${escapeHTML(url)}"
+            alt="${escapeHTML(name)}"
+            onerror="this.style.display='none';this.parentElement.textContent='${escapeHTML(initialsOf(name))}'"></span>`;
     }
-
+    return `<span class="${cls}">${escapeHTML(initialsOf(name))}</span>`;
 }
 
-
-document
-    .getElementById("closeChat")
-    .addEventListener(
-        "click",
-        () => {
-
-            document
-                .getElementById(
-                    "mobileChat"
-                )
-                .style.display =
-                "none";
-
-        }
-    );
-
-
-
-/* =========================================================
-   END / LEAVE SESSION
-========================================================= */
-
-document
-    .getElementById("endSessionBtn")
-    .addEventListener(
-        "click",
-        () => {
-
-            if (!isHost) {
-
-                showToast(
-                    "Only the host can end the session."
-                );
-
-                return;
-
-            }
-
-
-            const confirmed =
-                confirm(
-                    "End this discussion session for everyone?"
-                );
-
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            endRoom();
-
-        }
-    );
-
-
-
-document
-    .getElementById("leaveBtn")
-    .addEventListener(
-        "click",
-        () => {
-
-            const confirmed =
-                confirm(
-                    "Leave this discussion room?"
-                );
-
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            leaveRoom();
-
-        }
-    );
-
-
-
-function endRoom() {
-
-    clearInterval(
-        timerInterval
-    );
-
-
-    localStorage.removeItem(
-        "skillconnect_room_participants"
-    );
-
-    localStorage.removeItem(
-        "skillconnect_room_start"
-    );
-
-
-    showToast(
-        "Discussion session ended"
-    );
-
-
-    setTimeout(
-        () => {
-
-            window.location.href =
-                "live-discussions.html";
-
-        },
-        700
-    );
-
+function formatTime(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d)) return "";
+    return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-
-
-function leaveRoom() {
-
-    clearInterval(
-        timerInterval
-    );
-
-
-    /*
-        Demo behavior:
-        Remove current user's participation.
-    */
-
-    participants =
-        participants.filter(
-            participant =>
-                participant.name !==
-                "Anonymous"
-        );
-
-
-    showToast(
-        "You left the discussion"
-    );
-
-
-    setTimeout(
-        () => {
-
-            window.location.href =
-                "live-discussions.html";
-
-        },
-        600
-    );
-
+function formatDate(value) {
+    if (!value) return "Not scheduled";
+    const d = new Date(value);
+    if (isNaN(d)) return "Not scheduled";
+    return d.toLocaleString(undefined, {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit",
+    });
 }
 
-
-
-/* =========================================================
-   CREATE ROOM
-========================================================= */
-
-function createRoom(size) {
-
-    localStorage.setItem(
-        "skillconnect_new_room_size",
-        size
-    );
-
-
-    showToast(
-        `Creating a ${size}-member discussion room`
-    );
-
-
-    setTimeout(
-        () => {
-
-            window.location.href =
-                "live-discussions.html";
-
-        },
-        700
-    );
-
+function formatDateOnly(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (isNaN(d)) return "—";
+    return d.toLocaleDateString(undefined, {
+        month: "short", day: "numeric", year: "numeric",
+    });
 }
 
+let toastTimer;
+function showToast(message, isError = false) {
+    const toast = $("toast");
+    if (!toast) return;   // a missing toast must never break an error path
+    toast.textContent = message;
+    toast.classList.toggle("error", isError);
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
+}
 
-
-/* =========================================================
-   BACK
-========================================================= */
+function errorMessage(error) {
+    if (window.SkillShareAuth) return window.SkillShareAuth.getErrorMessage(error);
+    return (error && error.message) || "Something went wrong.";
+}
 
 function goBackToDiscussion() {
-
-    window.location.href =
-        "live-discussions.html";
-
+    window.location.href = "live-discussions.html";
 }
 
+/* ================= STATE SCREENS ================= */
 
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-function showToast(message) {
-
-    toast.textContent =
-        message;
-
-    toast.classList.add(
-        "show"
-    );
-
-
-    clearTimeout(
-        window.toastTimeout
-    );
-
-
-    window.toastTimeout =
-        setTimeout(
-            () => {
-
-                toast.classList.remove(
-                    "show"
-                );
-
-            },
-            2500
-        );
-
-}
-
-
-
-/* =========================================================
-   GLOBAL EVENTS
-========================================================= */
-
-function setupGlobalEvents() {
-
-    document.addEventListener(
-        "click",
-        event => {
-
-            if (
-                !event.target.closest(
-                    ".participant-menu"
-                ) &&
-                !event.target.closest(
-                    ".tile-menu-btn"
-                )
-            ) {
-
-                participantMenu.classList.remove(
-                    "show"
-                );
-
-            }
-
-
-            if (
-                !event.target.closest(
-                    ".more-menu"
-                ) &&
-                !event.target.closest(
-                    "#moreBtn"
-                )
-            ) {
-
-                moreMenu.classList.remove(
-                    "show"
-                );
-
-            }
-
-        }
-    );
-
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Escape"
-            ) {
-
-                participantMenu.classList.remove(
-                    "show"
-                );
-
-                moreMenu.classList.remove(
-                    "show"
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-
-/* =========================================================
-   WINDOW RESIZE
-========================================================= */
-
-window.addEventListener(
-    "resize",
-    () => {
-
-        participantMenu.classList.remove(
-            "show"
-        );
-
-        moreMenu.classList.remove(
-            "show"
-        );
-
+function showState(title, text, { icon = true, retry = false } = {}) {
+    /* Null-safe: the state machine itself must never be the reason the
+       page stays on its initial "Loading discussion..." text. */
+    if (roomBody) roomBody.hidden = true;
+    if (stateEl) stateEl.hidden = false;
+    if (stateIcon) stateIcon.hidden = !icon;
+    if (stateSpinner) stateSpinner.hidden = icon;
+    if (stateTitle) stateTitle.textContent = title;
+    if (stateText) stateText.textContent = text;
+    if (stateActions) stateActions.hidden = !retry;
+    if (retry && retryBtn) {
+        retryBtn.onclick = () => window.location.reload();
     }
-);
+}
+
+function showRoom() {
+    if (stateEl) stateEl.hidden = true;
+    if (roomBody) roomBody.hidden = false;
+}
+
+/* ================= ROOM LOADING ================= */
+
+/* A hanging auth/room request must never wedge the page on the spinner:
+   every blocking await below has a bounded timeout with an exit path. */
+function withTimeout(promise, ms, label) {
+    let timer = null;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+            const error = new Error(label || "Request timed out. Please try again.");
+            error.status = 0;
+            error.timeout = true;
+            reject(error);
+        }, ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => {
+        if (timer) clearTimeout(timer);
+    });
+}
+
+async function loadRoom() {
+    /* 1. Read + validate the room id from the URL. */
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("room");
+    if (!raw || !/^\d+$/.test(raw)) {
+        showState(
+            "Unable to open discussion room.",
+            "This link is missing a valid room ID. Go back to Live Discussions and pick a room.",
+            { retry: false }
+        );
+        return;
+    }
+    roomId = parseInt(raw, 10);
+
+    /* 2. Verify authentication (bounded: never stuck on Loading). */
+    try {
+        currentUser = await withTimeout(
+            window.SkillShareAuth.requireUser(),
+            15000,
+            "Sign-in check timed out. Please retry."
+        );
+        if (!currentUser) return; // 401 already redirected to login
+    } catch (error) {
+        showState("Unable to verify your session.", errorMessage(error), { retry: true });
+        return;
+    }
+
+    /* 3. Request the room (bounded: never stuck on Loading). */
+    try {
+        const data = await withTimeout(
+            window.SkillShareAPI.getDiscussion(roomId),
+            15000,
+            "Room request timed out. Please retry."
+        );
+        room = (data && data.room) || data || null;
+        if (!room || !room.id) throw new Error("Room not found.");
+    } catch (error) {
+        if (error && error.status === 404) {
+            showState(
+                "This discussion room no longer exists.",
+                "It may have been removed. Head back to Live Discussions to find another room.",
+                { retry: false }
+            );
+        } else if (error && error.status === 403) {
+            showState("You don't have access to this room.", errorMessage(error), { retry: false });
+        } else {
+            showState("Unable to load room information.", errorMessage(error), { retry: true });
+        }
+        return;
+    }
+
+    renderRoom();
+
+    /* SHOW THE ROOM IMMEDIATELY. Participants + chat load in the
+       background — a slow backend must never keep the user stuck on
+       the loading screen when the room data is already here. */
+    showRoom();
+
+    /* 4. Participants + chat load in parallel; one failing must not
+          break the whole page. */
+    let participantsFailed = false;
+    let chatFailed = false;
+
+    await Promise.all([
+        loadParticipants().catch(() => { participantsFailed = true; }),
+        loadChat().catch(() => { chatFailed = true; }),
+    ]);
+
+    /* 5. Connect LiveKit Cloud for real mic/camera/screen (non-blocking:
+       the app room is already rendered; media failure never blanks it). */
+    try { liveMedia().syncButtons(); } catch (e) {}
+    wireLivekitControls();
+    liveMedia().connect(roomId).catch(() => {});
+
+    if (participantsFailed) {
+        safeHTML("participantsList",
+            '<p class="empty-note">Unable to load participants. <button class="link-btn" type="button" onclick="loadParticipants()">Retry</button></p>');
+    }
+    if (chatFailed && isMember()) {
+        safeHTML("messages", `
+            <div class="chat-empty">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Unable to load messages.
+                <button class="link-btn" type="button" onclick="loadChat()">Retry</button>
+            </div>`);
+    }
+
+    /* 5. Light polling keeps the room fresh (only while visible). */
+    startPolling();
+}
+
+function isHost() {
+    return room && currentUser && room.host_id === currentUser.id;
+}
+
+function isMember() {
+    return room && (room.is_host || room.is_member);
+}
+
+function isOpen() {
+    return room && (room.status === "SCHEDULED" || room.status === "LIVE");
+}
+
+/* ================= ROOM RENDER ================= */
+
+function renderRoom() {
+    if (!room) return;
+
+    safeText("roomCrest", initialsOf(room.title));
+    safeText("roomTitle", room.title);
+    safeText("hostName", (room.host && room.host.name) || "Unknown host");
+    const hostLink = $("hostLink");
+    if (hostLink) hostLink.href = "profile.html";
+
+    const hostChip = $("hostChip");
+    if (hostChip) hostChip.hidden = false; // a room always has a host
+    const youChip = $("youChip");
+    if (youChip) youChip.hidden = !isHost();
+
+    /* status pill */
+    const pill = $("roomStatus");
+    if (pill) {
+        pill.className = "status-pill " + String(room.status || "").toLowerCase();
+        pill.innerHTML =
+            room.status === "LIVE"
+                ? '<span class="live-dot"></span> LIVE'
+                : escapeHTML(room.status);
+    }
+
+    /* participants count */
+    safeText("participantCount", room.participant_count || 0);
+    safeText("participantMax", room.max_participants);
+
+    /* scheduled time */
+    if (room.scheduled_at) {
+        const sched = $("scheduleStat");
+        if (sched) sched.hidden = false;
+        safeText("scheduleText", formatDate(room.scheduled_at));
+    } else {
+        const sched = $("scheduleStat");
+        if (sched) sched.hidden = true;
+    }
+
+    /* ended banner */
+    const banner = $("endedBanner");
+    if (banner) banner.hidden = !(room.status === "ENDED" || room.status === "CANCELLED");
+
+    /* agenda */
+    if (room.agenda) {
+        safeText("agendaText", room.agenda);
+        const at = $("agendaText");
+        if (at) at.hidden = false;
+        const ae = $("agendaEmpty");
+        if (ae) ae.hidden = true;
+    } else {
+        const at = $("agendaText");
+        if (at) at.hidden = true;
+        const ae = $("agendaEmpty");
+        if (ae) ae.hidden = false;
+    }
+
+    /* about */
+    if (room.description) {
+        safeText("aboutText", room.description);
+        const abt = $("aboutText");
+        if (abt) abt.hidden = false;
+        const abe = $("aboutEmpty");
+        if (abe) abe.hidden = true;
+    } else {
+        const abt = $("aboutText");
+        if (abt) abt.hidden = true;
+        const abe = $("aboutEmpty");
+        if (abe) abe.hidden = false;
+    }
+
+    /* details grid — only real information */
+    const details = [
+        ["Topic", room.topic || "—"],
+        ["Category", room.category || "—"],
+        ["Type", room.room_type ? String(room.room_type).replace(/_/g, " ") : "—"],
+        ["Created", formatDateOnly(room.created_at)],
+        ["Scheduled", formatDate(room.scheduled_at)],
+        ["Duration", room.duration_minutes ? room.duration_minutes + " min" : "—"],
+        ["Participant limit", String(room.max_participants)],
+        ["Participants", String(room.participant_count || 0)],
+    ];
+    safeHTML("detailGrid", details.map(([label, value]) => `
+        <div class="detail-item">
+            <small>${escapeHTML(label)}</small>
+            <b>${escapeHTML(value)}</b>
+        </div>`).join(""));
+
+    /* host controls — exposed only when the server confirms host role */
+    const actions = $("hostActions");
+    if (actions) actions.hidden = !isHost();
+    if (isHost()) {
+        const startBtn = $("startRoomBtn");
+        if (startBtn) startBtn.hidden = room.status !== "SCHEDULED";
+        const endBtn = $("endRoomBtn");
+        if (endBtn) endBtn.hidden = room.status !== "LIVE";
+        const editBtn = $("editRoomBtn");
+        if (editBtn) editBtn.disabled =
+            room.status === "ENDED" || room.status === "CANCELLED";
+    }
+
+    /* resources "add" — host only */
+    const addRes = $("addResourceBtn");
+    if (addRes) addRes.hidden = !isHost();
+
+    updateChatAvailability();
+}
+
+function updateChatAvailability() {
+    const input = $("messageInput");
+    const sendBtn = $("sendBtn");
+    const chatPanel = document.querySelector(".chat-panel");
+    const chatInputRow = chatPanel.querySelector(".chat-input");
+
+    /* remove previous note */
+    const previousNote = chatPanel.querySelector(".chat-closed-note");
+    if (previousNote) previousNote.remove();
+
+    if (!isMember() && isOpen()) {
+        /* Non-member opened a shared link. */
+        input.disabled = true;
+        sendBtn.disabled = true;
+        input.placeholder = "Join the room to send messages…";
+        const note = document.createElement("div");
+        note.className = "chat-closed-note";
+        note.innerHTML =
+            '<button class="primary-btn" type="button" onclick="joinRoom()">' +
+            '<i class="fa-solid fa-right-to-bracket"></i> Join this room</button>';
+        chatPanel.insertBefore(note, chatInputRow);
+    } else if (room.status === "ENDED" || room.status === "CANCELLED") {
+        input.disabled = true;
+        sendBtn.disabled = true;
+        input.placeholder = "This discussion has ended";
+        const note = document.createElement("div");
+        note.className = "chat-closed-note";
+        note.textContent = "Chat is read-only because the discussion has ended.";
+        chatPanel.insertBefore(note, chatInputRow);
+    } else {
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.placeholder = "Type a message…";
+    }
+}
+
+/* ================= JOIN / SHARE ================= */
+
+async function joinRoom() {
+    const API = window.SkillShareAPI;
+    try {
+        await API.joinDiscussion(roomId);
+        room = null;
+        messages = [];
+        lastMessageId = 0;
+        await loadRoomReload();
+        showToast("You joined the room.");
+    } catch (error) {
+        showToast(errorMessage(error), true);
+    }
+}
+
+async function loadRoomReload() {
+    /* Re-fetch room + participants + chat after a membership change. */
+    const data = await window.SkillShareAPI.getDiscussion(roomId);
+    room = data.room;
+    renderRoom();
+    await Promise.all([loadParticipants(), loadChat()]);
+}
+
+function shareRoom() {
+    const url = window.location.origin + window.location.pathname +
+        "?room=" + encodeURIComponent(roomId);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url)
+            .then(() => showToast("Room link copied to clipboard."))
+            .catch(() => promptCopy(url));
+    } else {
+        promptCopy(url);
+    }
+}
+
+function promptCopy(url) {
+    window.prompt("Copy this room link:", url);
+}
+
+/* ================= PARTICIPANTS ================= */
+
+async function loadParticipants() {
+    const data = await window.SkillShareAPI.getDiscussionParticipants(roomId);
+    participants = data.participants || [];
+    renderParticipants();
+}
+
+function renderParticipants() {
+    const list = $("participantsList");
+    if (!list) return;
+    const active = participants.filter((p) => p.status === "joined");
+
+    safeText("participantsChip", String(active.length));
+    safeText("participantCount", String(active.length));
+
+    /* Keep the live-media status line in sync with the REAL head-count:
+       LiveKit only sees the media peers, the database sees the room. */
+    if (window.DiscussionMedia && window.DiscussionMedia.setAppCount) {
+        window.DiscussionMedia.setAppCount(active.length);
+    }
+
+    if (!participants.length) {
+        list.innerHTML = '<p class="empty-note">No participants yet.</p>';
+        return;
+    }
+
+    list.innerHTML = participants.map((p) => {
+        const user = p.user || {};
+        const isActive = p.status === "joined";
+        const canKick = isHost() && isActive && user.id !== currentUser.id;
+        const statusNote = !isActive
+            ? `<span class="p-status-note">(${escapeHTML(p.status)})</span>`
+            : "";
+
+        return `
+        <div class="participant" data-user="${user.id ?? ""}">
+
+            ${avatarHTML(user, "p-avatar")}
+
+            <div class="p-info">
+                <b>${escapeHTML(user.name || "Former member")}</b>
+                <small>${user.username ? "@" + escapeHTML(user.username) : "Member"} · Joined</small>
+                ${statusNote}
+            </div>
+
+            <span class="p-role ${String(p.role).toLowerCase()}">${escapeHTML(p.role)}</span>
+
+            ${canKick ? `
+                <button class="p-kick" type="button"
+                    title="Remove from room"
+                    onclick="removeParticipant(${user.id})">
+                    <i class="fa-solid fa-user-minus"></i>
+                </button>` : ""}
+
+        </div>`;
+    }).join("");
+}
+
+async function removeParticipant(userId) {
+    if (!confirm("Remove this participant from the room?")) return;
+    try {
+        await window.SkillShareAPI.removeDiscussionParticipant(roomId, userId);
+        showToast("Participant removed.");
+        await loadParticipants();
+    } catch (error) {
+        showToast(errorMessage(error), true);
+    }
+}
+
+/* ================= RESOURCES ================= */
+
+async function loadResources() {
+    const list = $("resourcesList");
+    if (!list) return;
+    try {
+        const data = await window.SkillShareAPI.getDiscussionResources(roomId);
+        const resources = data.resources || [];
+
+        if (!resources.length) {
+            list.innerHTML = '<p class="empty-note">No resources shared yet.</p>';
+            return;
+        }
+
+        list.innerHTML = resources.map((r) => {
+            const icon = r.kind === "github"
+                ? "fa-brands fa-github"
+                : r.kind === "doc"
+                    ? "fa-regular fa-file-lines"
+                    : "fa-solid fa-link";
+            return `
+            <div class="resource-item">
+                <i class="${icon}"></i>
+                <div class="r-info">
+                    <b>${escapeHTML(r.title)}</b>
+                    <small>by ${escapeHTML((r.added_by && r.added_by.name) || "Member")}
+                        · ${formatDateOnly(r.created_at)}</small>
+                </div>
+                <a class="r-url" href="${escapeHTML(r.url)}"
+                   target="_blank" rel="noopener noreferrer">Open</a>
+            </div>`;
+        }).join("");
+    } catch (error) {
+        list.innerHTML = '<p class="empty-note">Unable to load resources.</p>';
+    }
+}
+
+function toggleResourceForm(show) {
+    $("resourceForm").hidden = !show;
+    if (show) $("resourceTitle").focus();
+}
+
+async function submitResource(event) {
+    event.preventDefault();
+    const errEl = $("resourceError");
+    errEl.hidden = true;
+
+    const title = $("resourceTitle").value.trim();
+    const url = $("resourceUrl").value.trim();
+    const kind = $("resourceKind").value;
+
+    if (!title) { errEl.textContent = "Title is required."; errEl.hidden = false; return; }
+    if (!/^https?:\/\//i.test(url)) {
+        errEl.textContent = "URL must start with http:// or https://";
+        errEl.hidden = false;
+        return;
+    }
+
+    try {
+        await window.SkillShareAPI.addDiscussionResource(roomId, { title, url, kind });
+        $("resourceTitle").value = "";
+        $("resourceUrl").value = "";
+        $("resourceKind").value = "link";
+        toggleResourceForm(false);
+        showToast("Resource added.");
+        await loadResources();
+    } catch (error) {
+        errEl.textContent = errorMessage(error);
+        errEl.hidden = false;
+    }
+}
+
+/* ================= EDIT ROOM (host) ================= */
+
+function openEditRoom() {
+    if (!isHost()) return;
+
+    $("editTitleInput").value = room.title || "";
+    $("editTopicInput").value = room.topic || "";
+    $("editDescriptionInput").value = room.description || "";
+    $("editDurationInput").value = room.duration_minutes || "";
+    $("editMaxInput").value = room.max_participants || 10;
+    $("editAgendaInput").value = room.agenda || "";
+
+    const sched = room.scheduled_at ? new Date(room.scheduled_at) : null;
+    $("editDateInput").value = sched && !isNaN(sched)
+        ? sched.toISOString().slice(0, 10) : "";
+    $("editTimeInput").value = sched && !isNaN(sched)
+        ? sched.toTimeString().slice(0, 5) : "";
+
+    $("editFormError").hidden = true;
+    $("editModal").hidden = false;
+    document.body.classList.add("modal-open");
+}
+
+function closeEditRoom() {
+    $("editModal").hidden = true;
+    document.body.classList.remove("modal-open");
+}
+
+async function saveRoomEdits(event) {
+    event.preventDefault();
+    const errEl = $("editFormError");
+    errEl.hidden = true;
+
+    const title = $("editTitleInput").value.trim();
+    if (!title) { errEl.textContent = "Room title is required."; errEl.hidden = false; return; }
+
+    const date = $("editDateInput").value;
+    const time = $("editTimeInput").value;
+    const durationRaw = $("editDurationInput").value;
+    const maxRaw = $("editMaxInput").value;
+
+    const payload = {
+        title,
+        topic: $("editTopicInput").value.trim() || null,
+        description: $("editDescriptionInput").value.trim() || null,
+        agenda: $("editAgendaInput").value.trim() || null,
+        scheduled_at: date ? (time ? `${date}T${time}:00` : `${date}T00:00:00`) : null,
+        duration_minutes: durationRaw ? parseInt(durationRaw, 10) : null,
+        max_participants: maxRaw ? parseInt(maxRaw, 10) : null,
+    };
+
+    const button = $("editSubmitBtn");
+    const original = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+
+    try {
+        const data = await window.SkillShareAPI.updateDiscussion(roomId, payload);
+        room = data.room;
+        closeEditRoom();
+        renderRoom();
+        showToast("Room updated.");
+    } catch (error) {
+        errEl.textContent = errorMessage(error);
+        errEl.hidden = false;
+    } finally {
+        button.disabled = false;
+        button.innerHTML = original;
+    }
+}
+
+/* ================= HOST LIFECYCLE ================= */
+
+async function startRoom() {
+    if (!isHost()) return;
+    if (!confirm("Start this discussion now?")) return;
+    try {
+        const data = await window.SkillShareAPI.startDiscussion(roomId);
+        room = data.room;
+        renderRoom();
+        showToast("The discussion is now LIVE.");
+    } catch (error) {
+        showToast(errorMessage(error), true);
+    }
+}
+
+async function endRoom() {
+    if (!isHost()) return;
+    if (!confirm("End this discussion for everyone? This cannot be undone.")) return;
+    try {
+        const data = await window.SkillShareAPI.endDiscussion(roomId);
+        room = data.room;
+        renderRoom();
+        showToast("Discussion ended.");
+    } catch (error) {
+        showToast(errorMessage(error), true);
+    }
+}
+
+async function leaveRoom() {
+    if (!confirm("Leave this discussion room?")) return;
+    try {
+        await window.SkillShareAPI.leaveDiscussion(roomId);
+        showToast("You left the room.");
+        setTimeout(() => { window.location.href = "live-discussions.html"; }, 600);
+    } catch (error) {
+        showToast(errorMessage(error), true);
+    }
+}
+
+/* ================= CHAT ================= */
+
+async function loadChat() {
+    const data = await window.SkillShareAPI.getDiscussionMessages(roomId, null, 30);
+    const incoming = data.messages || [];
+    messages = incoming;
+    lastMessageId = messages.length ? messages[messages.length - 1].id : 0;
+    renderMessages(true);
+}
+
+function renderMessages(forceScroll) {
+    const container = $("messages");
+    if (!container) return;
+
+    if (!messages.length) {
+        container.innerHTML = `
+            <div class="chat-empty">
+                <i class="fa-regular fa-comments"></i>
+                No messages yet.<br>Start the discussion.
+            </div>`;
+        return;
+    }
+
+    const myId = currentUser && currentUser.id;
+    container.innerHTML = messages.map((m) => {
+        const own = m.sender && m.sender.id === myId;
+        const sender = m.sender || {};
+        const stateNote = m._pending
+            ? '<span class="m-state">Sending…</span>'
+            : m._failed
+                ? '<span class="m-state failed">Failed to send</span>'
+                : "";
+        return `
+        <div class="message ${own ? "own" : ""}">
+            ${avatarHTML(sender, "m-avatar")}
+            <div class="m-body">
+                <div class="m-meta">
+                    <b>${escapeHTML(sender.name || "Member")}</b>
+                    <time>${escapeHTML(formatTime(m.created_at))}</time>
+                </div>
+                <div class="m-content">${escapeHTML(m.content)}</div>
+                ${stateNote}
+            </div>
+        </div>`;
+    }).join("");
+
+    if (forceScroll) container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+    const input = $("messageInput");
+    const sendBtn = $("sendBtn");
+    const content = input.value.trim();
+
+    if (!content || sending || !isMember() || !isOpen()) return;
+
+    sending = true;
+    sendBtn.disabled = true;
+    input.value = "";
+
+    /* Optimistic entry (state: Sending) */
+    const optimisticId = "temp_" + Date.now();
+    messages.push({
+        id: optimisticId,
+        sender: {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar_url: currentUser.avatar_url,
+        },
+        content: content,
+        created_at: new Date().toISOString(),
+        _pending: true,
+    });
+    renderMessages(true);
+
+    try {
+        const data = await window.SkillShareAPI.sendDiscussionMessage(roomId, content);
+        /* Replace the optimistic entry with the stored one (state: Sent). */
+        messages = messages.filter((m) => m.id !== optimisticId);
+        messages.push(data.message);
+        lastMessageId = Math.max(lastMessageId, data.message.id);
+        renderMessages(true);
+    } catch (error) {
+        /* state: Failed — visible, never silently "sent" */
+        const temp = messages.find((m) => m.id === optimisticId);
+        if (temp) { temp._failed = true; temp._pending = false; }
+        input.value = content;
+        renderMessages(false);
+        showToast(errorMessage(error), true);
+    } finally {
+        sending = false;
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+
+/* ================= LIVEKIT CONTROLS ================= */
+
+function wireLivekitControls() {
+    const on = (id, fn) => {
+        const el = $(id);
+        if (el && !el.dataset.lkWired) {
+            el.dataset.lkWired = "1";
+            el.addEventListener("click", fn);
+        }
+    };
+    on("micBtn", () => liveMedia().toggleMic());
+    on("camBtn", () => liveMedia().toggleCam());
+    on("screenBtn", () => liveMedia().toggleScreen());
+    on("livekitRetryBtn", () => liveMedia().connect(roomId));
+    window.addEventListener("beforeunload", () => {
+        try { liveMedia().disconnect(); } catch (e) {}
+    });
+}
+
+/* ================= POLLING (light) ================= */
+
+function startPolling() {
+    clearInterval(pollTimer);
+    pollTick = 0;
+    /* One 6s interval: chat every tick, participants + room status
+       every 3rd tick (≈18s). Skips entirely when the tab is hidden —
+       no request loops, no requests every few milliseconds. */
+    pollTimer = setInterval(async () => {
+        if (document.hidden || !room) return;
+        pollTick += 1;
+        try {
+            await loadChat();
+        } catch (error) { /* transient — next tick retries */ }
+
+        if (pollTick % 3 === 0) {
+            try {
+                const data = await window.SkillShareAPI.getDiscussion(roomId);
+                if (data.room.status !== room.status ||
+                    data.room.participant_count !== room.participant_count) {
+                    room = data.room;
+                    renderRoom();
+                }
+                await loadParticipants();
+                await loadResources();
+            } catch (error) { /* transient */ }
+        }
+    }, 6000);
+}
+
+/* ================= WIRING + INIT ================= */
+
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!window.SkillShareAPI || !window.SkillShareAPI.getToken()) {
+        window.location.href =
+            "login.html?next=" +
+            encodeURIComponent("discussion-room.html" + window.location.search);
+        return;
+    }
+
+    const safeOn = (id, event, handler) => {
+        const el = $(id);
+        if (el) el.addEventListener(event, handler);
+    };
+
+    safeOn("sendBtn", "click", sendMessage);
+    safeOn("messageInput", "keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    safeOn("editRoomBtn", "click", openEditRoom);
+    safeOn("editRoomForm", "submit", saveRoomEdits);
+    safeOn("startRoomBtn", "click", startRoom);
+    safeOn("endRoomBtn", "click", endRoom);
+
+    safeOn("addResourceBtn", "click", () => toggleResourceForm(true));
+    safeOn("cancelResourceBtn", "click", () => toggleResourceForm(false));
+    safeOn("resourceForm", "submit", submitResource);
+
+    safeOn("editModal", "click", (e) => {
+        if (e.target === e.currentTarget) closeEditRoom();
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeEditRoom();
+    });
+
+    await loadRoom();
+
+    /* Leave button only for non-host members — the host ends the room
+       instead (a normal Leave must never destroy the room). */
+    if (room && isMember() && !isHost()) {
+        const leaveBtn = document.createElement("button");
+        leaveBtn.className = "danger-btn";
+        leaveBtn.type = "button";
+        leaveBtn.innerHTML =
+            '<i class="fa-solid fa-right-from-bracket"></i> Leave';
+        leaveBtn.addEventListener("click", leaveRoom);
+        const header = $("roomHeader");
+        if (header) header.appendChild(leaveBtn);
+    }
+
+    if (room) loadResources().catch(() => {});
+});
+
+
+
+
+
+

@@ -36,7 +36,7 @@ from models import (
     Message,
 )
 # SQLAlchemy helpers used across the request/message endpoints.
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, case, func
 import auth
 import config
 import stage6_service as stage6
@@ -47,6 +47,14 @@ from email_service import send_admin_request_notification
 from email_service import send_admin_request_notification
 
 app = FastAPI()
+
+# Communication-hub additive migrations (new tables/columns only; never destructive).
+try:
+    from comm_migrate import run_communication_migrations
+    _comm_applied = run_communication_migrations(engine)
+    print(f"[comm] additive migrations applied: {_comm_applied} statements")
+except Exception as _comm_mig_err:  # never break boot
+    print(f"[comm] WARNING: communication migrations skipped: {_comm_mig_err}")
 
 Base.metadata.create_all(bind=engine)
 
@@ -104,6 +112,12 @@ def _run_startup_migrations():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status VARCHAR DEFAULT 'active'",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
+        # Performance helper for type-ahead search. Indexed lookups only;
+        # never destructive and never changes auth/data.
+        "CREATE INDEX IF NOT EXISTS idx_users_name_lower ON users (LOWER(name))",
+        "CREATE INDEX IF NOT EXISTS idx_users_username_lower ON users (LOWER(username))",
+        "CREATE INDEX IF NOT EXISTS idx_conn_req_pair_status ON connection_requests (sender_id, receiver_id, status)",
+        "CREATE INDEX IF NOT EXISTS idx_connections_pair ON connections (user_one_id, user_two_id)",
         # Explore Skills: learning_resources already created by
         # Base.metadata.create_all(); the learning_records additions
         # below prepare My Learning tracking (started/in_progress/
@@ -131,7 +145,13 @@ def _run_startup_migrations():
     ]
     with engine.begin() as connection:
         for statement in statements:
-            connection.execute(text(statement))
+            try:
+                connection.execute(text(statement))
+            except Exception as exc:
+                # SQLite used by local tests does not support every
+                # PostgreSQL index expression. Keep boot safe; search
+                # still works without the optional index.
+                print(f"[migrate] skipped optional statement: {exc}")
 
     # Backfill public IDs for existing users (idempotent).
     with engine.begin() as connection:
@@ -1646,6 +1666,7 @@ def user_summary(u):
         "id": u.id,
         "public_id": getattr(u, "public_id", None),
         "name": u.name,
+        "username": getattr(u, "username", None),
         # NOTE: email is intentionally NOT returned. It is private
         # account data and must not be exposed to other users.
         "avatar": getattr(u, "avatar_url", None) or AVATAR_BY_KEY.get(
@@ -1654,6 +1675,8 @@ def user_summary(u):
         "bio": getattr(u, "bio", None),
         "skills": getattr(u, "skills", None),
         "interests": getattr(u, "interests", None),
+        "location": getattr(u, "location", None),
+        "website": getattr(u, "website", None),
     }
 
 
@@ -1761,11 +1784,18 @@ def serialize_conversation(db, conv, current_user_id):
 
 @app.get("/api/users")
 def list_api_users(
+    limit: int = 50,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """List other registered users (bounded - never the whole table)."""
+    limit = min(max(int(limit or 50), 1), 100)
     users = (
-        db.query(User).filter(User.id != current_user["id"]).order_by(User.name).all()
+        db.query(User)
+        .filter(User.id != current_user["id"])
+        .order_by(User.name)
+        .limit(limit)
+        .all()
     )
     return {"users": [user_summary(u) for u in users]}
 
@@ -1811,6 +1841,63 @@ def _user_relationship(db, me, user_id):
     return {"relationship": "none"}
 
 
+def _relationships_batched(db, me, user_ids):
+    """Return {user_id: relationship} for many users using 3 queries total.
+
+    ``_user_relationship`` runs three queries per user, which becomes
+    expensive for a 50-row search page (150 round-trips). This batched
+    version answers the whole result set with one query per table while
+    returning exactly the same shape.
+    """
+    ids = [uid for uid in user_ids if uid is not None and uid != me]
+    rels = {uid: {"relationship": "none"} for uid in ids}
+    if not ids:
+        return rels
+
+    # Connected first - a connection is the strongest relationship.
+    for conn in (
+        db.query(Connection)
+        .filter(
+            or_(
+                and_(Connection.user_one_id == me, Connection.user_two_id.in_(ids)),
+                and_(Connection.user_two_id == me, Connection.user_one_id.in_(ids)),
+            )
+        )
+        .all()
+    ):
+        other = conn.user_two_id if conn.user_one_id == me else conn.user_one_id
+        if other in rels:
+            rels[other] = {"relationship": "connected", "connection_id": conn.id}
+
+    for req in (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.status == "pending",
+            or_(
+                and_(
+                    ConnectionRequest.sender_id == me,
+                    ConnectionRequest.receiver_id.in_(ids),
+                ),
+                and_(
+                    ConnectionRequest.receiver_id == me,
+                    ConnectionRequest.sender_id.in_(ids),
+                ),
+            ),
+        )
+        .all()
+    ):
+        other = req.receiver_id if req.sender_id == me else req.sender_id
+        # A pending request never overrides an existing connection.
+        if other in rels and rels[other]["relationship"] != "connected":
+            rels[other] = {
+                "relationship": "pending",
+                "direction": "sent" if req.sender_id == me else "received",
+                "request_id": req.id,
+            }
+
+    return rels
+
+
 @app.get("/api/users/search")
 def search_users(
     q: str = "",
@@ -1818,14 +1905,20 @@ def search_users(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Search real registered users by name, email, bio, skills or
-    interests. The search runs in PostgreSQL, not in the frontend.
+    """Search real registered users by name, username, public ID, bio,
+    skills or interests. The search runs in PostgreSQL, not in the
+    frontend.
 
     Each result includes a ``relationship`` field describing how the
     authenticated user is related to that user, so the frontend can
-    render the correct action button without additional API calls."""
+    render the correct action button without additional API calls.
+
+    Email is never returned — it is only matchable for lookup, while
+    the public ``user_summary`` keeps it private.
+    """
     term = (q or "").strip()
     me = current_user["id"]
+    limit = min(max(int(limit or 25), 1), 50)
     query = db.query(User).filter(User.id != me)
 
     if term:
@@ -1836,6 +1929,7 @@ def search_users(
         query = query.filter(
             or_(
                 User.name.ilike(pattern),
+                User.username.ilike(pattern),
                 User.public_id.ilike(f"%{term_upper}%"),
                 User.email.ilike(pattern),
                 User.bio.ilike(pattern),
@@ -1844,13 +1938,40 @@ def search_users(
             )
         )
 
-    rows = query.order_by(User.name).limit(min(max(limit, 1), 50)).all()
+    total = query.count()
+
+    # Smart ordering is pushed into the database so we only ever fetch
+    # `limit` rows instead of over-fetching and sorting in Python:
+    #   0 exact name, 1 exact username, 2 name prefix, 3 username prefix,
+    #   4 partial name, 5 partial username, 6 other match (bio/skills/ID).
+    if term:
+        needle = term.strip().lower()
+        rank = case(
+            (func.lower(User.name) == needle, 0),
+            (func.lower(User.username) == needle, 1),
+            (func.lower(User.name).like(f"{needle}%"), 2),
+            (func.lower(User.username).like(f"{needle}%"), 3),
+            (func.lower(User.name).like(f"%{needle}%"), 4),
+            (func.lower(User.username).like(f"%{needle}%"), 5),
+            else_=6,
+        )
+        rows = query.order_by(rank, User.name).limit(limit).all()
+    else:
+        rows = query.order_by(User.name).limit(limit).all()
+
+    # One batched lookup for every result - never one query per card.
+    relationships = _relationships_batched(db, me, [u.id for u in rows])
+
     return {
         "users": [
-            {**user_summary(u), "relationship": _user_relationship(db, me, u.id)}
+            {**user_summary(u), "relationship": relationships.get(u.id,
+                                                                 {"relationship": "none"})}
             for u in rows
         ],
         "query": term,
+        "total": total,
+        # Lets the UI show "See all results" only when more rows really exist.
+        "has_more": total > len(rows),
     }
 
 
@@ -1860,12 +1981,58 @@ def get_user_profile(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Public profile of any registered user (no private fields)."""
+    """Public profile of any registered user (no private fields).
+
+    Reuses the existing UserSkill/Skill, Education and Project tables.
+    Never returns password hashes, emails or JWTs.
+    """
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     me = current_user["id"]
+
+    skill_rows = (
+        db.query(UserSkill, Skill)
+        .join(Skill, Skill.id == UserSkill.skill_id)
+        .filter(UserSkill.user_id == user_id)
+        .order_by(Skill.name)
+        .all()
+    )
+    skills_detail = [
+        {
+            "id": skill.id,
+            "name": skill.name,
+            "level": mapping.level,
+            "years_of_experience": mapping.years_of_experience,
+            "self_rating": mapping.self_rating,
+        }
+        for mapping, skill in skill_rows
+    ]
+    education_rows = (
+        db.query(Education)
+        .filter(Education.user_id == user_id)
+        .order_by(Education.id.desc())
+        .limit(5)
+        .all()
+    )
+    project_rows = (
+        db.query(Project)
+        .filter(Project.owner_id == user_id)
+        .order_by(Project.created_at.desc(), Project.id.desc())
+        .limit(3)
+        .all()
+    )
+    connections_count = (
+        db.query(Connection)
+        .filter(
+            or_(
+                Connection.user_one_id == user_id,
+                Connection.user_two_id == user_id,
+            )
+        )
+        .count()
+    )
     connection = get_pair_connection(db, me, user_id)
     pending = (
         db.query(ConnectionRequest)
@@ -1892,6 +2059,19 @@ def get_user_profile(
 
     return {
         "user": user_summary(user),
+        "connections_count": connections_count,
+        "skills_detail": skills_detail,
+        "education": [_serialize_education(r) for r in education_rows],
+        "projects_preview": [
+            {
+                "id": p.id,
+                "title": p.title,
+                "description": p.description,
+                "skills": p.skills,
+                "image_url": p.image_url,
+            }
+            for p in project_rows
+        ],
         "relationship": {
             "connected": connection is not None,
             "pending_request_id": pending.id if pending else None,
@@ -2040,6 +2220,41 @@ def list_connections(
         )
 
     return {"connections": connections}
+
+
+@app.delete("/api/connections/{user_id}")
+def remove_connection(
+    user_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove an accepted connection between the current user and another user.
+
+    Deletes only the single Connection row (additive-safe: never touches
+    users, messages, conversations or requests). Uses JWT-derived identity;
+    the user_id path parameter is only the target peer.
+    """
+    me = current_user["id"]
+    if me == user_id:
+        raise HTTPException(status_code=400, detail="You cannot remove yourself")
+
+    row = (
+        db.query(Connection)
+        .filter(
+            Connection.status == "active",
+            or_(
+                and_(Connection.user_one_id == me, Connection.user_two_id == user_id),
+                and_(Connection.user_one_id == user_id, Connection.user_two_id == me),
+            ),
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    db.delete(row)
+    db.commit()
+    return {"success": True, "removed": user_id}
 
 
 @app.delete("/api/requests/{request_id}")
@@ -3278,3 +3493,47 @@ try:
     print("[learning] routes registered: /api/learning/*")
 except Exception as _learn_err:  # never break boot on additive stage
     print(f"[learning] WARNING: learning routes not registered: {_learn_err}")
+
+
+# ================================================================
+# COMMUNICATION HUB (additive: groups, reactions, attachments,
+# preferences, calls, realtime WS). No existing route touched.
+# ================================================================
+try:
+    from comm_api import register_communication
+    register_communication(app, get_db, get_current_user_model)
+    print("[comm] routes registered: /api/communication/* + /ws/communication")
+except Exception as _comm_err:  # never break boot on additive stage
+    print(f"[comm] WARNING: communication routes not registered: {_comm_err}")
+
+
+# ================================================================
+# LIVE DISCUSSIONS (additive: rooms, participants, messages,
+# resources + optional room WS). No existing route touched.
+# Host is always derived from the JWT. Additive tables only.
+# ================================================================
+try:
+    import discussions_models  # registers the discussion tables on Base
+    from discussions_api import register_discussions
+    register_discussions(app, get_db, get_current_user_model)
+    # create_all ran earlier in boot — run again so the new (empty)
+    # discussion_* tables are created. It never alters existing tables.
+    Base.metadata.create_all(bind=engine)
+    print("[discussions] routes registered: /api/discussions/* + /ws/discussions/*")
+except Exception as _disc_err:  # never break boot on additive stage
+    print(f"[discussions] WARNING: discussion routes not registered: {_disc_err}")
+
+
+# ================================================================
+# LIVEKIT CLOUD (additive: POST /api/livekit/token only).
+# Mints short-lived participant tokens for existing discussion
+# rooms. Auth via the existing JWT; PostgreSQL stays the source of
+# truth for rooms/members/chat. No existing route touched.
+# ================================================================
+try:
+    from livekit_api import register_livekit
+    register_livekit(app, get_db, get_current_user_model)
+    print("[livekit] route registered: POST /api/livekit/token")
+except Exception as _lk_err:  # never break boot on additive stage
+    print(f"[livekit] WARNING: livekit route not registered: {_lk_err}")
+

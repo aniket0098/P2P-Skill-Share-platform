@@ -264,13 +264,18 @@ class Connection(Base):
 
 
 class Conversation(Base):
-    """A conversation thread shared between connected users."""
+    """A conversation thread shared between connected users (direct or group)."""
 
     __tablename__ = "conversations"
 
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now, nullable=False)
+    # Communication-hub extension (additive; legacy rows read as direct).
+    conversation_type = Column(String, nullable=False, default="direct")
+    group_name = Column(String, nullable=True)
+    group_avatar_url = Column(String, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 
 class ConversationParticipant(Base):
@@ -283,6 +288,10 @@ class ConversationParticipant(Base):
         Integer, ForeignKey("conversations.id"), nullable=False, index=True
     )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # Communication-hub extension (additive; legacy rows read as member).
+    role = Column(String, nullable=False, default="member")
+    joined_at = Column(DateTime, default=func.now(), nullable=True)
+    last_read_message_id = Column(Integer, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
@@ -304,6 +313,13 @@ class Message(Base):
     content = Column(String, nullable=False)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     is_read = Column(Boolean, default=False, nullable=False)
+    # Communication-hub extension (additive; legacy rows read as plain messages).
+    reply_to_id = Column(Integer, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True)
+    edited_at = Column(DateTime, nullable=True)
+    is_deleted = Column(Boolean, default=False, nullable=False)
+    is_pinned = Column(Boolean, default=False, nullable=False)
+    forward_from_id = Column(Integer, nullable=True)
+    attachment_kind = Column(String, nullable=True)
 
     def __repr__(self):  # helpful for debugging
         return (
@@ -1312,3 +1328,18 @@ class CareerGoal(Base):
             f"role={self.target_role!r} status={self.status!r}>"
         )
 
+
+
+# === COMMUNICATION HUB EXTENSION (additive) ===
+# Registers ConversationPreference / MessageReaction / MessageAttachment /
+# CallRecord / CallParticipant on the shared Base. No existing model touched.
+try:
+    from comm_models import register_communication_models as _register_comm_models
+    _COMM_MODELS = _register_comm_models(Base)
+    ConversationPreference = _COMM_MODELS["ConversationPreference"]
+    MessageReaction = _COMM_MODELS["MessageReaction"]
+    MessageAttachment = _COMM_MODELS["MessageAttachment"]
+    CallRecord = _COMM_MODELS["CallRecord"]
+    CallParticipant = _COMM_MODELS["CallParticipant"]
+except Exception as _comm_models_err:  # never break import
+    print(f"[comm] WARNING: communication models not registered: {_comm_models_err}")

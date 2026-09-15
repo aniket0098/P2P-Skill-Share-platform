@@ -616,6 +616,78 @@ window.SkillShareAPI = (() => {
             const wsBase = baseUrl.replace(/^http/i, "ws");
             return `${wsBase}/ws/communication?token=${encodeURIComponent(getToken() || "")}`;
         },
+
+        /* =====================================================
+           LIVE DISCUSSIONS — room discovery + room lifecycle
+           All calls are JWT-protected; the backend derives the
+           current user from the token (never a body user_id).
+           ===================================================== */
+        listDiscussions: (params = {}) => {
+            const qs = new URLSearchParams();
+            if (params.q) qs.set("q", params.q);
+            if (params.category) qs.set("category", params.category);
+            if (params.status) qs.set("status", params.status);
+            if (params.filter && params.filter !== "all") qs.set("filter", params.filter);
+            if (params.limit) qs.set("limit", params.limit);
+            const suffix = qs.toString() ? `?${qs.toString()}` : "";
+            return request(`/api/discussions${suffix}`);
+        },
+        createDiscussion: (data) =>
+            request("/api/discussions", {
+                method: "POST",
+                body: JSON.stringify(data),
+            }),
+        getDiscussion: (roomId) => request(`/api/discussions/${roomId}`),
+        updateDiscussion: (roomId, data) =>
+            request(`/api/discussions/${roomId}`, {
+                method: "PATCH",
+                body: JSON.stringify(data),
+            }),
+        startDiscussion: (roomId) =>
+            request(`/api/discussions/${roomId}/start`, { method: "POST" }),
+        endDiscussion: (roomId) =>
+            request(`/api/discussions/${roomId}/end`, { method: "POST" }),
+        cancelDiscussion: (roomId) =>
+            request(`/api/discussions/${roomId}/cancel`, { method: "POST" }),
+        joinDiscussion: (roomId) =>
+            request(`/api/discussions/${roomId}/join`, { method: "POST" }),
+        leaveDiscussion: (roomId) =>
+            request(`/api/discussions/${roomId}/leave`, { method: "POST" }),
+        getDiscussionParticipants: (roomId) =>
+            request(`/api/discussions/${roomId}/participants`),
+        removeDiscussionParticipant: (roomId, userId) =>
+            request(`/api/discussions/${roomId}/participants/${userId}`, {
+                method: "DELETE",
+            }),
+        getDiscussionMessages: (roomId, beforeId, limit = 30) =>
+            request(
+                `/api/discussions/${roomId}/messages?limit=${limit}` +
+                    (beforeId ? `&before_id=${beforeId}` : "")
+            ),
+        sendDiscussionMessage: (roomId, content) =>
+            request(`/api/discussions/${roomId}/messages`, {
+                method: "POST",
+                body: JSON.stringify({ content }),
+            }),
+        getDiscussionResources: (roomId) =>
+            request(`/api/discussions/${roomId}/resources`),
+        addDiscussionResource: (roomId, data) =>
+            request(`/api/discussions/${roomId}/resources`, {
+                method: "POST",
+                body: JSON.stringify(data),
+            }),
+        discussionWsUrl: (roomId) => {
+            const wsBase = baseUrl.replace(/^http/i, "ws");
+            return `${wsBase}/ws/discussions/${roomId}?token=${encodeURIComponent(getToken() || "")}`;
+        },
+        /* LiveKit Cloud: short-lived participant token for the SAME
+           application room (JWT auth; server enforces membership + cap).
+           Never exposes API key/secret. */
+        getLivekitToken: (roomId) =>
+            request("/api/livekit/token", {
+                method: "POST",
+                body: JSON.stringify({ room_id: Number(roomId) }),
+            }),
     };
 })();
 

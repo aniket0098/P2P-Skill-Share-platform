@@ -136,6 +136,23 @@ FRONTEND_URLS = [
 
 
 # ---------------------------------------------------------------------------
+# LiveKit Cloud — real-time audio/video rooms (server-side ONLY)
+# ---------------------------------------------------------------------------
+# SECURITY: LIVEKIT_API_SECRET must never appear in HTML/JS/CSS,
+# localStorage, logs, or any API response. The frontend only ever
+# receives the public server URL + a short-lived participant token.
+LIVEKIT_URL = (os.getenv("LIVEKIT_URL", "") or "").strip()
+LIVEKIT_API_KEY = (os.getenv("LIVEKIT_API_KEY", "") or "").strip()
+LIVEKIT_API_SECRET = (os.getenv("LIVEKIT_API_SECRET", "") or "").strip()
+if (not LIVEKIT_URL or not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET) and not IS_PRODUCTION:
+    _warn(
+        "LiveKit is not configured (LIVEKIT_URL / LIVEKIT_API_KEY / "
+        "LIVEKIT_API_SECRET). /api/livekit/token will return 503 until "
+        "these are set in backend-I/.env."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Stage 9 — AI Career Coach provider settings
 # ---------------------------------------------------------------------------
 # The coach is a provider abstraction:

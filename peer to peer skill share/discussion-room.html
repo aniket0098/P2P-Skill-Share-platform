@@ -15,7 +15,20 @@
         rel="stylesheet"
     >
 
-    <link rel="stylesheet" href="discussion-room.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <link rel="stylesheet" href="discussion-room.css?v=20260916c">
+    <link rel="stylesheet" href="livekit-room.css?v=20260916c">
+    <link rel="stylesheet" href="components/profile-dropdown.css?v=20260916c">
+    <script src="config.js?v=20260916c"></script>
+    <script src="api-client.js?v=20260916c"></script>
+    <script src="auth.js?v=20260916c"></script>
+    <!-- LiveKit client (CDN UMD). No credentials here: the browser only
+         receives the public server URL + a short-lived token from
+         POST /api/livekit/token. -->
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.4/dist/livekit-client.umd.min.js"></script>
+    <script src="components/profile-dropdown.js?v=20260916c"></script>
 </head>
 
 <body>
@@ -29,7 +42,9 @@
     <aside class="sidebar">
 
         <div class="brand">
-            <div class="brand-logo">✦</div>
+            <div class="brand-logo">
+                <i class="fa-solid fa-share-nodes"></i>
+            </div>
 
             <div>
                 <h2>SkillConnect</h2>
@@ -41,44 +56,43 @@
         <nav class="side-nav">
 
             <a href="dashboard.html">
-                <span>⌂</span>
-                Dashboard
+                <i class="fa-solid fa-house"></i>
+                <span>Dashboard</span>
             </a>
 
             <a href="explore.html">
-                <span>⌕</span>
-                Explore Skills
+                <i class="fa-solid fa-compass"></i>
+                <span>Explore Skills</span>
             </a>
 
             <a href="live-learning.html">
-                <span>◉</span>
-                Live Learn
+                <i class="fa-solid fa-tower-broadcast"></i>
+                <span>Live Learn</span>
             </a>
 
             <a href="my-learning.html">
-                <span>▣</span>
-                My Learning
+                <i class="fa-solid fa-book-open"></i>
+                <span>My Learning</span>
             </a>
 
             <a href="messages.html">
-                <span>▤</span>
-                Messages
-                <b class="nav-count">3</b>
+                <i class="fa-regular fa-message"></i>
+                <span>Messages</span>
             </a>
 
             <a href="community.html">
-                <span>♧</span>
-                Community
+                <i class="fa-solid fa-users"></i>
+                <span>Community</span>
             </a>
 
             <a href="live-discussions.html" class="active">
-                <span>▢</span>
-                LiveDiscussion
+                <i class="fa-regular fa-comments"></i>
+                <span>Discussions</span>
             </a>
 
             <a href="setting.html">
-                <span>⚙</span>
-                Settings
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
             </a>
 
         </nav>
@@ -89,22 +103,21 @@
         <div class="teach-card">
 
             <h3>
-                Teach a skill.<br>
-                Inspire the world.
+                Host a room.<br>
+                Lead the conversation.
             </h3>
 
             <p>
-                Join thousands of people sharing their knowledge.
+                Create a live discussion and learn together in real time.
             </p>
 
             <button onclick="window.location.href='live-discussions.html'">
-                Share Your Skill →
+                Back to Discussions
             </button>
 
         </div>
 
     </aside>
-
 
 
     <!-- =====================================================
@@ -122,9 +135,9 @@
                 <button
                     class="back-btn"
                     onclick="goBackToDiscussion()"
-                    aria-label="Back to discussion"
+                    aria-label="Back to Live Discussions"
                 >
-                    ←
+                    <i class="fa-solid fa-arrow-left"></i>
                 </button>
 
                 <div>
@@ -137,26 +150,10 @@
 
             <div class="top-actions">
 
-                <div class="credits">
-                    <div class="coin">S</div>
-
-                    <div>
-                        <strong id="creditBalance">1,250</strong>
-                        <small>Credits</small>
-                    </div>
-                </div>
-
-
-                <button
-                    class="notification-btn"
-                    onclick="showToast('You have 4 new notifications')"
-                >
-                    ♧
-                    <span>4</span>
+                <button class="ghost-btn" type="button" onclick="shareRoom()" title="Copy room link">
+                    <i class="fa-solid fa-link"></i>
+                    Share
                 </button>
-
-
-                <!-- Profile dropdown rendered by shared component -->
 
                 <div id="profileDropdownContainer"></div>
 
@@ -165,483 +162,340 @@
         </header>
 
 
-
         <!-- =====================================================
-             ROOM CONTENT
+             ROOM SHELL
+             (JS decides: loading / error state OR the room itself)
         ====================================================== -->
 
-        <section class="room-layout">
+        <section class="room-shell" id="roomShell">
+
+            <!-- LOADING / ERROR / UNAUTHORIZED / ENDED STATES -->
+
+            <div class="room-state" id="roomState">
+
+                <div class="spinner" id="stateSpinner"></div>
+
+                <i class="fa-solid fa-triangle-exclamation" id="stateIcon" hidden></i>
+
+                <h2 id="stateTitle">Loading discussion...</h2>
+
+                <p id="stateText">Please wait while we open the room.</p>
+
+                <div class="state-actions" id="stateActions" hidden>
+
+                    <button class="primary-btn" type="button" id="retryBtn">
+                        <i class="fa-solid fa-rotate-right"></i> Retry
+                    </button>
+
+                    <button class="ghost-btn" type="button" onclick="goBackToDiscussion()">
+                        Back to Discussions
+                    </button>
+
+                </div>
+
+            </div>
 
 
-            <!-- =================================================
-                 VIDEO AREA
-            ================================================== -->
+            <!-- REAL ROOM (hidden until loaded) -->
 
-            <section class="video-section">
+            <div class="room-body" id="roomBody" hidden>
+
 
                 <!-- ROOM HEADER -->
 
-                <div class="room-header">
+                <header class="room-header" id="roomHeader">
 
-                    <div class="room-title">
+                    <div class="room-header-main">
 
-                        <div class="room-icon">
-                            ▣
-                        </div>
+                        <div class="room-crest" id="roomCrest">…</div>
 
-                        <div>
-                            <h2>
-                                <span id="roomTitle">UI/UX Design Discussion</span>
-                                <span class="live-label">● Live</span>
-                            </h2>
+                        <div class="room-header-info">
 
-                            <p>
-                                Let's discuss best practices in UI/UX design and grow together.
+                            <h2 id="roomTitle">Loading…</h2>
+
+                            <p class="room-hostline">
+
+                                Hosted by
+                                <a id="hostLink" href="#" target="_blank" rel="noopener">
+                                    <strong id="hostName">…</strong>
+                                </a>
+
+                                <span class="host-chip" id="hostChip" hidden>HOST</span>
+
+                                <span class="you-chip" id="youChip" hidden>YOU</span>
+
                             </p>
+
                         </div>
 
                     </div>
 
 
-                    <div class="room-stats">
+                    <div class="room-header-stats">
 
-                        <div>
-                            <span>♧</span>
-                            <strong id="participantCount">0 / 10</strong>
-                            <small>Participants</small>
-                        </div>
+                        <span class="status-pill" id="roomStatus">
+                            <span class="live-dot"></span> SCHEDULED
+                        </span>
 
-                        <div>
-                            <span>◷</span>
-                            <strong id="timer">00:00:00</strong>
-                        </div>
+                        <span class="header-stat" title="Participants">
+                            <i class="fa-solid fa-user-group"></i>
+                            <b id="participantCount">0</b> / <span id="participantMax">0</span>
+                        </span>
 
-                        <button
-                            class="end-session"
-                            id="endSessionBtn"
-                        >
-                            ⊗ End Session
+                        <span class="header-stat" id="scheduleStat" hidden title="Scheduled time">
+                            <i class="fa-regular fa-clock"></i>
+                            <span id="scheduleText"></span>
+                        </span>
+
+                    </div>
+
+
+                    <!-- HOST CONTROLS (rendered only when authorized) -->
+
+                    <div class="room-header-actions" id="hostActions" hidden>
+
+                        <button class="ghost-btn" type="button" id="editRoomBtn">
+                            <i class="fa-solid fa-pen"></i> Edit
+                        </button>
+
+                        <button class="ghost-btn" type="button" id="startRoomBtn">
+                            <i class="fa-solid fa-play"></i> Start
+                        </button>
+
+                        <button class="danger-btn" type="button" id="endRoomBtn">
+                            <i class="fa-solid fa-stop"></i> End Room
                         </button>
 
                     </div>
 
-                </div>
+                </header>
 
 
+                <!-- ROOM WORKSPACE -->
 
-                <!-- =================================================
-                     VIDEO GRID
-                ================================================== -->
-
-                <div
-                    class="video-grid"
-                    id="videoGrid"
-                ></div>
+                <div class="room-layout">
 
 
+                    <!-- LEFT: DISCUSSION AREA -->
 
-                <!-- =================================================
-                     CONTROL BAR
-                ================================================== -->
-
-                <div class="control-bar">
-
-                    <button
-                        class="control"
-                        id="micBtn"
-                    >
-                        <span>🎙</span>
-                        <small>Mic</small>
-                    </button>
+                    <section class="discussion-col">
 
 
-                    <button
-                        class="control"
-                        id="cameraBtn"
-                    >
-                        <span>▣</span>
-                        <small>Camera</small>
-                    </button>
+                        <!-- STATUS BANNER (ended / cancelled rooms) -->
 
+                        <div class="ended-banner" id="endedBanner" hidden>
 
-                    <button
-                        class="control"
-                        id="screenBtn"
-                    >
-                        <span>▤</span>
-                        <small>Share Screen</small>
-                    </button>
+                            <i class="fa-solid fa-flag-checkered"></i>
 
-
-                    <button
-                        class="control"
-                        id="participantsBtn"
-                    >
-                        <span>♧</span>
-                        <small>Participants</small>
-                    </button>
-
-
-                    <button
-                        class="control"
-                        id="chatBtn"
-                    >
-                        <span>▰</span>
-                        <small>Chat</small>
-                    </button>
-
-
-                    <button
-                        class="control"
-                        id="raiseHandBtn"
-                    >
-                        <span>✋</span>
-                        <small>Raise Hand</small>
-                    </button>
-
-
-                    <button
-                        class="control"
-                        id="recordBtn"
-                    >
-                        <span>◉</span>
-                        <small>Record</small>
-                    </button>
-
-
-                    <button
-                        class="control"
-                        id="moreBtn"
-                    >
-                        <span>•••</span>
-                        <small>More</small>
-                    </button>
-
-
-                    <button
-                        class="leave-btn"
-                        id="leaveBtn"
-                    >
-                        <span>☎</span>
-                        <small>Leave</small>
-                    </button>
-
-                </div>
-
-
-
-                <!-- =================================================
-                     LOWER ROOM INFORMATION
-                ================================================== -->
-
-                <div class="room-bottom">
-
-
-                    <!-- Highlights -->
-
-                    <div class="info-card">
-
-                        <h3>Session Highlights</h3>
-
-                        <ul>
-                            <li>Discussing UI/UX trends 2024</li>
-                            <li>Best tools for UI designers</li>
-                            <li>Real world UX case studies</li>
-                            <li>Career opportunities in UI/UX</li>
-                        </ul>
-
-                        <button>
-                            View All Notes
-                        </button>
-
-                    </div>
-
-
-
-                    <!-- Participants -->
-
-                    <div class="info-card participants-card">
-
-                        <div class="card-heading">
-                            <h3>
-                                Participants
-                                (<span id="participantSmallCount">0</span>)
-                            </h3>
-
-                            <button id="viewParticipantsBtn">
-                                View All
-                            </button>
-                        </div>
-
-                        <div
-                            class="mini-participants"
-                            id="miniParticipants"
-                        ></div>
-
-                    </div>
-
-
-
-                    <!-- Raised Hands -->
-
-                    <div class="info-card">
-
-                        <div class="card-heading">
-
-                            <h3>
-                                Raise Hand
-                                (<span id="raisedCount">0</span>)
-                            </h3>
-
-                            <button>
-                                View All
-                            </button>
+                            <div>
+                                <b>This discussion has ended.</b>
+                                <p>The conversation history below is read-only.</p>
+                            </div>
 
                         </div>
 
-                        
 
+                        <!-- AGENDA / TOPICS -->
 
-                        
+                        <article class="panel agenda-panel">
 
-                    </div>
+                            <div class="panel-head">
 
-                </div>
+                                <h3><i class="fa-solid fa-list-check"></i> Discussion Topics</h3>
 
+                            </div>
 
+                            <p class="agenda-text" id="agendaText" hidden></p>
 
-                <!-- =================================================
-                     CREATE ROOM - SMALLER AREA
-                ================================================== -->
-
-                <div class="create-room">
-
-                    <div>
-                        <h3>Want to start your own discussion?</h3>
-                        <p>
-                            Create your own discussion room and invite learners to join.
-                        </p>
-                    </div>
-
-
-                    <div class="room-options">
-
-                        <div>
-                            <span>♧</span>
-                            <strong>5 Members</strong>
-                            <small>Small Group</small>
-                            <button onclick="createRoom(5)">
-                                Create Room
-                            </button>
-                        </div>
-
-
-                        <div class="selected">
-                            <span>♧</span>
-                            <strong>10 Members</strong>
-                            <small>Medium Group</small>
-                            <button onclick="createRoom(10)">
-                                Create Room
-                            </button>
-                        </div>
-
-
-                        <div>
-                            <span>♧</span>
-                            <strong>15 Members</strong>
-                            <small>Large Group</small>
-                            <button onclick="createRoom(15)">
-                                Create Room
-                            </button>
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =====================================================
-                 RIGHT SIDEBAR
-            ====================================================== -->
-
-            <aside class="right-panel">
-
-
-                <!-- DISCUSSION INFO -->
-
-                <div class="discussion-info">
-
-                    <h3>Discussion Info</h3>
-
-                    <div class="info-room">
-
-                        <div class="large-room-icon">
-                            ▣
-                        </div>
-
-                        <div>
-                            <h3>UI/UX Design Discussion</h3>
-
-                            <p>
-                                Best practices, tips and real world insights.
+                            <p class="empty-note" id="agendaEmpty">
+                                The host hasn't added discussion points yet.
                             </p>
-                        </div>
 
-                    </div>
-
-
-                    <div class="detail-row">
-                        <span>Hosted by</span>
-                        <strong>Anonymous</strong>
-                    </div>
-
-                    <div class="detail-row">
-                        <span>Group Size</span>
-
-                        <div class="size-buttons">
-                            <button>5</button>
-                            <button class="selected">10</button>
-                            <button>15</button>
-                        </div>
-
-                    </div>
+                        </article>
 
 
-                    <div class="detail-row">
-                        <span>Room ID</span>
-                        <strong>UIUX-4587</strong>
-                    </div>
+                        <!-- LIVE VOICE & VIDEO (LiveKit Cloud) -->
+
+                        <article class="panel media-panel">
+
+                            <div class="panel-head">
+
+                                <h3><i class="fa-solid fa-headphones"></i> Voice &amp; Video</h3>
+
+                                <span class="livekit-state" id="livekitState">CONNECTING</span>
+
+                            </div>
+
+                            <div class="livekit-statusline" id="livekitStatusline">Connecting to live room…</div>
+
+                            <div class="livekit-grid" id="livekitGrid"></div>
+
+                            <div class="livekit-controls">
+                                <button class="control-btn" type="button" id="micBtn" aria-label="Mute microphone">
+                                    <i class="fa-solid fa-microphone"></i><span>Mic</span>
+                                </button>
+                                <button class="control-btn" type="button" id="camBtn" aria-label="Turn camera off">
+                                    <i class="fa-solid fa-video"></i><span>Camera</span>
+                                </button>
+                                <button class="control-btn" type="button" id="screenBtn" aria-label="Share screen">
+                                    <i class="fa-solid fa-display"></i><span>Share</span>
+                                </button>
+                                <button class="control-btn danger" type="button" id="livekitRetryBtn" hidden>
+                                    <i class="fa-solid fa-rotate-right"></i><span>Retry</span>
+                                </button>
+                            </div>
+
+                        </article>
 
 
-                    <div class="detail-row">
-                        <span>Created</span>
-                        <strong>Today, 06:00 PM</strong>
-                    </div>
+                        <!-- ROOM RESOURCES -->
+
+                        <article class="panel resources-panel">
+
+                            <div class="panel-head">
+
+                                <h3><i class="fa-solid fa-paperclip"></i> Resources</h3>
+
+                                <button class="link-btn" type="button" id="addResourceBtn" hidden>
+                                    <i class="fa-solid fa-plus"></i> Add link
+                                </button>
+
+                            </div>
+
+
+                            <form class="resource-form" id="resourceForm" hidden>
+
+                                <input
+                                    type="text"
+                                    id="resourceTitle"
+                                    placeholder="Resource title"
+                                    maxlength="200"
+                                >
+
+                                <input
+                                    type="url"
+                                    id="resourceUrl"
+                                    placeholder="https://…"
+                                >
+
+                                <select id="resourceKind">
+                                    <option value="link">Link</option>
+                                    <option value="github">GitHub</option>
+                                    <option value="doc">Document</option>
+                                </select>
+
+                                <button class="primary-btn" type="submit">Add</button>
+
+                                <button class="ghost-btn" type="button" id="cancelResourceBtn">
+                                    Cancel
+                                </button>
+
+                                <p class="form-error" id="resourceError" hidden></p>
+
+                            </form>
+
+
+                            <div id="resourcesList"></div>
+
+                        </article>
+
+
+                        <!-- ROOM INFORMATION -->
+
+                        <article class="panel info-panel">
+
+                            <div class="panel-head">
+
+                                <h3><i class="fa-solid fa-circle-info"></i> About this room</h3>
+
+                            </div>
+
+                            <p class="about-text" id="aboutText" hidden></p>
+
+                            <p class="empty-note" id="aboutEmpty" hidden>
+                                No description provided.
+                            </p>
+
+                            <div class="detail-grid" id="detailGrid"></div>
+
+                        </article>
+
+                    </section>
+
+
+                    <!-- RIGHT: PARTICIPANTS + CHAT -->
+
+                    <aside class="side-col">
+
+
+                        <!-- PARTICIPANTS -->
+
+                        <section class="panel participants-panel">
+
+                            <div class="panel-head">
+
+                                <h3>
+                                    <i class="fa-solid fa-users"></i>
+                                    Participants
+                                    <span class="count-chip" id="participantsChip">0</span>
+                                </h3>
+
+                                <button class="icon-btn mobile-only" type="button"
+                                        id="closeParticipantsBtn" aria-label="Close participants">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+
+                            </div>
+
+                            <div class="participants-list" id="participantsList"></div>
+
+                        </section>
+
+
+                        <!-- CHAT -->
+
+                        <section class="panel chat-panel">
+
+                            <div class="panel-head">
+
+                                <h3>
+                                    <i class="fa-regular fa-comments"></i>
+                                    Room Chat
+                                </h3>
+
+                                <button class="icon-btn mobile-only" type="button"
+                                        id="closeChatBtn" aria-label="Close chat">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+
+                            </div>
+
+                            <div class="messages" id="messages"></div>
+
+                            <div class="chat-input">
+
+                                <input
+                                    type="text"
+                                    id="messageInput"
+                                    placeholder="Type a message…"
+                                    maxlength="4000"
+                                    autocomplete="off"
+                                >
+
+                                <button class="send-btn" type="button" id="sendBtn"
+                                        aria-label="Send message">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+
+                            </div>
+
+                        </section>
+
+                    </aside>
 
                 </div>
 
-
-
-                <!-- RIGHT TABS -->
-
-                <div class="chat-panel">
-
-                    <div class="chat-tabs">
-
-                        <button class="active">
-                            Chat
-                        </button>
-
-                        <button>
-                            Notes
-                        </button>
-
-                        <button>
-                            Resources
-                        </button>
-
-                        <button>
-                            Polls
-                        </button>
-
-                    </div>
-
-
-                    <div
-                        class="messages"
-                        id="messages"
-                    >
-
-                        <div class="message">
-
-                            <div class="message-avatar">
-                                AV
-                            </div>
-
-                            <div>
-                                <strong>Anonymous</strong>
-                                <small>06:02 PM</small>
-
-                                <p>
-                                    Welcome everyone! Let's start with UI/UX design trends.
-                                </p>
-
-                                <span class="like">
-                                    ♡ 12
-                                </span>
-                            </div>
-
-                        </div>
-
-
-                        <div class="message">
-
-                            <div class="message-avatar">
-                                PS
-                            </div>
-
-                            <div>
-                                <strong>Anonymous</strong>
-                                <small>06:03 PM</small>
-
-                                <p>
-                                    Micro-interactions are game changers.
-                                </p>
-
-                                <span class="like">
-                                    ♡ 8
-                                </span>
-                            </div>
-
-                        </div>
-
-
-                        <div class="message">
-
-                            <div class="message-avatar">
-                                RS
-                            </div>
-
-                            <div>
-                                <strong>Anonymous</strong>
-                                <small>06:04 PM</small>
-
-                                <p>
-                                    Totally agree! They improve user experience so much.
-                                </p>
-
-                                <span class="like">
-                                    ♡ 5
-                                </span>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- CHAT INPUT -->
-
-                    <div class="chat-input">
-
-                        <input
-                            type="text"
-                            id="messageInput"
-                            placeholder="Type a message..."
-                        >
-
-                        <button id="sendMessageBtn">
-                            ➤
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </aside>
+            </div>
 
         </section>
 
@@ -650,118 +504,111 @@
 </div>
 
 
-
 <!-- =========================================================
-     PARTICIPANT MENU
+     EDIT ROOM MODAL (host only)
 ========================================================= -->
 
-<div
-    class="participant-menu"
-    id="participantMenu"
->
-    <button data-action="fullscreen">
-        ⛶ View Fullscreen
-    </button>
+<div class="modal-overlay" id="editModal" hidden>
 
-    <button data-action="mute">
-        🎙 Mute Participant
-    </button>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
 
-    <button data-action="profile">
-        👤 View Profile
-    </button>
-
-    <button
-        data-action="kick"
-        class="danger"
-        id="kickButton"
-    >
-        ✕ Remove from Room
-    </button>
-</div>
-
-
-
-<!-- =========================================================
-     MORE MENU
-========================================================= -->
-
-<div
-    class="more-menu"
-    id="moreMenu"
->
-
-    <button id="speakerBtn">
-        🔊 Speaker
-    </button>
-
-    <button id="settingsBtn">
-        ⚙ Audio & Video Settings
-    </button>
-
-    <button id="layoutBtn">
-        ▦ Change Layout
-    </button>
-
-</div>
-
-
-
-<!-- =========================================================
-     MOBILE CHAT DRAWER
-========================================================= -->
-
-<div
-    class="mobile-chat"
-    id="mobileChat"
->
-
-    <div class="mobile-chat-header">
-
-        <h3>Room Chat</h3>
-
-        <button id="closeChat">
-            ×
+        <button class="close-modal" type="button" onclick="closeEditRoom()" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
         </button>
 
-    </div>
+        <h2 id="editTitle">Edit Room</h2>
 
-    <div
-        class="mobile-messages"
-        id="mobileMessages"
-    ></div>
+        <p>Update the room details participants will see.</p>
 
-    <div class="chat-input">
 
-        <input
-            id="mobileMessageInput"
-            placeholder="Type a message..."
-        >
+        <form id="editRoomForm" novalidate>
 
-        <button id="mobileSend">
-            ➤
-        </button>
+            <label for="editTitleInput">Room Title *</label>
+
+            <input type="text" id="editTitleInput" maxlength="200" required>
+
+
+            <label for="editTopicInput">Topic</label>
+
+            <input type="text" id="editTopicInput" maxlength="160">
+
+
+            <label for="editDescriptionInput">Description</label>
+
+            <textarea id="editDescriptionInput" maxlength="4000"></textarea>
+
+
+            <div class="form-row">
+
+                <div>
+                    <label for="editDateInput">Scheduled Date</label>
+                    <input type="date" id="editDateInput">
+                </div>
+
+                <div>
+                    <label for="editTimeInput">Scheduled Time</label>
+                    <input type="time" id="editTimeInput">
+                </div>
+
+            </div>
+
+
+            <div class="form-row">
+
+                <div>
+                    <label for="editDurationInput">Duration (minutes)</label>
+                    <input type="number" id="editDurationInput" min="5" max="720">
+                </div>
+
+                <div>
+                    <label for="editMaxInput">Max Participants</label>
+                    <input type="number" id="editMaxInput" min="2" max="200">
+                </div>
+
+            </div>
+
+
+            <label for="editAgendaInput">Agenda / Discussion Points</label>
+
+            <textarea id="editAgendaInput" maxlength="4000"></textarea>
+
+
+            <p class="form-error" id="editFormError" hidden></p>
+
+            <button class="submit-room" type="submit" id="editSubmitBtn">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+
+        </form>
 
     </div>
 
 </div>
 
 
+<!-- TOAST -->
 
-<!-- =========================================================
-     TOAST
-========================================================= -->
-
-<div
-    class="toast"
-    id="toast"
-></div>
+<div class="toast" id="toast" role="status"></div>
 
 
-
-<script src="discussion-room.js"></script>
+<script src="discussion-room.js?v=20260916c"></script>
+    <script src="livekit-room.js?v=20260916c"></script>
+    <script src="livekit-room-part2.js?v=20260916c"></script>
+    <script src="livekit-room-part3.js?v=20260916c"></script>
+    <script src="livekit-room-part4.js?v=20260916c"></script>
 
     <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
-    <script src="portal-unify.js"></script>
+    <script src="portal-unify.js?v=20260916c"></script>
 </body>
 </html>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.SkillShareProfileDropdown) {
+            SkillShareProfileDropdown.init("#profileDropdownContainer");
+        }
+    });
+</script>
+
+
+

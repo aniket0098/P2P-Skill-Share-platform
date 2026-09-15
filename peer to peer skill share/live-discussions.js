@@ -1,971 +1,488 @@
 /* =========================================================
-   SKILLCONNECT DISCUSSION JAVASCRIPT
-========================================================= */
+   SKILLCONNECT — LIVE DISCUSSIONS (real backend edition)
+   All data comes from /api/discussions/* (PostgreSQL via
+   FastAPI). The JWT user is the only identity used; no
+   localStorage "room database" exists any more.
+   ========================================================= */
 
-
-/* ================= DATA ================= */
-
-const defaultRooms = [];
-
-
-/* ================= LOCAL STORAGE ================= */
-
-function getRooms() {
-
-    /* Discussion rooms are provided by the backend.
-       No seed data is written to localStorage. */
-
-    return [];
-}
-
-
-function saveRooms(rooms) {
-
-    localStorage.setItem(
-        "skillconnect_rooms",
-        JSON.stringify(rooms)
-    );
-
-}
-
-
-function getSavedRooms() {
-
-    return JSON.parse(
-        localStorage.getItem("skillconnect_saved_rooms") || "[]"
-    );
-
-}
-
-
-function saveSavedRooms(ids) {
-
-    localStorage.setItem(
-        "skillconnect_saved_rooms",
-        JSON.stringify(ids)
-    );
-
-}
-
-
-function getMyRooms() {
-
-    return JSON.parse(
-        localStorage.getItem("skillconnect_my_rooms") || "[]"
-    );
-
-}
-
-
-function saveMyRooms(ids) {
-
-    localStorage.setItem(
-        "skillconnect_my_rooms",
-        JSON.stringify(ids)
-    );
-
-}
-
+"use strict";
 
 /* ================= STATE ================= */
 
 let currentTab = "all";
-let selectedCreateSize = 10;
-
-
-/* ================= RENDER ROOMS ================= */
-
-function renderRooms() {
-
-    const container =
-        document.getElementById("roomsContainer");
-
-    if (!container) return;
-
-    let rooms = getRooms();
-
-    const savedIds = getSavedRooms();
-    const myRooms = getMyRooms();
-
-    const search =
-        document.getElementById("searchInput").value
-            .toLowerCase()
-            .trim();
-
-    const category =
-        document.getElementById("categoryFilter").value;
-
-
-    /* SEARCH */
-
-    if (search) {
-
-        rooms = rooms.filter(room =>
-            room.title.toLowerCase().includes(search) ||
-            room.description.toLowerCase().includes(search) ||
-            room.host.toLowerCase().includes(search) ||
-            room.category.toLowerCase().includes(search)
-        );
-
-    }
-
-
-    /* CATEGORY */
-
-    if (category !== "all") {
-
-        rooms = rooms.filter(
-            room => room.category === category
-        );
-
-    }
-
-
-    /* TAB */
-
-    if (currentTab === "saved") {
-
-        rooms = rooms.filter(
-            room => savedIds.includes(room.id)
-        );
-
-    }
-
-
-    if (currentTab === "mine") {
-
-        rooms = rooms.filter(
-            room => myRooms.includes(room.id)
-        );
-
-    }
-
-
-    if (currentTab === "joined") {
-
-        const joined =
-            JSON.parse(
-                localStorage.getItem("skillconnect_joined_rooms") || "[]"
-            );
-
-        rooms = rooms.filter(
-            room => joined.includes(room.id)
-        );
-
-    }
-
-
-    /* SORT */
-
-    const sort =
-        document.getElementById("sortFilter").value;
-
-    if (sort === "popular") {
-
-        rooms.sort(
-            (a,b) => b.members - a.members
-        );
-
-    }
-
-
-    if (sort === "newest") {
-
-        rooms.reverse();
-
-    }
-
-
-    container.innerHTML = "";
-
-
-    if (!rooms.length) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fa-regular fa-comments"></i>
-                <h3>No discussion rooms found</h3>
-                <p>Try another search or create your own room.</p>
-                <button onclick="openCreateRoom()">
-                    Create Discussion Room
-                </button>
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    rooms.forEach(room => {
-
-        container.innerHTML += createRoomHTML(
-            room,
-            savedIds.includes(room.id)
-        );
-
-    });
-
-
-    document.getElementById("savedCount").textContent =
-        savedIds.length;
-
-}
-
-
-/* ================= ROOM HTML ================= */
-
-function createRoomHTML(room, isSaved) {
-
-    const available =
-        room.capacity - room.members;
-
-    const isFull =
-        room.members >= room.capacity;
-
-
-    return `
-
-        <article class="room-card">
-
-            <div class="room-image ${room.theme}">
-
-                <span class="room-status">
-                    ${room.status === "LIVE" ? "● LIVE" : "UPCOMING"}
-                </span>
-
-                <strong>
-                    ${getShortTitle(room.title)}
-                </strong>
-
-                <span class="room-members">
-                    <i class="fa-solid fa-user-group"></i>
-                    ${room.members}/${room.capacity}
-                </span>
-
-            </div>
-
-
-            <div class="room-info">
-
-                <h3>${room.title}</h3>
-
-                <p>
-                    ${room.description}
-                </p>
-
-
-                <div class="room-host">
-
-                    <div class="host-avatar">
-                        ${getInitial(room.host)}
-                    </div>
-
-                    <div class="host-avatar">
-                        P
-                    </div>
-
-                    <div class="host-avatar">
-                        R
-                    </div>
-
-                    <div class="more-members">
-                        +${Math.max(0,room.members - 3)}
-                    </div>
-
-                    <span class="host-name">
-                        ${room.host}
-                    </span>
-
-                    <span class="host-label">
-                        Host
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <div class="room-actions">
-
-                <span class="room-size-label">
-                    Room Size
-                </span>
-
-
-                <div class="size-buttons">
-
-                    ${[5,10,15].map(size => `
-
-                        <button
-                            class="${room.capacity === size ? "active" : ""}"
-                            onclick="selectRoomSize(${room.id},${size})">
-
-                            ${size}
-
-                        </button>
-
-                    `).join("")}
-
-                </div>
-
-
-                <div class="starts">
-
-                    <i class="fa-regular fa-clock"></i>
-
-                    ${room.start}
-
-                </div>
-
-
-                <button
-                    class="join-room"
-                    onclick="joinRoom(${room.id})"
-                    ${isFull ? "disabled" : ""}>
-
-                    ${isFull ? "Room Full" : "Join Room"}
-
-                </button>
-
-
-                <button
-                    class="save-room ${isSaved ? "saved" : ""}"
-                    onclick="toggleSave(${room.id})"
-                    title="Save room">
-
-                    <i class="${isSaved ? "fa-solid" : "fa-regular"} fa-bookmark"></i>
-
-                </button>
-
-            </div>
-
-        </article>
-
-    `;
-
-}
-
+let searchTimer = null;
+let latestQueryId = 0;      // guards against stale search results
+let roomsCache = [];        // last successful payload (per current filter)
+let creating = false;       // create-room in-flight guard (double-click safe)
 
 /* ================= HELPERS ================= */
 
-function getInitial(name) {
+const escapeHTML = (value) => {
+    const div = document.createElement("div");
+    div.textContent = value == null ? "" : String(value);
+    return div.innerHTML;
+};
 
-    return name.charAt(0).toUpperCase();
+const initialsOf = (name) =>
+    String(name || "?").trim().split(/\s+/).map((w) => w[0]).join("")
+        .slice(0, 2).toUpperCase() || "?";
 
+function roomUrl(id) {
+    return "discussion-room.html?room=" + encodeURIComponent(id);
 }
 
-
-function getShortTitle(title) {
-
-    if (title.includes("UI/UX"))
-        return "UI/UX DESIGN";
-
-    if (title.includes("Python"))
-        return "PYTHON";
-
-    if (title.includes("Marketing"))
-        return "DIGITAL MARKETING";
-
-    if (title.includes("Speaking"))
-        return "PUBLIC SPEAKING";
-
-    if (title.includes("Web"))
-        return "WEB DEVELOPMENT";
-
-    if (title.includes("AI"))
-        return "AI TOOLS";
-
-    return title.substring(0,18).toUpperCase();
-
-}
-
-
-/* ================= SAVE ROOM ================= */
-
-function toggleSave(id) {
-
-    let saved = getSavedRooms();
-
-    if (saved.includes(id)) {
-
-        saved =
-            saved.filter(roomId => roomId !== id);
-
-        showToast("Room removed from Saved");
-
-    } else {
-
-        saved.push(id);
-
-        showToast("Room saved successfully");
-
-    }
-
-    saveSavedRooms(saved);
-
-    renderRooms();
-
-}
-
-
-/* ================= JOIN ROOM ================= */
-
-function joinRoom(id) {
-
-    const rooms = getRooms();
-
-    const room =
-        rooms.find(r => r.id === id);
-
-    if (!room) return;
-
-
-    if (room.members >= room.capacity) {
-
-        showToast("This room is full");
-
-        return;
-
-    }
-
-
-    /* Increase participants */
-
-    room.members++;
-
-    saveRooms(rooms);
-
-
-    /* Save joined */
-
-    let joined =
-        JSON.parse(
-            localStorage.getItem("skillconnect_joined_rooms") || "[]"
-        );
-
-
-    if (!joined.includes(id)) {
-
-        joined.push(id);
-
-    }
-
-
-    localStorage.setItem(
-        "skillconnect_joined_rooms",
-        JSON.stringify(joined)
-    );
-
-
-    /* Save selected room */
-
-    localStorage.setItem(
-        "skillconnect_current_room",
-        JSON.stringify(room)
-    );
-
-
-    /* Open the matching experience first — it preserves the
-       selected room (skillconnect_current_room) and then
-       transitions into discussion-room.html. */
-
-    window.location.href =
-        "discussion-waiting.html";
-
-}
-
-
-/* ================= JOIN FEATURED ================= */
-
-function joinRoomByTitle(title) {
-
-    const room =
-        getRooms().find(
-            room => room.title === title
-        );
-
-    if (room) {
-
-        joinRoom(room.id);
-
-    } else {
-
-        showToast("Room not found");
-
-    }
-
-}
-
-
-/* ================= ROOM SIZE ================= */
-
-function selectRoomSize(id,size) {
-
-    const rooms = getRooms();
-
-    const room =
-        rooms.find(r => r.id === id);
-
-    if (!room) return;
-
-
-    room.capacity = size;
-
-
-    if (room.members > size) {
-
-        room.members = size;
-
-    }
-
-
-    saveRooms(rooms);
-
-    renderRooms();
-
-    showToast(`Room size changed to ${size} members`);
-
-}
-
-
-/* ================= CREATE MODAL ================= */
-
-function openCreateRoom() {
-
-    document
-        .getElementById("createModal")
-        .classList.add("show");
-
-}
-
-
-function closeCreateRoom() {
-
-    document
-        .getElementById("createModal")
-        .classList.remove("show");
-
-}
-
-
-/* ================= CREATE ROOM SIZE ================= */
-
-document
-    .querySelectorAll("[data-modal-size]")
-    .forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            document
-                .querySelectorAll("[data-modal-size]")
-                .forEach(btn =>
-                    btn.classList.remove("active")
-                );
-
-            button.classList.add("active");
-
-            selectedCreateSize =
-                Number(button.dataset.modalSize);
-
-        });
-
+function formatDate(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d)) return "";
+    const today = new Date();
+    const opts = { month: "short", day: "numeric" };
+    if (d.getFullYear() !== today.getFullYear()) opts.year = "numeric";
+    const date = d.toLocaleDateString(undefined, opts);
+    const time = d.toLocaleTimeString(undefined, {
+        hour: "numeric", minute: "2-digit",
     });
-
-
-/* ================= CREATE ROOM ================= */
-
-document
-    .getElementById("createRoomForm")
-    .addEventListener("submit", function(e) {
-
-        e.preventDefault();
-
-
-        const name =
-            document.getElementById("roomName").value.trim();
-
-        const category =
-            document.getElementById("roomCategory").value;
-
-        const description =
-            document.getElementById("roomDescription").value.trim();
-
-        const time =
-            document.getElementById("roomTime").value;
-
-
-        if (!name || !category || !description) {
-
-            showToast("Please fill all required fields");
-
-            return;
-
-        }
-
-
-        const rooms = getRooms();
-
-
-        const newRoom = {
-
-            id: Date.now(),
-
-            title: name,
-
-            category: category,
-
-            description: description,
-
-            host: "Anonymous",
-
-            members: 1,
-
-            capacity: selectedCreateSize,
-
-            start: time
-                ? new Date(time).toLocaleString()
-                : "Starting soon",
-
-            status: "UPCOMING",
-
-            theme: getTheme(category)
-
-        };
-
-
-        rooms.unshift(newRoom);
-
-        saveRooms(rooms);
-
-
-        /* Add to My Rooms */
-
-        const myRooms = getMyRooms();
-
-        myRooms.push(newRoom.id);
-
-        saveMyRooms(myRooms);
-
-
-        /* Activity */
-
-        saveActivity(
-            `You created "${newRoom.title}"`
-        );
-
-
-        this.reset();
-
-        closeCreateRoom();
-
-        currentTab = "mine";
-
-        updateTabs();
-
-        renderRooms();
-
-        showToast("Discussion room created successfully");
-
-    });
-
-
-/* ================= CATEGORY THEME ================= */
-
-function getTheme(category) {
-
-    if (category === "Programming")
-        return "python";
-
-    if (category === "Marketing")
-        return "marketing";
-
-    if (category === "Communication")
-        return "speaking";
-
-    return "uiux";
-
+    return `${date}, ${time}`;
 }
 
+let toastTimer;
+function showToast(message, isError = false) {
+    const toast = document.getElementById("toast");
+    const text = document.getElementById("toastText");
+    const icon = toast.querySelector("i");
+    text.textContent = message;
+    icon.className = isError
+        ? "fa-solid fa-circle-exclamation"
+        : "fa-solid fa-circle-check";
+    toast.classList.toggle("error", isError);
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
+}
+
+function errorMessage(error) {
+    if (window.SkillShareAuth) {
+        return window.SkillShareAuth.getErrorMessage(error);
+    }
+    return (error && error.message) || "Something went wrong.";
+}
 
 /* ================= TABS ================= */
 
-document
-    .querySelectorAll(".tab")
-    .forEach(tab => {
-
-        tab.addEventListener("click", () => {
-
-            currentTab =
-                tab.dataset.tab;
-
-            updateTabs();
-
-            renderRooms();
-
-        });
-
+function setTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll(".tabs .tab").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tab);
     });
-
-
-function updateTabs() {
-
-    document
-        .querySelectorAll(".tab")
-        .forEach(tab => {
-
-            tab.classList.toggle(
-                "active",
-                tab.dataset.tab === currentTab
-            );
-
-        });
-
+    loadRooms();
 }
 
+/* ================= LOAD + RENDER ROOMS ================= */
 
-/* ================= SEARCH ================= */
+async function loadRooms() {
+    const container = document.getElementById("roomsContainer");
+    const queryId = ++latestQueryId;
+    const term = document.getElementById("searchInput").value.trim();
+    const category = document.getElementById("categoryFilter").value;
 
-document
-    .getElementById("searchInput")
-    .addEventListener("input", () => {
+    container.innerHTML = `
+        <div class="state-card">
+            <div class="spinner"></div>
+            <p>Loading discussions...</p>
+        </div>`;
 
-        renderRooms();
-
-    });
-
-
-function performSearch() {
-
-    renderRooms();
-
-}
-
-
-/* ================= FILTER ================= */
-
-document
-    .getElementById("categoryFilter")
-    .addEventListener("change", renderRooms);
-
-document
-    .getElementById("sortFilter")
-    .addEventListener("change", renderRooms);
-
-
-/* ================= PROFILE ================= */
-
-const profileBtn =
-    document.getElementById("profileBtn");
-
-const profileMenu =
-    document.getElementById("profileMenu");
-
-
-profileBtn.addEventListener("click", e => {
-
-    e.stopPropagation();
-
-    profileMenu.classList.toggle("show");
-
-});
-
-
-document.addEventListener("click", () => {
-
-    profileMenu.classList.remove("show");
-
-});
-
-
-profileMenu.addEventListener("click", e => {
-
-    e.stopPropagation();
-
-});
-
-
-/* ================= CREDITS ================= */
-
-function loadCredits() {
-
-    const credits =
-        localStorage.getItem("skillconnect_credits") || "0";
-
-    const element =
-        document.getElementById("topCredits");
-
-    if (element) {
-
-        element.textContent =
-            Number(credits).toLocaleString();
-
+    const API = window.SkillShareAPI;
+    if (!API) {
+        renderErrorState(container, "API client unavailable.", "Retry", loadRooms);
+        return;
     }
 
+    try {
+        const data = await API.listDiscussions({
+            q: term,
+            category: category,
+            filter: currentTab,
+            limit: 60,
+        });
+
+        if (queryId !== latestQueryId) return; // newer query in flight
+
+        roomsCache = data.rooms || [];
+        renderRooms(applySort(roomsCache));
+        updateOverview(roomsCache);
+    } catch (error) {
+        if (queryId !== latestQueryId) return;
+        renderErrorState(container, errorMessage(error), "Retry", loadRooms);
+    }
 }
 
-
-/* ================= ACTIVITY ================= */
-
-function getActivities() {
-
-    return JSON.parse(
-        localStorage.getItem("skillconnect_activity") || "[]"
-    );
-
+function renderErrorState(container, message, buttonLabel, retryFn) {
+    container.innerHTML = `
+        <div class="state-card error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <p>${escapeHTML(message)}</p>
+            <button class="retry-btn" type="button">
+                <i class="fa-solid fa-rotate-right"></i> ${escapeHTML(buttonLabel || "Retry")}
+            </button>
+        </div>`;
+    container.querySelector(".retry-btn").addEventListener("click", retryFn);
 }
 
-
-function saveActivity(text) {
-
-    const activities =
-        getActivities();
-
-    activities.unshift({
-        text,
-        time: "Just now"
-    });
-
-    localStorage.setItem(
-        "skillconnect_activity",
-        JSON.stringify(activities.slice(0,5))
-    );
-
+function statusBadge(room) {
+    const map = {
+        LIVE: ["live", "LIVE"],
+        SCHEDULED: ["scheduled", "SCHEDULED"],
+        ENDED: ["ended", "ENDED"],
+        CANCELLED: ["ended", "CANCELLED"],
+    };
+    const [cls, label] = map[room.status] || ["scheduled", room.status];
+    return `<span class="status-badge ${cls}">
+        ${cls === "live" ? '<span class="live-dot"></span>' : ""}${escapeHTML(label)}
+    </span>`;
 }
 
+function renderRooms(rooms) {
+    const container = document.getElementById("roomsContainer");
+    document.getElementById("resultCount").textContent =
+        rooms.length === 1 ? "1 room" : `${rooms.length} rooms`;
 
-function renderActivity() {
-
-    const container =
-        document.getElementById("activityList");
-
-    if (!container) return;
-
-    let activities =
-        getActivities();
-
-
-    if (!activities.length) {
-
-        activities = [
-
-            {
-                text: "Anonymous created UI/UX Design Discussion",
-                time: "10 min ago"
-            },
-
-            {
-                text: "Anonymous joined Python Programming Help",
-                time: "25 min ago"
-            },
-
-            {
-                text: "Anonymous scheduled Digital Marketing Trends",
-                time: "1 hour ago"
-            },
-
-            {
-                text: "Anonymous created Public Speaking Mastery",
-                time: "2 hours ago"
-            }
-
-        ];
-
+    if (!rooms.length) {
+        const emptyText = {
+            all: "No discussions match your search yet.",
+            live: "No rooms are live right now. Check back soon or host your own.",
+            upcoming: "No upcoming rooms scheduled yet.",
+            mine: "You haven't created any rooms yet.",
+            joined: "You haven't joined any rooms yet.",
+        };
+        container.innerHTML = `
+            <div class="state-card">
+                <i class="fa-regular fa-comments"></i>
+                <p>${escapeHTML(emptyText[currentTab] || emptyText.all)}</p>
+                <button class="retry-btn" type="button" onclick="openCreateRoom()">
+                    <i class="fa-solid fa-plus"></i> Create Room
+                </button>
+            </div>`;
+        return;
     }
 
+    container.innerHTML = rooms.map((room) => {
+        const host = room.host || {};
+        const count = room.participant_count || 0;
+        const full = count >= room.max_participants;
+        const closed = room.status === "ENDED" || room.status === "CANCELLED";
 
-    container.innerHTML =
-        activities.map(activity => `
+        let action;
+        if (room.is_host || room.is_member) {
+            action = `<a class="room-btn primary" href="${roomUrl(room.id)}">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                ${room.is_host ? "Open Room" : "Continue"}
+            </a>`;
+        } else if (closed) {
+            action = `<a class="room-btn ghost" href="${roomUrl(room.id)}">View Room</a>`;
+        } else if (full) {
+            action = `<button class="room-btn ghost" type="button" disabled title="This room is full">Room Full</button>`;
+        } else {
+            action = `<button class="room-btn primary" type="button"
+                onclick="joinRoom(${room.id})" data-join="${room.id}">
+                <i class="fa-solid fa-right-to-bracket"></i> Join Room
+            </button>`;
+        }
 
-            <div class="activity-item">
+        return `
+        <article class="room-card" data-room="${room.id}">
 
-                <div class="activity-avatar">
-                    <i class="fa-solid fa-user"></i>
+            <div class="room-card-top">
+
+                <div class="room-avatar">${escapeHTML(initialsOf(room.title))}</div>
+
+                <div class="room-titles">
+                    <h3><a href="${roomUrl(room.id)}">${escapeHTML(room.title)}</a></h3>
+                    <p class="room-host">
+                        <i class="fa-solid fa-microphone-lines"></i>
+                        Hosted by ${escapeHTML(host.name || "Unknown host")}
+                        ${room.is_host ? '<span class="you-chip">You</span>' : ""}
+                    </p>
                 </div>
 
-                <div class="activity-text">
-
-                    <strong>SkillConnect User</strong>
-                    ${activity.text}
-
-                    <span class="activity-time">
-                        ${activity.time}
-                    </span>
-
-                </div>
+                ${statusBadge(room)}
 
             </div>
 
-        `).join("");
+            ${room.description
+                ? `<p class="room-desc">${escapeHTML(room.description)}</p>`
+                : ""}
 
+            <div class="room-meta">
+
+                ${room.topic
+                    ? `<span class="meta-chip" title="Topic">
+                        <i class="fa-solid fa-tag"></i> ${escapeHTML(room.topic)}</span>`
+                    : ""}
+                ${room.category
+                    ? `<span class="meta-chip">
+                        <i class="fa-solid fa-layer-group"></i> ${escapeHTML(room.category)}</span>`
+                    : ""}
+                ${room.scheduled_at
+                    ? `<span class="meta-chip">
+                        <i class="fa-regular fa-clock"></i> ${escapeHTML(formatDate(room.scheduled_at))}</span>`
+                    : ""}
+
+            </div>
+
+            <div class="room-card-bottom">
+
+                <div class="participants-count ${full ? "full" : ""}"
+                     title="${count} of ${room.max_participants} participants">
+                    <i class="fa-solid fa-user-group"></i>
+                    ${count} / ${room.max_participants}
+                </div>
+
+                ${action}
+
+            </div>
+
+        </article>`;
+    }).join("");
 }
 
+function updateOverview(rooms) {
+    document.getElementById("statTotal").textContent = rooms.length;
+    document.getElementById("statLive").textContent =
+        rooms.filter((r) => r.status === "LIVE").length;
+    document.getElementById("statUpcoming").textContent =
+        rooms.filter((r) => r.status === "SCHEDULED").length;
+    // "Joined" = rooms where I am a non-host member (real backend flags).
+    document.getElementById("statJoined").textContent =
+        rooms.filter((r) => r.is_member && !r.is_host).length;
 
-/* ================= TOAST ================= */
-
-let toastTimer;
-
-function showToast(message) {
-
-    const toast =
-        document.getElementById("toast");
-
-    document.getElementById("toastText")
-        .textContent = message;
-
-    toast.classList.add("show");
-
-    clearTimeout(toastTimer);
-
-    toastTimer =
-        setTimeout(() => {
-
-            toast.classList.remove("show");
-
-        }, 3000);
-
+    // "My rooms" side panel: real rooms I host (same payload, no extra call).
+    const mine = roomsCache.filter((r) => r.is_host).slice(0, 4);
+    const list = document.getElementById("myRoomsList");
+    if (!mine.length) {
+        list.innerHTML =
+            '<p class="side-empty">You haven\'t created any rooms yet.</p>';
+        return;
+    }
+    list.innerHTML = mine.map((room) => `
+        <a class="mini-room" href="${roomUrl(room.id)}">
+            <span class="mini-avatar">${escapeHTML(initialsOf(room.title))}</span>
+            <span class="mini-info">
+                <strong>${escapeHTML(room.title)}</strong>
+                <small>${room.participant_count || 0} / ${room.max_participants || "?"} · ${escapeHTML(room.status)}</small>
+            </span>
+            <i class="fa-solid fa-chevron-right"></i>
+        </a>
+    `).join("");
 }
 
-
-/* ================= LOGOUT ================= */
-
-function logout() {
-
-    localStorage.removeItem("skillconnect_logged_in");
-
-    showToast("Logged out successfully");
-
-    setTimeout(() => {
-
-        window.location.href =
-            "index.html";
-
-    }, 800);
-
+/* Client-side sort for the visible payload (no extra API, no fake control):
+   the sort select now actually reorders what the server returned. */
+function applySort(rooms) {
+    const mode = (document.getElementById("sortFilter") || {}).value || "newest";
+    const list = rooms.slice();
+    if (mode === "oldest") {
+        list.sort((a, b) => (a.id || 0) - (b.id || 0));
+    } else if (mode === "participants") {
+        list.sort((a, b) => (b.participant_count || 0) - (a.participant_count || 0));
+    } else {
+        list.sort((a, b) => (b.id || 0) - (a.id || 0)); // newest first
+    }
+    return list;
 }
 
+/* ================= JOIN ROOM ================= */
 
-/* ================= ESCAPE MODAL ================= */
+async function joinRoom(roomId, button) {
+    const API = window.SkillShareAPI;
+    if (!API || !roomId) return;
 
-document.addEventListener("keydown", e => {
-
-    if (e.key === "Escape") {
-
-        closeCreateRoom();
-
+    const original = button ? button.innerHTML : null;
+    if (button) {
+        button.disabled = true;
+        button.innerHTML =
+            '<i class="fa-solid fa-circle-notch fa-spin"></i> Joining...';
     }
 
+    try {
+        await API.joinDiscussion(roomId);
+        window.location.href = roomUrl(roomId);
+    } catch (error) {
+        if (button && original) {
+            button.disabled = false;
+            button.innerHTML = original;
+        }
+        showToast(errorMessage(error), true);
+        // Refresh so a full room / ended room reflects the new state.
+        loadRooms();
+    }
+}
+
+/* ================= CREATE ROOM ================= */
+
+function openCreateRoom() {
+    const modal = document.getElementById("createModal");
+    modal.hidden = false;
+    document.body.classList.add("modal-open");
+    initCreateDefaults();
+    setTimeout(() => document.getElementById("roomTitle").focus(), 60);
+}
+
+function closeCreateRoom() {
+    const modal = document.getElementById("createModal");
+    modal.hidden = true;
+    document.body.classList.remove("modal-open");
+    const err = document.getElementById("createFormError");
+    err.hidden = true;
+}
+
+function showFormError(message) {
+    const err = document.getElementById("createFormError");
+    if (!err) {
+        showToast(message, true);
+        return;
+    }
+    err.textContent = message;
+    err.hidden = false;
+}
+
+function hideFormError() {
+    const err = document.getElementById("createFormError");
+    if (err) err.hidden = true;
+}
+
+async function submitCreateRoom(event) {
+    event.preventDefault();
+    if (creating) return;   // double-click guard: one request at a time
+    hideFormError();
+
+    const title = document.getElementById("roomTitle").value.trim();
+    const topic = document.getElementById("roomTopic").value.trim();
+    const maxRaw = document.getElementById("roomMax").value;
+    const maxParticipants = parseInt(String(maxRaw).trim(), 10);
+    const ALLOWED_MAX = [5, 10, 15, 20, 25, 50];
+
+    if (!title) return showFormError("Room title is required.");
+    if (!topic) return showFormError("Topic is required.");
+    if (!ALLOWED_MAX.includes(maxParticipants)) {
+        return showFormError("Please choose a valid participant limit (5, 10, 15, 20, 25 or 50).");
+    }
+
+    const date = document.getElementById("roomDate").value;   // yyyy-mm-dd
+    const time = document.getElementById("roomTime").value;   // hh:mm
+    if (!date) return showFormError("Please choose a date.");
+    if (!time) return showFormError("Please choose a time.");
+
+    // Local-timezone scheduling: the browser value is a local wall time.
+    // It is sent as a well-defined local datetime string; the backend
+    // stores it consistently and the UI renders it back in local time.
+    const scheduled = new Date(`${date}T${time}:00`);
+    if (isNaN(scheduled.getTime())) {
+        return showFormError("That date/time is not valid. Please pick another.");
+    }
+    if (scheduled.getTime() <= Date.now() - 60000) {
+        return showFormError("Please select a future time.");
+    }
+    const scheduledAt = `${date}T${time}:00`;
+
+    const durationRaw = document.getElementById("roomDuration").value;
+
+    const payload = {
+        title: title,
+        description: document.getElementById("roomDescription").value.trim() || null,
+        topic: topic,
+        category: document.getElementById("roomCategory").value || null,
+        room_type: document.getElementById("roomType").value,
+        max_participants: maxParticipants,
+        duration_minutes: durationRaw ? parseInt(durationRaw, 10) : null,
+        scheduled_at: scheduledAt,
+        agenda: document.getElementById("roomAgenda").value.trim() || null,
+    };
+
+    const button = document.getElementById("createSubmitBtn");
+    const original = button.innerHTML;
+    creating = true;
+    button.disabled = true;
+    button.innerHTML =
+        '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating...';
+
+    try {
+        const data = await window.SkillShareAPI.createDiscussion(payload);
+        // Backend returns { room: {...} }; accept a bare-room shape too so a
+        // response-shape drift can never produce ?room=undefined.
+        const room = (data && data.room) || data || {};
+        if (!room.id) throw new Error("Room created but no ID was returned.");
+
+        showToast("Room created. Opening it now...");
+        // Direct route to the real room — no dead page in between.
+        window.location.href = roomUrl(room.id);
+    } catch (error) {
+        creating = false;
+        button.disabled = false;
+        button.innerHTML = original;
+        showFormError(errorMessage(error));
+    }
+}
+
+/* Friendly date/time defaults: min = today, default = tomorrow 19:00. */
+function initCreateDefaults() {
+    try {
+        const dateEl = document.getElementById("roomDate");
+        const timeEl = document.getElementById("roomTime");
+        if (!dateEl || !timeEl) return;
+        const pad = (n) => String(n).padStart(2, "0");
+        const now = new Date();
+        const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        dateEl.min = today;
+        if (!dateEl.value) {
+            const tmr = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            dateEl.value = `${tmr.getFullYear()}-${pad(tmr.getMonth() + 1)}-${pad(tmr.getDate())}`;
+        }
+        if (!timeEl.value) timeEl.value = "19:00";
+    } catch (error) { /* defaults are a nicety — never block the form */ }
+}
+
+/* ================= GLOBAL EVENTS + INIT ================= */
+
+document.addEventListener("DOMContentLoaded", async () => {
+    /* Auth: rely on the shared service (redirects to login when the
+       session is missing/expired). */
+    if (!window.SkillShareAPI || !window.SkillShareAPI.getToken()) {
+        window.location.href = "login.html?next=live-discussions.html";
+        return;
+    }
+
+    /* Every lookup below is guarded: one missing element must never abort
+       the rest of initialisation. (An unguarded lookup previously threw
+       here, which killed the submit listener and the first loadRooms(),
+       leaving the page stuck on the loading skeleton.) */
+    const on = (id, event, handler) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(event, handler);
+    };
+
+    on("searchInput", "input", () => {
+        // Debounced search: one request per settled keystroke burst,
+        // stale responses are discarded via latestQueryId.
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(loadRooms, 250);
+    });
+
+    on("categoryFilter", "change", loadRooms);
+
+    document.querySelectorAll(".tabs .tab").forEach((button) => {
+        button.addEventListener("click", () => setTab(button.dataset.tab));
+    });
+
+    on("createRoomForm", "submit", submitCreateRoom);
+
+    on("createModal", "click", (e) => {
+        if (e.target === e.currentTarget) closeCreateRoom();
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeCreateRoom();
+    });
+
+    await loadRooms();
 });
 
-
-/* ================= INITIALIZE ================= */
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    loadCredits();
-
-    renderRooms();
-
-    renderActivity();
-
-});
