@@ -63,7 +63,31 @@ document.addEventListener("DOMContentLoaded", () => {
         activeTab: "all",
         searchSeq: 0,
         discoverSeq: 0,
-        loaded: false,
+                loaded: false,
+        searchAborted: null,
+    };
+
+    /* Session-scoped search cache (lightweight, no sensitive data). */
+    const SEARCH_CACHE = new Map();
+    const SEARCH_CACHE_MAX = 40;
+    const SEARCH_CACHE_TTL_MS = 60_000;
+    const searchCache = {
+        get(q) {
+            const e = SEARCH_CACHE.get(q);
+            if (!e) return null;
+            if (Date.now() - e.t > SEARCH_CACHE_TTL_MS) {
+                SEARCH_CACHE.delete(q);
+                return null;
+            }
+            return e.data;
+        },
+        set(q, data) {
+            if (SEARCH_CACHE.size >= SEARCH_CACHE_MAX) {
+                for (const k of SEARCH_CACHE.keys()) { SEARCH_CACHE.delete(k); break; }
+            }
+            SEARCH_CACHE.set(q, { data, t: Date.now() });
+        },
+        clear() { SEARCH_CACHE.clear(); },
     };
 
     /* =====================================================
@@ -120,6 +144,22 @@ document.addEventListener("DOMContentLoaded", () => {
         return code
             ? '<span class="card-idcode">ID: ' + escapeHtml(code) + "</span>"
             : "";
+    }
+
+    /* "@username" line - rendered only when the DB row really has one. */
+    function handleHtml(user) {
+        const uname = user && user.username ? String(user.username).trim() : "";
+        return uname ? '<span class="card-handle">@' + escapeHtml(uname) + "</span>" : "";
+    }
+
+    /* Public-ID + optional location line (both real columns of users). */
+    function idLineHtml(user) {
+        const code = escapeHtml(String((user && user.public_id) || "").replace(/^SC-?/i, ""));
+        const loc = user && user.location
+            ? " &middot; " + escapeHtml(user.location)
+            : "";
+        return '<span class="card-sub">ID: <span class="card-idcode">' + code +
+            "</span>" + loc + "</span>";
     }
 
     function setBtnLoading(btn, on) {
@@ -384,9 +424,8 @@ document.addEventListener("DOMContentLoaded", () => {
             '<div class="card-top">' + avatarHtml(user) +
             '<div style="min-width:0">' +
             '<h3 class="card-name"><span>' + escapeHtml(user.name) + "</span>" + pill + "</h3>" +
-            '<span class="card-sub">ID: <span class="card-idcode">' +
-            escapeHtml(String(user.public_id || "").replace(/^SC-?/i, "")) +
-            "</span></span></div></div>" +
+            handleHtml(user) +
+            idLineHtml(user) + "</div></div>" +
             (user.bio ? '<p class="card-bio">' + escapeHtml(user.bio) + "</p>" : "") +
             chipsHtml(user.skills) +
             '<div class="card-actions">' + actions + "</div></article>";
@@ -422,9 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
             '<div style="min-width:0">' +
             '<h3 class="card-name"><span>' + escapeHtml(other ? other.name : "Unknown user") +
             "</span>" + (badge || pillForIncoming(req.status)) + "</h3>" +
-            '<span class="card-sub">ID: <span class="card-idcode">' +
-            escapeHtml(String((other && other.public_id) || "").replace(/^SC-?/i, "")) +
-            "</span></span></div></div>" +
+            handleHtml(other) + idLineHtml(other) + "</div></div>" +
             (other && other.bio ? '<p class="card-bio">' + escapeHtml(other.bio) + "</p>" : "") +
             chipsHtml(other && other.skills) +
             (req.message ? '<p class="req-message">&ldquo;' + escapeHtml(req.message) + '&rdquo;</p>' : "") +
@@ -448,9 +485,7 @@ document.addEventListener("DOMContentLoaded", () => {
             '<div style="min-width:0">' +
             '<h3 class="card-name"><span>' + escapeHtml(u.name || "Unknown") + "</span>" +
             '<span class="rel-pill connected">Connected &#10003;</span></h3>' +
-            '<span class="card-sub">ID: <span class="card-idcode">' +
-            escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")) +
-            "</span></span></div></div>" +
+            handleHtml(u) + idLineHtml(u) + "</div></div>" +
             (u.bio ? '<p class="card-bio">' + escapeHtml(u.bio) + "</p>" : "") +
             chipsHtml(u.skills) +
             (conn.connected_since
@@ -638,41 +673,119 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const skills = String(u.skills || "").split(",").map(s => s.trim())
             .filter(Boolean).slice(0, 2).join(" &#8226; ");
+        // Real values only: username / public ID / skills come from the DB row.
+        const meta = [];
+        if (u.username) meta.push("@" + escapeHtml(u.username));
+        meta.push("ID: " + escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")));
+        if (skills) meta.push(skills);
         return '<button type="button" class="search-item" data-act="profile" ' +
             'data-user-id="' + u.id + '">' +
             avatarHtml(u) +
             '<div class="search-item-main">' +
             '<div class="search-item-name"><span>' + escapeHtml(u.name) + "</span>" + pill + "</div>" +
-            '<div class="search-item-meta">ID: ' +
-            escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")) +
-            (skills ? " &nbsp;&#8226;&nbsp; " + skills : "") + "</div>" +
+            '<div class="search-item-meta">' + meta.join(" &nbsp;&#8226;&nbsp; ") + "</div>" +
             "</div></button>";
     }
 
     function renderSearchResults(users, query) {
         if (!users.length) {
             searchResults.innerHTML =
-                '<div class="search-empty">No people found for "' +
-                escapeHtml(query) + '". Try a different name, skill or ID.</div>';
+                '<div class="search-empty">No accounts found<br>' +
+                '<span class="search-empty-hint">Nothing matched &ldquo;' +
+                escapeHtml(query) + "&rdquo;. Try another name or username.</span></div>";
             return;
         }
-        searchResults.innerHTML = users.map(searchItemHtml).join("");
+        searchResults.innerHTML =
+            '<div class="search-results-head">Search results</div>' +
+            users.map(searchItemHtml).join("");
     }
 
-    async function runSearch(query) {
+        async function runSearch(query, signal) {
+        // Bump the version for EVERY query (cache hits included) so a slower
+        // in-flight response can never overwrite a newer one.
         const seq = ++state.searchSeq;
+
+        // Session cache: repeating "ani" -> "anik" -> "ani" is instant.
+        const cached = searchCache.get(query);
+        if (cached) {
+            searchSpinner.hidden = true;
+            renderSearchResults(cached.users, query);
+            showSeeAll(query, !!cached.has_more);
+            return cached.users;
+        }
+
         searchSpinner.hidden = false;
+        showSearching();
         try {
-            const res = await API.searchUsers(query);
-            if (seq !== state.searchSeq) return; // stale response, drop it
-            renderSearchResults((res && res.users) || [], query);
+            const res = await API.searchUsers(query, 8, { signal });
+            if ((signal && signal.aborted) || seq !== state.searchSeq) return null; // stale, drop
+            const users = (res && res.users) || [];
+            const hasMore = !!res.has_more;
+            searchCache.set(query, { users, has_more: hasMore });
+            renderSearchResults(users, query);
+            showSeeAll(query, hasMore);
+            return users;
         } catch (err) {
+            // Aborted requests are expected (fast typing) - never surface them.
+            if ((signal && signal.aborted) || (err && err.name === "AbortError")) return null;
             if (seq === state.searchSeq && err.status !== 401) {
                 searchResults.innerHTML =
                     '<div class="search-empty">' + escapeHtml(friendlyError(err)) + "</div>";
             }
+            return null;
         } finally {
             if (seq === state.searchSeq) searchSpinner.hidden = true;
+        }
+    }
+
+    /* "Searching..." is only shown while a request is actually in flight. */
+    function showSearching() {
+        searchResults.innerHTML =
+            '<div class="search-status" role="status">' +
+            '<span class="search-status-dot" aria-hidden="true"></span>Searching&hellip;</div>';
+    }
+
+    /* "See all results" - only rendered when the backend says more exist. */
+    function showSeeAll(query, show) {
+        const existing = document.getElementById("searchSeeAll");
+        if (existing) existing.remove();
+        if (!show) return;
+        const row = document.createElement("div");
+        row.id = "searchSeeAll";
+        row.className = "search-see-all";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "search-see-all-btn";
+        btn.dataset.query = query;
+        btn.innerHTML = "See all results for &ldquo;" + escapeHtml(query) + "&rdquo;";
+        row.appendChild(btn);
+        searchResults.appendChild(row);
+    }
+
+    /* Full result list (bounded by the backend limit of 50) in the All tab. */
+    async function expandSearch(query) {
+        closeSearch();
+        switchTab("all");
+        // switchTab may kick off a lazy "discover" load; invalidate it so it
+        // can never overwrite these search results.
+        state.discoverSeq++;
+        grids.all.innerHTML = skeletons(4);
+        try {
+            const res = await API.searchUsers(query, 50);
+            const users = (res && res.users) || [];
+            grids.all.innerHTML = users.length
+                ? '<div class="panel-note">Showing ' + users.length + " result" +
+                  (users.length === 1 ? "" : "s") + " for &ldquo;" +
+                  escapeHtml(query) + "&rdquo;</div>" +
+                  users.map(personCard).join("")
+                : emptyState("&#128269;", "No accounts found",
+                    "No accounts match \"" + query + "\". Try another name or username.");
+            document.getElementById("searchSeeAll")?.remove();
+        } catch (err) {
+            if (err.status !== 401) {
+                grids.all.innerHTML = emptyState("&#9888;", "Couldn't search",
+                    friendlyError(err));
+            }
         }
     }
 
@@ -685,14 +798,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const value = peopleSearch.value.trim();
         searchClear.hidden = value.length === 0;
         clearTimeout(runSearch._t);
+
+        // Cancel anything still in flight and invalidate its response version.
+        if (state.searchAborted) {
+            state.searchAborted.abort();
+            state.searchAborted = null;
+        }
+        state.searchSeq++;
+
         if (value.length < 2) {
-            closeSearch();
+            searchSpinner.hidden = true;
+            if (value.length === 1) {
+                // Useful initial state: no pointless API call for 1 character.
+                searchResults.hidden = false;
+                searchResults.innerHTML =
+                    '<div class="search-hint">Keep typing &mdash; enter at least 2 ' +
+                    "characters to search people.</div>";
+            } else {
+                closeSearch();
+            }
             return;
         }
+
         runSearch._t = setTimeout(() => {
             searchResults.hidden = false;
-            runSearch(value);
-        }, 300); // debounce
+            const controller = new AbortController();
+            state.searchAborted = controller;
+            runSearch(value, controller.signal);
+        }, 250); // short debounce (spec: 200-300ms), never 1s+
     });
 
     searchClear.addEventListener("click", () => {
@@ -715,8 +848,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!e.target.closest(".search-wrap")) closeSearch();
     });
 
-    /* Search result actions (delegated): open the profile modal. */
+    /* Search result actions (delegated): profile modal + "see all". */
     searchResults.addEventListener("click", (e) => {
+        const seeAll = e.target.closest(".search-see-all-btn");
+        if (seeAll) {
+            expandSearch(seeAll.dataset.query || peopleSearch.value.trim());
+            return;
+        }
         const item = e.target.closest(".search-item");
         if (item) {
             closeSearch();
@@ -734,7 +872,7 @@ document.addEventListener("DOMContentLoaded", () => {
             grids.all.innerHTML = skeletons(6);
         }
         try {
-            const res = await API.searchUsers("");
+            const res = await API.searchUsers("", 50);
             if (seq !== state.discoverSeq) return;
             state.discover = (res && res.users) || [];
             grids.all.innerHTML = state.discover.length
@@ -763,55 +901,198 @@ document.addEventListener("DOMContentLoaded", () => {
         return '<span class="rel-pill none">Not connected</span>';
     }
 
+    /* Skill strength bars: only rendered when the DB really stores a level. */
+    const SKILL_LEVEL_PCT = {
+        beginner: 35, novice: 35, basic: 45, elementary: 45,
+        intermediate: 65, advanced: 85, expert: 100,
+    };
+
+    function titleCase(value) {
+        return String(value || "").replace(/[_-]+/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    function truncate(value, max) {
+        const text = String(value || "").trim();
+        return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text;
+    }
+
+    /* Loading state - the Requests page behind the modal stays usable. */
+    function profileSkeleton() {
+        return '<div class="p-loading" role="status">' +
+            '<span class="p-spinner" aria-hidden="true"></span>Opening profile&hellip;</div>' +
+            '<div class="p-head"><span class="sk sk-avatar"></span>' +
+            '<div class="sk-lines"><span class="sk sk-line" style="width:45%"></span>' +
+            '<span class="sk sk-line short"></span></div></div>' +
+            '<span class="sk sk-line sk-block" style="width:92%"></span>' +
+            '<span class="sk sk-line sk-block" style="width:68%"></span>' +
+            '<div class="p-actions"><span class="sk sk-btn"></span>' +
+            '<span class="sk sk-btn"></span></div>';
+    }
+
+    /* Skills: normalized UserSkill rows first, else the real users.skills CSV. */
+    function profileSkillsHtml(res) {
+        const detail = Array.isArray(res.skills_detail) ? res.skills_detail : [];
+        if (detail.length) {
+            return detail.map((s) => {
+                const pct = SKILL_LEVEL_PCT[String(s.level || "").toLowerCase()] || 0;
+                return '<div class="skill-item">' +
+                    '<div class="skill-item-top"><span class="skill-name">' +
+                    escapeHtml(s.name) + "</span>" +
+                    (s.level ? '<span class="skill-level">' +
+                        escapeHtml(titleCase(s.level)) + "</span>" : "") + "</div>" +
+                    (pct ? '<div class="skill-bar"><span style="width:' + pct +
+                        '%"></span></div>' : "") + "</div>";
+            }).join("");
+        }
+        const csv = String((res.user && res.user.skills) || "").trim();
+        if (!csv) return '<div class="p-empty">No skills added yet.</div>';
+        return chipsHtml(csv, 12);
+    }
+
+    function profileEducationHtml(rows) {
+        if (!rows.length) return '<div class="p-empty">No education added yet.</div>';
+        return rows.map((e) => {
+            const title = [e.degree, e.field_of_study].filter(Boolean).join(" &middot; ") ||
+                titleCase(e.education_level) || "Education";
+            const bits = [];
+            if (e.institution_name) bits.push(escapeHtml(e.institution_name));
+            if (e.cgpa) bits.push("CGPA " + escapeHtml(String(e.cgpa)));
+            if (e.grade) bits.push("Grade " + escapeHtml(String(e.grade)));
+            if (e.location) bits.push(escapeHtml(e.location));
+            return '<div class="p-item"><div class="p-item-title">' + title + "</div>" +
+                (bits.length ? '<div class="p-item-sub">' + bits.join(" &middot; ") +
+                    "</div>" : "") + "</div>";
+        }).join("");
+    }
+
+    function profileProjectsHtml(rows) {
+        if (!rows.length) return '<div class="p-empty">No projects added yet.</div>';
+        return rows.map((p) =>
+            '<div class="p-item"><div class="p-item-title">' +
+            escapeHtml(p.title || "Untitled project") + "</div>" +
+            (p.description ? '<div class="p-item-sub">' +
+                escapeHtml(truncate(p.description, 150)) + "</div>" : "") +
+            (p.skills ? chipsHtml(p.skills, 5) : "") + "</div>").join("");
+    }
+
+function profileHtml(res) {
+        const u = res.user || {};
+        const rel = res.relationship || {};
+        const skills = Array.isArray(res.skills_detail) ? res.skills_detail : [];
+        const education = Array.isArray(res.education) ? res.education : [];
+        const projects = Array.isArray(res.projects_preview) ? res.projects_preview : [];
+        const isSelf = !!(state.me && state.me.id === u.id);
+
+        let actions;
+        if (isSelf) {
+            actions = '<a class="btn btn-ghost" href="profile.html">Edit your profile</a>';
+        } else if (rel.connected) {
+            actions = '<a class="btn btn-primary" href="messages.html' +
+                (rel.conversation_id ? "?user=" + u.id : "") + '">Message</a>';
+        } else if (rel.pending_request_id && rel.pending_direction === "sent") {
+            actions = '<button type="button" class="btn btn-success" disabled>' +
+                'Request Sent &#10003;</button>' +
+                '<button type="button" class="btn btn-danger" data-act="cancel" ' +
+                'data-user-id="' + u.id + '" data-request-id="' + rel.pending_request_id +
+                '">Cancel Request</button>';
+        } else if (rel.pending_request_id) {
+            actions = '<button type="button" class="btn btn-success" data-act="accept" ' +
+                'data-user-id="' + u.id + '" data-request-id="' + rel.pending_request_id +
+                '">Accept</button>' +
+                '<button type="button" class="btn btn-danger" data-act="decline" ' +
+                'data-user-id="' + u.id + '" data-request-id="' + rel.pending_request_id +
+                '">Decline</button>';
+        } else {
+            actions = '<button type="button" class="btn btn-primary" data-act="connect" ' +
+                'data-user-id="' + u.id + '">Connect</button>';
+        }
+
+        const info = [];
+        if (u.location) {
+            info.push('<span class="p-kv"><b>Location</b><span>' +
+                escapeHtml(u.location) + "</span></span>");
+        }
+        if (u.website) {
+            const href = /^https?:\/\//i.test(u.website) ? u.website : "https://" + u.website;
+            info.push('<span class="p-kv"><b>Website</b><a href="' + escapeHtml(href) +
+                '" target="_blank" rel="noopener noreferrer">' + escapeHtml(u.website) +
+                "</a></span>");
+        }
+
+        const connections = typeof res.connections_count === "number"
+            ? res.connections_count : 0;
+
+        return '<div class="p-head">' + avatarHtml(u) +
+            '<div class="p-head-main"><h3 class="p-name" id="modalName">' +
+            escapeHtml(u.name) + "</h3>" +
+            (u.username ? '<span class="p-handle">@' + escapeHtml(u.username) + "</span>" : "") +
+            '<span class="p-id">ID: ' +
+            escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")) + "</span> " +
+            relLine(rel) + "</div></div>" +
+            (u.bio ? '<p class="p-bio">' + escapeHtml(u.bio) + "</p>" : "") +
+            '<div class="p-stats">' +
+            '<div class="p-stat"><b>' + connections + "</b><span>Connections</span></div>" +
+            '<div class="p-stat"><b>' + skills.length + "</b><span>Skills</span></div>" +
+            "</div>" +
+            (info.length
+                ? '<div class="p-section"><p class="p-label">About</p>' +
+                  '<div class="p-info">' + info.join("") + "</div></div>"
+                : "") +
+            '<div class="p-section"><p class="p-label">Skills</p>' +
+            profileSkillsHtml(res) + "</div>" +
+            '<div class="p-section"><p class="p-label">Education</p>' +
+            profileEducationHtml(education) + "</div>" +
+            '<div class="p-section"><p class="p-label">Projects</p>' +
+            profileProjectsHtml(projects) + "</div>" +
+            (u.interests
+                ? '<div class="p-section"><p class="p-label">Learning interests</p>' +
+                  chipsHtml(u.interests, 8) + "</div>"
+                : "") +
+            '<div class="p-actions">' + actions + "</div>";
+    }
+
+    /* Only the newest profile request may paint the modal. */
+    let profileSeq = 0;
+
     async function openProfile(userId) {
         if (!userId) return;
-        modalBody.innerHTML = skeletons(1);
+        const seq = ++profileSeq;
+        modalBody.setAttribute("aria-busy", "true");
+        modalBody.innerHTML = profileSkeleton();
         profileModal.hidden = false;
         modalClose.focus();
         try {
             const res = await API.getUserProfile(userId);
-            const u = res.user || {};
-            const rel = res.relationship || {};
-            let actions = "";
-
-            if (rel.connected) {
-                actions = '<a class="btn btn-primary" href="messages.html' +
-                    (rel.conversation_id ? "?user=" + u.id : "") + '">Message</a>';
-            } else if (rel.pending_request_id) {
-                actions = '<button type="button" class="btn btn-success" disabled>Request ' +
-                    (rel.pending_direction === "sent" ? "Sent &#10003;" : "Received") + "</button>";
-            } else {
-                actions = '<button type="button" class="btn btn-primary" data-act="connect" ' +
-                    'data-user-id="' + u.id + '">Connect</button>';
-            }
-
-            modalBody.innerHTML =
-                '<div class="p-head">' + avatarHtml(u) +
-                '<div><h3 class="p-name" id="modalName">' + escapeHtml(u.name) + "</h3>" +
-                '<span class="p-id">ID: ' +
-                escapeHtml(String(u.public_id || "").replace(/^SC-?/i, "")) + "</span> " +
-                relLine(rel) + "</div></div>" +
-                (u.bio ? '<p class="p-bio">' + escapeHtml(u.bio) + "</p>" : "") +
-                (u.skills
-                    ? '<div class="p-section"><p class="p-label">Skills</p>' +
-                      chipsHtml(u.skills, 8) + "</div>"
-                    : "") +
-                (u.interests
-                    ? '<div class="p-section"><p class="p-label">Learning interests</p>' +
-                      chipsHtml(u.interests, 8) + "</div>"
-                    : "") +
-                '<div class="p-actions">' + actions + "</div>";
-
-            modalBody.querySelector('[data-act="connect"]')
-                .addEventListener("click", (e) => handleAction(e.currentTarget));
+            if (seq !== profileSeq) return;      // a newer profile was opened
+            modalBody.setAttribute("aria-busy", "false");
+            modalBody.innerHTML = profileHtml(res);
         } catch (err) {
-            profileModal.hidden = true;
-            if (err.status !== 401) {
-                toast("error", "Couldn't load profile", friendlyError(err));
-            }
+            if (seq !== profileSeq || err.status === 401) return;
+            // The rest of the Requests page keeps working; retry stays available.
+            modalBody.setAttribute("aria-busy", "false");
+            modalBody.innerHTML =
+                '<div class="p-error" role="alert">' +
+                '<div class="p-error-title">Unable to load profile.</div>' +
+                '<div class="p-error-msg">' + escapeHtml(friendlyError(err)) + "</div>" +
+                '<div class="p-actions"><button type="button" class="btn btn-primary" ' +
+                'data-retry="' + escapeHtml(String(userId)) + '">Try again</button></div></div>';
         }
     }
 
+    /* Relationship actions inside the profile modal (connect / accept /
+       decline / cancel) reuse the same handler as the cards, so there is
+       no duplicate request logic anywhere. */
+    modalBody.addEventListener("click", async (e) => {
+        const retry = e.target.closest("[data-retry]");
+        if (retry) { openProfile(retry.dataset.retry); return; }
+        const btn = e.target.closest("button[data-act]");
+        if (!btn || btn.disabled) return;
+        const targetId = btn.dataset.userId;
+        await handleAction(btn);
+        // Refresh the open modal so the relationship state stays accurate.
+        if (targetId && !profileModal.hidden) openProfile(targetId);
+    });
     function closeProfile() {
         profileModal.hidden = true;
         modalBody.innerHTML = "";

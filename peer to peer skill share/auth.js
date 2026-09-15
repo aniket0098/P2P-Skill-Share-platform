@@ -130,7 +130,7 @@ window.SkillShareAuth = (() => {
             try {
                 // GET /me — backend resolves the user from the JWT.
                 const data = await window.SkillShareAPI.getMe();
-                const user = (data && data.user) || null;
+                const user = (data && (data.user || data)) || null;
 
                 if (!user || user.id == null) {
                     throw new Error("Current-user endpoint returned no user.");

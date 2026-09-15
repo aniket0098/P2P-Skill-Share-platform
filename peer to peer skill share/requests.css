@@ -1,32 +1,38 @@
 /* =========================================================
-   SKILLSHARE - CONNECTIONS
-   Modern, database-backed connection management interface.
+   SKILLSHARE - CONNECTIONS · 2026 DARK LAYERED UI PATCH
+   Scoped additive override. Existing light design-system and
+   class names are preserved; this only fixes contrast bugs
+   (light text on white cards) and layers the requested
+   deep-navy hierarchy on top. No routes/auth/DB changes.
    ========================================================= */
 
+/* Requests page — the :root dark tokens above apply file-wide because
+   this stylesheet is loaded only by requests.html. */
+
 :root {
-    --bg: #f4f6fb;
-    --surface: #ffffff;
-    --surface-soft: #f8f9fd;
-    --text: #121725;
-    --muted: #6b7689;
-    --border: #e4e8f1;
+    --bg: #07101F;
+    --surface: #0E1A2B;
+    --surface-soft: #14243A;
+    --text: #F4F7FB;
+    --muted: #AEBACB;
+    --border: rgba(174, 186, 203, 0.18);
 
-    --primary: #635bff;
-    --primary-dark: #5148e8;
-    --primary-soft: #eeedff;
+    --primary: #4F8CFF;
+    --primary-dark: #7FB0FF;
+    --primary-soft: rgba(79, 140, 255, 0.16);
 
-    --success: #0e9f6e;
-    --success-soft: #e5f7f0;
-    --danger: #e0245e;
-    --danger-soft: #fdeaef;
-    --warn: #b45309;
-    --warn-soft: #fef3e2;
+    --success: #35C98A;
+    --success-soft: rgba(53, 201, 138, 0.14);
+    --danger: #FF5C6C;
+    --danger-soft: rgba(255, 92, 108, 0.14);
+    --warn: #F5B942;
+    --warn-soft: rgba(245, 185, 66, 0.15);
 
     --radius: 16px;
     --radius-sm: 10px;
-    --shadow-sm: 0 1px 2px rgba(20, 27, 45, 0.05);
-    --shadow-md: 0 6px 20px -6px rgba(20, 27, 45, 0.14);
-    --shadow-lg: 0 24px 60px -12px rgba(20, 27, 45, 0.28);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, 0.65);
 }
 
 * { box-sizing: border-box; }
@@ -36,7 +42,8 @@ html, body { margin: 0; padding: 0; }
 body {
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     background:
-        radial-gradient(900px 320px at 85% -80px, rgba(99, 91, 255, 0.10), transparent 60%),
+        radial-gradient(1000px 340px at 85% -90px, rgba(79, 140, 255, 0.16), transparent 62%),
+        radial-gradient(760px 300px at 8% -70px, rgba(99, 91, 255, 0.12), transparent 60%),
         var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -46,7 +53,7 @@ body {
 button { font-family: inherit; }
 
 :focus-visible {
-    outline: 3px solid rgba(99, 91, 255, 0.45);
+    outline: 3px solid rgba(79, 140, 255, 0.55);
     outline-offset: 2px;
 }
 
@@ -63,7 +70,7 @@ button { font-family: inherit; }
     justify-content: space-between;
     gap: 16px;
     padding: 12px 28px;
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(7, 16, 31, 0.88);
     backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--border);
 }
@@ -87,7 +94,7 @@ button { font-family: inherit; }
     width: 32px;
     height: 32px;
     border-radius: 9px;
-    background: linear-gradient(135deg, var(--primary), #8f7bff);
+    background: linear-gradient(135deg, #2F6BEE, #6E5BE0);
     color: #fff;
     font-size: 17px;
     box-shadow: var(--shadow-sm);
@@ -107,7 +114,7 @@ button { font-family: inherit; }
 
 .topbar-nav a:hover { color: var(--text); background: var(--surface-soft); }
 
-.topbar-nav a.active { color: var(--primary-dark); background: var(--primary-soft); }
+.topbar-nav a.active { color: #DCE7FF; background: var(--primary-soft); }
 
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 
@@ -126,9 +133,9 @@ button { font-family: inherit; }
 }
 
 .icon-btn:hover {
-    color: var(--primary-dark);
-    border-color: rgba(99, 91, 255, 0.4);
-    background: var(--primary-soft);
+    color: #DCE7FF;
+    border-color: rgba(79, 140, 255, 0.55);
+    background: var(--surface-soft);
 }
 
 .icon-btn.spinning svg { animation: spin 0.7s linear infinite; }
@@ -146,7 +153,8 @@ button { font-family: inherit; }
     place-items: center;
     border-radius: 999px;
     background: var(--danger);
-    color: #ce5b5b;
+    /* Dark ink on the bright alert red: 6.1:1 (white on #FF5C6C was only 3.0:1). */
+    color: #2A0A0F;
     font-size: 10.5px;
     font-weight: 700;
     border: 2px solid var(--surface);
@@ -163,6 +171,7 @@ button { font-family: inherit; }
     border-radius: 999px;
     background: var(--surface);
     box-shadow: var(--shadow-sm);
+    color: var(--text);
 }
 
 .user-chip-avatar {
@@ -170,8 +179,8 @@ button { font-family: inherit; }
     height: 30px;
     border-radius: 50%;
     object-fit: cover;
-    background: linear-gradient(135deg, var(--primary), #8f7bff);
-    color: #f59f9f;
+    background: linear-gradient(135deg, #2F6BEE, #6E5BE0);
+    color: #ffffff;
     display: grid;
     place-items: center;
     font-size: 12px;
@@ -185,6 +194,7 @@ button { font-family: inherit; }
 .user-chip-name {
     font-size: 13.5px;
     font-weight: 700;
+    color: var(--text);
     max-width: 140px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -204,7 +214,7 @@ button { font-family: inherit; }
     font-size: clamp(30px, 4.4vw, 42px);
     font-weight: 900;
     letter-spacing: -0.035em;
-    background: linear-gradient(120deg, #141b2d 30%, var(--primary) 100%);
+    background: linear-gradient(120deg, #F4F7FB 20%, var(--primary) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -237,7 +247,7 @@ button { font-family: inherit; }
 
 .search-box:focus-within {
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.14), var(--shadow-md);
+    box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.22), var(--shadow-md);
 }
 
 .search-box input {
@@ -251,7 +261,7 @@ button { font-family: inherit; }
     min-width: 0;
 }
 
-.search-box input::placeholder { color: #9aa4b6; }
+.search-box input::placeholder { color: #7F8DA3; }
 
 .search-icon { color: var(--muted); flex-shrink: 0; }
 
@@ -330,6 +340,7 @@ button { font-family: inherit; }
 .search-item-name {
     font-weight: 700;
     font-size: 14.5px;
+    color: #F4F7FB;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -394,9 +405,9 @@ button { font-family: inherit; }
 .tab:hover { color: var(--text); }
 
 .tab.active {
-    background: linear-gradient(135deg, var(--primary), #7a6bff);
+    background: linear-gradient(135deg, #2F6BEE, #2456C8);
     color: #fff;
-    box-shadow: 0 6px 14px -6px rgba(99, 91, 255, 0.6);
+    box-shadow: 0 6px 14px -6px rgba(79, 140, 255, 0.65);
 }
 
 .tab-count {
@@ -455,12 +466,12 @@ button { font-family: inherit; }
     transition: all 0.15s ease;
 }
 
-.filter-chip:hover { color: var(--text); border-color: #c9cfdd; }
+.filter-chip:hover { color: var(--text); border-color: rgba(127, 176, 255, 0.55); }
 
 .filter-chip.active {
     background: var(--primary-soft);
-    border-color: rgba(99, 91, 255, 0.45);
-    color: var(--primary-dark);
+    border-color: rgba(79, 140, 255, 0.55);
+    color: #DCE7FF;
 }
 
 /* =========================================================
@@ -489,7 +500,7 @@ button { font-family: inherit; }
 .card:hover {
     transform: translateY(-3px);
     box-shadow: var(--shadow-md);
-    border-color: #d6dbec;
+    border-color: rgba(79, 140, 255, 0.45);
 }
 
 .card-top { display: flex; align-items: center; gap: 13px; min-width: 0; }
@@ -500,7 +511,7 @@ button { font-family: inherit; }
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    background: linear-gradient(135deg, var(--primary), #8f7bff);
+    background: linear-gradient(135deg, #2F6BEE, #6E5BE0);
     color: #fff;
     display: grid;
     place-items: center;
@@ -516,8 +527,9 @@ button { font-family: inherit; }
     font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
     font-size: 11.5px;
     font-weight: 700;
-    color: var(--primary-dark);
+    color: #BFD6FF;
     background: var(--primary-soft);
+    border: 1px solid rgba(79, 140, 255, 0.28);
     border-radius: 6px;
     padding: 1.5px 7px;
     letter-spacing: 0.04em;
@@ -528,6 +540,7 @@ button { font-family: inherit; }
     font-size: 15.5px;
     font-weight: 800;
     letter-spacing: -0.01em;
+    color: #F4F7FB;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -571,9 +584,15 @@ button { font-family: inherit; }
 }
 
 .chip.skill {
-    background: #f0fbf6;
-    border-color: #cdeee0;
-    color: #0b7a55;
+    background: rgba(53, 201, 138, 0.16);
+    border-color: rgba(53, 201, 138, 0.42);
+    color: #7FE7B4;
+}
+
+.chip.username {
+    background: rgba(79, 140, 255, 0.14);
+    border-color: rgba(79, 140, 255, 0.38);
+    color: #BFD6FF;
 }
 
 .card-meta {
@@ -625,9 +644,9 @@ button { font-family: inherit; }
 .btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: linear-gradient(135deg, #2F6BEE, #2456C8);
     color: #fff;
-    box-shadow: 0 5px 12px -5px rgba(99, 91, 255, 0.65);
+    box-shadow: 0 5px 12px -5px rgba(79, 140, 255, 0.65);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -636,9 +655,9 @@ button { font-family: inherit; }
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #10b981, #0e9f6e);
-    color: #fff;
-    box-shadow: 0 5px 12px -5px rgba(14, 159, 110, 0.6);
+    background: linear-gradient(135deg, #35C98A, #1DA871);
+    color: #06281C;
+    box-shadow: 0 5px 12px -5px rgba(53, 201, 138, 0.55);
 }
 
 .btn-success:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
@@ -649,15 +668,15 @@ button { font-family: inherit; }
     color: var(--text);
 }
 
-.btn-ghost:hover:not(:disabled) { background: var(--surface-soft); border-color: #c9cfdd; }
+.btn-ghost:hover:not(:disabled) { background: var(--surface-soft); border-color: rgba(127, 176, 255, 0.45); }
 
 .btn-danger {
     background: var(--danger-soft);
-    color: var(--danger);
-    border-color: rgba(224, 36, 94, 0.25);
+    color: #FF9AA6;
+    border-color: rgba(255, 92, 108, 0.36);
 }
 
-.btn-danger:hover:not(:disabled) { background: #fbdae2; }
+.btn-danger:hover:not(:disabled) { background: rgba(255, 92, 108, 0.22); color: #FFC2CA; }
 
 .btn.loading { position: relative; color: transparent !important; pointer-events: none; }
 
@@ -674,7 +693,7 @@ button { font-family: inherit; }
 
 .btn-ghost.loading::after,
 .btn-danger.loading::after {
-    border-color: rgba(20, 27, 45, 0.15);
+    border-color: rgba(244, 247, 251, 0.22);
     border-top-color: var(--muted);
 }
 
@@ -689,10 +708,10 @@ button { font-family: inherit; }
     letter-spacing: 0.02em;
 }
 
-.rel-pill.connected { background: var(--success-soft); color: var(--success); }
-.rel-pill.pending { background: var(--warn-soft); color: var(--warn); }
-.rel-pill.self { background: var(--primary-soft); color: var(--primary-dark); }
-.rel-pill.none { background: var(--surface-soft); color: var(--muted); }
+.rel-pill.connected { background: var(--success-soft); color: #7FE7B4; }
+.rel-pill.pending { background: var(--warn-soft); color: #F5C86B; }
+.rel-pill.self { background: var(--primary-soft); color: #BFD6FF; }
+.rel-pill.none { background: rgba(174, 186, 203, 0.12); color: #AEBACB; }
 
 .status-badge {
     display: inline-flex;
@@ -713,10 +732,10 @@ button { font-family: inherit; }
     background: currentColor;
 }
 
-.status-badge.pending { background: var(--warn-soft); color: var(--warn); }
-.status-badge.accepted { background: var(--success-soft); color: var(--success); }
-.status-badge.rejected { background: var(--danger-soft); color: var(--danger); }
-.status-badge.cancelled { background: #eef1f6; color: var(--muted); }
+.status-badge.pending { background: var(--warn-soft); color: #F5C86B; }
+.status-badge.accepted { background: var(--success-soft); color: #7FE7B4; }
+.status-badge.rejected { background: var(--danger-soft); color: #FF9AA6; }
+.status-badge.cancelled { background: rgba(174, 186, 203, 0.14); color: #AEBACB; }
 
 /* =========================================================
    EMPTY STATES / SKELETONS
@@ -727,7 +746,7 @@ button { font-family: inherit; }
     text-align: center;
     padding: 54px 20px;
     background: var(--surface);
-    border: 1.5px dashed #d5dbe8;
+    border: 1.5px dashed rgba(174, 186, 203, 0.34);
     border-radius: var(--radius);
     animation: fadeUp 0.25s ease;
 }
@@ -740,7 +759,7 @@ button { font-family: inherit; }
     place-items: center;
     border-radius: 50%;
     background: var(--primary-soft);
-    color: var(--primary-dark);
+    color: #BFD6FF;
     font-size: 27px;
 }
 
@@ -762,7 +781,7 @@ button { font-family: inherit; }
 .card.skeleton { animation: none; }
 
 .sk {
-    background: linear-gradient(90deg, #eef1f7 25%, #f7f9fc 45%, #eef1f7 65%);
+    background: linear-gradient(90deg, #14243A 25%, #1C3252 45%, #14243A 65%);
     background-size: 200% 100%;
     animation: shimmer 1.15s infinite linear;
     border-radius: 8px;
@@ -875,7 +894,8 @@ button { font-family: inherit; }
     width: min(520px, 100%);
     max-height: calc(100vh - 48px);
     overflow-y: auto;
-    background: var(--surface);
+    background: #0B1628;
+    border: 1px solid rgba(174, 186, 203, 0.18);
     border-radius: 20px;
     box-shadow: var(--shadow-lg);
     padding: 26px;
@@ -922,6 +942,116 @@ button { font-family: inherit; }
 
 .p-head { display: flex; align-items: center; gap: 16px; padding-right: 36px; }
 
+.p-head-main { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+
+.p-handle { font-size: 13px; font-weight: 600; color: #BFD6FF; }
+
+/* Loading / error states: readable on the modal surface. */
+.p-loading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #BFD6FF;
+    margin-bottom: 16px;
+}
+
+.p-spinner {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(79, 140, 255, 0.28);
+    border-top-color: var(--primary);
+    animation: spin 0.7s linear infinite;
+}
+
+.p-error {
+    border: 1px solid rgba(255, 92, 108, 0.4);
+    background: var(--danger-soft);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+}
+
+.p-error-title { color: #FFC2CA; font-weight: 800; font-size: 14.5px; }
+
+.p-error-msg { color: var(--muted); font-size: 13px; margin-top: 5px; }
+
+.p-error .p-actions { margin-top: 14px; }
+
+/* Real profile fields (location / website) - labels vs values are distinct. */
+.p-info { display: flex; flex-direction: column; gap: 8px; }
+
+.p-kv { display: flex; gap: 10px; font-size: 13px; min-width: 0; }
+
+.p-kv b {
+    color: var(--muted);
+    font-weight: 700;
+    min-width: 74px;
+    flex-shrink: 0;
+}
+
+.p-kv span, .p-kv a { color: var(--text); overflow-wrap: anywhere; }
+
+.p-kv a { color: #BFD6FF; }
+
+.p-kv a:hover { color: #DCE7FF; text-decoration: underline; }
+
+/* Education / project rows. */
+.p-item {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 13px;
+}
+
+.p-item + .p-item { margin-top: 8px; }
+
+.p-item-title { color: var(--text); font-weight: 700; font-size: 13.5px; }
+
+.p-item-sub { color: var(--muted); font-size: 12.5px; margin-top: 3px; line-height: 1.5; }
+
+.p-item .chip-row { margin-top: 8px; }
+
+.p-empty {
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+    background: rgba(174, 186, 203, 0.07);
+    border: 1px dashed rgba(174, 186, 203, 0.28);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+}
+
+/* Skill strength (only rendered when a real level exists). */
+.skill-item + .skill-item { margin-top: 11px; }
+
+.skill-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.skill-name { color: var(--text); font-size: 13px; font-weight: 700; }
+
+.skill-level { color: #7FE7B4; font-size: 11.5px; font-weight: 700; }
+
+.skill-bar {
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(174, 186, 203, 0.16);
+    overflow: hidden;
+}
+
+.skill-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), #35C98A);
+}
+
 .p-head .avatar { width: 68px; height: 68px; font-size: 22px; }
 
 .p-name { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
@@ -932,7 +1062,7 @@ button { font-family: inherit; }
     font-family: ui-monospace, Consolas, monospace;
     font-size: 12px;
     font-weight: 700;
-    color: var(--primary-dark);
+    color: #BFD6FF;
     background: var(--primary-soft);
     padding: 2.5px 9px;
     border-radius: 7px;
@@ -998,4 +1128,138 @@ button { font-family: inherit; }
     .toast-container { left: 16px; right: 16px; bottom: 16px; }
     .p-actions .btn { min-width: 100%; }
     .card-actions .btn { flex: 1; }
+}
+
+/* =========================================================
+   REQUESTS PAGE - ADDITIVE UI (search states, handles, skeletons)
+   Append-only section: fixes a few contrast/visibility details and
+   adds the new type-ahead + profile states. Nothing here changes
+   existing selectors, routes or layout structure.
+   ========================================================= */
+
+/* "@username" under the name - distinct from the primary name colour so
+   the two lines never blend together. */
+.card-handle {
+    display: block;
+    color: #BFD6FF;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Header row inside the search dropdown. */
+.search-results-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 9px 16px;
+    background: #0B1628;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* "Searching..." - shown only while a request is genuinely in flight. */
+.search-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 16px;
+    color: var(--text);
+    font-size: 13.5px;
+}
+
+.search-status-dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid rgba(79, 140, 255, 0.3);
+    border-top-color: var(--primary);
+    animation: spin 0.7s linear infinite;
+}
+
+/* "Keep typing..." initial state (fewer than the minimum characters). */
+.search-hint {
+    padding: 16px;
+    color: var(--text);
+    font-size: 13.5px;
+}
+
+/* Empty-state hint text stays secondary but readable. */
+.search-empty-hint {
+    display: inline-block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+/* "See all results" footer row. */
+.search-see-all {
+    border-top: 1px solid var(--border);
+    background: #0B1628;
+}
+
+.search-see-all-btn {
+    width: 100%;
+    padding: 12px 16px;
+    border: 0;
+    background: transparent;
+    color: #BFD6FF;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.search-see-all-btn:hover { background: var(--surface-soft); color: #DCE7FF; }
+
+/* Small informational line above a grid (used by "See all results"). */
+.panel-note {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 2px 4px;
+}
+
+/* Skeleton helper for the profile loading state. */
+.sk-block { display: block; margin: 10px 0; }
+
+@media (max-width: 900px) {
+    /* Tablet: profile becomes a comfortable right-hand drawer. */
+    #profileModal .modal {
+        width: min(560px, 100%);
+        max-height: calc(100vh - 40px);
+    }
+}
+
+@media (max-width: 640px) {
+    /* Mobile: profile view is a full-screen drawer. */
+    #profileModal { padding: 0; place-items: stretch; }
+
+    #profileModal .modal {
+        width: 100%;
+        max-height: 100vh;
+        height: 100vh;
+        border-radius: 0;
+        border: 0;
+        padding: 18px 16px 28px;
+    }
+
+    #profileModal .modal-body { padding-bottom: 28px; }
+
+    .p-head .avatar { width: 58px; height: 58px; font-size: 19px; }
+
+    .p-kv b { min-width: 62px; }
+
+    .search-results { border-radius: 14px; }
+
+    .search-item { padding: 11px 13px; }
 }
