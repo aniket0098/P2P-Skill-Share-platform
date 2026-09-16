@@ -18,17 +18,17 @@
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <link rel="stylesheet" href="discussion-room.css?v=20260916c">
-    <link rel="stylesheet" href="livekit-room.css?v=20260916c">
-    <link rel="stylesheet" href="components/profile-dropdown.css?v=20260916c">
-    <script src="config.js?v=20260916c"></script>
-    <script src="api-client.js?v=20260916c"></script>
-    <script src="auth.js?v=20260916c"></script>
+    <link rel="stylesheet" href="discussion-room.css?v=20260916d">
+    <link rel="stylesheet" href="livekit-room.css?v=20260916d">
+    <link rel="stylesheet" href="components/profile-dropdown.css?v=20260916d">
+    <script src="config.js?v=20260916d"></script>
+    <script src="api-client.js?v=20260916d"></script>
+    <script src="auth.js?v=20260916d"></script>
     <!-- LiveKit client (CDN UMD). No credentials here: the browser only
          receives the public server URL + a short-lived token from
          POST /api/livekit/token. -->
     <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.4/dist/livekit-client.umd.min.js"></script>
-    <script src="components/profile-dropdown.js?v=20260916c"></script>
+    <script src="components/profile-dropdown.js?v=20260916d"></script>
 </head>
 
 <body>
@@ -237,6 +237,16 @@
                             <span class="live-dot"></span> SCHEDULED
                         </span>
 
+                        <span class="privacy-pill" id="roomPrivacyPill" hidden
+                              title="Private room — the host approves join requests">
+                            <i class="fa-solid fa-lock"></i> PRIVATE
+                        </span>
+
+                        <span class="header-stat" id="meetingTimerStat" hidden title="Meeting time">
+                            <i class="fa-regular fa-hourglass-half"></i>
+                            <span id="meetingTimer">00:00</span>
+                        </span>
+
                         <span class="header-stat" title="Participants">
                             <i class="fa-solid fa-user-group"></i>
                             <b id="participantCount">0</b> / <span id="participantMax">0</span>
@@ -328,6 +338,8 @@
 
                             <div class="livekit-statusline" id="livekitStatusline">Connecting to live room…</div>
 
+                            <div class="share-selector" id="shareSelector" hidden></div>
+
                             <div class="livekit-grid" id="livekitGrid"></div>
 
                             <div class="livekit-controls">
@@ -339,6 +351,15 @@
                                 </button>
                                 <button class="control-btn" type="button" id="screenBtn" aria-label="Share screen">
                                     <i class="fa-solid fa-display"></i><span>Share</span>
+                                </button>
+                                <button class="control-btn" type="button" id="handBtn" aria-label="Raise hand">
+                                    <i class="fa-regular fa-hand"></i><span>Hand</span>
+                                </button>
+                                <button class="control-btn" type="button" id="presentBtn" aria-label="Presentation mode">
+                                    <i class="fa-solid fa-up-right-and-down-left-from-center"></i><span>Present</span>
+                                </button>
+                                <button class="control-btn danger" type="button" id="exitPresentationBtn" hidden>
+                                    <i class="fa-solid fa-compress"></i><span>Exit Presentation</span>
                                 </button>
                                 <button class="control-btn danger" type="button" id="livekitRetryBtn" hidden>
                                     <i class="fa-solid fa-rotate-right"></i><span>Retry</span>
@@ -428,6 +449,25 @@
                     <aside class="side-col">
 
 
+                        <!-- JOIN REQUESTS (host/moderator only; private rooms) -->
+
+                        <section class="panel join-requests-panel" id="joinRequestsPanel" hidden>
+
+                            <div class="panel-head">
+
+                                <h3>
+                                    <i class="fa-solid fa-user-clock"></i>
+                                    Join Requests
+                                    <span class="count-chip" id="joinRequestsChip">0</span>
+                                </h3>
+
+                            </div>
+
+                            <div class="join-requests-list" id="joinRequestsList"></div>
+
+                        </section>
+
+
                         <!-- PARTICIPANTS -->
 
                         <section class="panel participants-panel">
@@ -446,6 +486,9 @@
                                 </button>
 
                             </div>
+
+                            <input type="text" id="participantSearch" class="participant-search"
+                                   placeholder="Search participants…" autocomplete="off">
 
                             <div class="participants-list" id="participantsList"></div>
 
@@ -591,14 +634,14 @@
 <div class="toast" id="toast" role="status"></div>
 
 
-<script src="discussion-room.js?v=20260916c"></script>
-    <script src="livekit-room.js?v=20260916c"></script>
-    <script src="livekit-room-part2.js?v=20260916c"></script>
-    <script src="livekit-room-part3.js?v=20260916c"></script>
-    <script src="livekit-room-part4.js?v=20260916c"></script>
+<script src="discussion-room.js?v=20260916d"></script>
+    <script src="livekit-room.js?v=20260916d"></script>
+    <script src="livekit-room-part2.js?v=20260916d"></script>
+    <script src="livekit-room-part3.js?v=20260916d"></script>
+    <script src="livekit-room-part4.js?v=20260916d"></script>
 
     <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
-    <script src="portal-unify.js?v=20260916c"></script>
+    <script src="portal-unify.js?v=20260916d"></script>
 </body>
 </html>
 

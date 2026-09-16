@@ -653,6 +653,15 @@ window.SkillShareAPI = (() => {
             request(`/api/discussions/${roomId}/join`, { method: "POST" }),
         leaveDiscussion: (roomId) =>
             request(`/api/discussions/${roomId}/leave`, { method: "POST" }),
+        /* Private-room join requests (additive; existing contracts untouched). */
+        requestDiscussionJoin: (roomId) =>
+            request(`/api/discussions/${roomId}/request`, { method: "POST" }),
+        getDiscussionJoinRequests: (roomId, status = "pending") =>
+            request(`/api/discussions/${roomId}/requests?status=${encodeURIComponent(status)}`),
+        acceptDiscussionJoinRequest: (roomId, requestId) =>
+            request(`/api/discussions/${roomId}/requests/${requestId}/accept`, { method: "POST" }),
+        rejectDiscussionJoinRequest: (roomId, requestId) =>
+            request(`/api/discussions/${roomId}/requests/${requestId}/reject`, { method: "POST" }),
         getDiscussionParticipants: (roomId) =>
             request(`/api/discussions/${roomId}/participants`),
         removeDiscussionParticipant: (roomId, userId) =>

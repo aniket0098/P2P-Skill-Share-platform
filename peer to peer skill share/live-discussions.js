@@ -179,6 +179,27 @@ function renderRooms(rooms) {
             </a>`;
         } else if (closed) {
             action = `<a class="room-btn ghost" href="${roomUrl(room.id)}">View Room</a>`;
+        } else if (room.is_private && room.my_join_request === "pending") {
+            action = `<button class="room-btn ghost" type="button" disabled
+                title="Waiting for the host to approve your request">
+                <i class="fa-solid fa-hourglass-half"></i> Request Pending
+            </button>`;
+        } else if (room.is_private && room.my_join_request === "accepted") {
+            action = `<button class="room-btn primary" type="button"
+                onclick="joinRoom(${room.id})" data-join="${room.id}">
+                <i class="fa-solid fa-right-to-bracket"></i> Join Room
+            </button>`;
+        } else if (room.is_private && room.my_join_request === "rejected") {
+            action = `<button class="room-btn ghost" type="button"
+                onclick="requestToJoin(${room.id}, this)"
+                title="Your request was declined — send a new one?">
+                <i class="fa-solid fa-rotate-right"></i> Request Again
+            </button>`;
+        } else if (room.is_private) {
+            action = `<button class="room-btn primary" type="button"
+                onclick="requestToJoin(${room.id}, this)" data-join="${room.id}">
+                <i class="fa-solid fa-lock"></i> Request to Join
+            </button>`;
         } else if (full) {
             action = `<button class="room-btn ghost" type="button" disabled title="This room is full">Room Full</button>`;
         } else {
@@ -201,6 +222,7 @@ function renderRooms(rooms) {
                         <i class="fa-solid fa-microphone-lines"></i>
                         Hosted by ${escapeHTML(host.name || "Unknown host")}
                         ${room.is_host ? '<span class="you-chip">You</span>' : ""}
+                        ${room.is_private ? '<span class="privacy-chip" title="Private room — host approval required"><i class="fa-solid fa-lock"></i> Private</span>' : ""}
                     </p>
                 </div>
 
@@ -317,6 +339,35 @@ async function joinRoom(roomId, button) {
     }
 }
 
+/* PRIVATE ROOMS: ask the host for approval (no direct join). */
+async function requestToJoin(roomId, button) {
+    const API = window.SkillShareAPI;
+    if (!API || !roomId) return;
+
+    const original = button ? button.innerHTML : null;
+    if (button) {
+        button.disabled = true;
+        button.innerHTML =
+            '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending...';
+    }
+
+    try {
+        await API.requestDiscussionJoin(roomId);
+        showToast("Request sent — waiting for the host to approve.");
+        if (button) {
+            button.disabled = true;
+            button.innerHTML =
+                '<i class="fa-solid fa-hourglass-half"></i> Request Pending';
+        }
+    } catch (error) {
+        if (button && original) {
+            button.disabled = false;
+            button.innerHTML = original;
+        }
+        showToast(errorMessage(error), true);
+    }
+}
+
 /* ================= CREATE ROOM ================= */
 
 function openCreateRoom() {
@@ -392,6 +443,7 @@ async function submitCreateRoom(event) {
         topic: topic,
         category: document.getElementById("roomCategory").value || null,
         room_type: document.getElementById("roomType").value,
+        is_private: (document.getElementById("roomVisibility") || {}).value === "private",
         max_participants: maxParticipants,
         duration_minutes: durationRaw ? parseInt(durationRaw, 10) : null,
         scheduled_at: scheduledAt,

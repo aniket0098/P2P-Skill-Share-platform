@@ -133,6 +133,33 @@
     border-radius: 999px;
 }
 
+/* Honest fallback label inside a tile without a live frame — the tile is
+   never an empty bordered box (avatar + CONNECTING / CAMERA OFF /
+   VIDEO UNAVAILABLE). Hidden while the video is rendering. */
+.lk-camstate {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(4, 8, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    padding: 4px 10px;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+/* Dimension guard: a video element must never inflate its tile or overflow
+   horizontally on narrow screens (Phase 13/19). */
+.lk-tile video {
+    max-width: 100%;
+}
+
 .livekit-controls {
     display: flex;
     flex-wrap: wrap;
@@ -180,4 +207,514 @@
     color: var(--muted, #98a1bd);
     background: rgba(255, 255, 255, 0.04);
     border: 1px dashed rgba(255, 255, 255, 0.18);
+}
+
+/* =========================================================
+   MEETING UPGRADE (additive) — tile menu, hand, pin /
+   spotlight, presentation mode, share selector.
+   ========================================================= */
+
+/* raise-hand flag on a tile */
+.lk-flags span[data-f="hand"] {
+    display: none;
+}
+
+.lk-flags span[data-f="hand"].raised {
+    display: grid;
+    color: #0b1026;
+    background: #ffd166;
+    border-color: #ffd166;
+}
+
+/* three-dot menu button */
+.lk-menu-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    color: #fff;
+    background: rgba(4, 8, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.lk-tile:hover .lk-menu-btn,
+.lk-menu-btn:focus-visible {
+    opacity: 1;
+}
+
+.lk-menu-btn:hover {
+    background: rgba(47, 129, 255, 0.45);
+}
+
+.lk-tile-menu {
+    position: absolute;
+    top: 38px;
+    left: 8px;
+    z-index: 30;
+    min-width: 172px;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    border-radius: 11px;
+    background: #101a36;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+
+.lk-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #eef1fb;
+    text-align: left;
+}
+
+.lk-menu-item i { width: 15px; text-align: center; }
+
+.lk-menu-item:hover { background: rgba(47, 129, 255, 0.2); }
+
+.lk-menu-item.danger {
+    color: #ffc9ce;
+}
+
+.lk-menu-item.danger:hover { background: rgba(255, 93, 108, 0.18); }
+
+/* pinned / spotlight layout roles */
+.lk-tile.pinned {
+    border-color: rgba(34, 211, 238, 0.75);
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.35);
+}
+
+.livekit-grid.has-spotlight .lk-tile.spotlight {
+    grid-column: 1 / -1;
+    min-height: 260px;
+}
+
+.livekit-grid.has-spotlight .lk-tile.spotlight video {
+    height: 320px;
+}
+
+/* active-share selector (2+ simultaneous screen shares) */
+.share-selector {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 9px 11px;
+    border-radius: 11px;
+    background: rgba(255, 209, 102, 0.08);
+    border: 1px solid rgba(255, 209, 102, 0.4);
+}
+
+.share-selector[hidden] { display: none !important; }
+
+.share-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffd166;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.share-option {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #eef1fb;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.share-option:hover { background: rgba(47, 129, 255, 0.2); }
+
+.share-option.active {
+    color: #0b1026;
+    background: #ffd166;
+    border-color: #ffd166;
+}
+
+/* presentation mode: the active share is highlighted in-flow.
+   The <video> element is never re-parented — connection stays intact.
+   (Per-tile native fullscreen is handled by :fullscreen rules below.) */
+body.presenting .lk-tile.lk-presentation {
+    border-color: rgba(255, 209, 102, 0.75);
+    box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.4);
+}
+
+body.presenting .lk-tile.lk-presentation video {
+    object-fit: contain;
+    background: #000;
+}
+
+/* While presenting, side panels collapse so the stage stays dominant —
+   participants remain visible in the compact in-grid roster. */
+body.presenting .sidebar,
+body.presenting .topbar,
+body.presenting .agenda-panel,
+body.presenting .resources-panel,
+body.presenting .info-panel,
+body.presenting .side-col,
+body.presenting .room-header {
+    display: none !important;
+}
+
+body.presenting .room-layout {
+    grid-template-columns: 1fr;
+}
+
+body.presenting .main {
+    margin-left: 0;
+    width: 100%;
+    padding: 12px;
+}
+
+body.presenting .livekit-controls {
+    position: sticky;
+    bottom: 12px;
+    z-index: 40;
+    background: rgba(4, 8, 24, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    padding: 9px 12px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 12px auto 0;
+}
+
+/* Mobile: keep tiles readable and controls reachable. */
+@media (max-width: 650px) {
+    .livekit-grid { grid-template-columns: 1fr 1fr; }
+    .lk-tile video { height: 120px; }
+    .livekit-grid.has-spotlight .lk-tile.spotlight,
+    .livekit-grid.has-spotlight .lk-tile.spotlight video {
+        min-height: 180px;
+        height: 200px;
+    }
+    .lk-tile-menu { min-width: 150px; }
+}
+
+/* =========================================================
+   GOOGLE-MEET-STYLE PRESENTATION LAYOUT (additive).
+   .is-presenting is applied whenever a screen share is live or
+   Present mode is on. One logical participant: share tiles get the
+   dominant stage; the presenter's own camera tile is hidden from the
+   grid (its PiP overlay lives inside the share tile); everyone else
+   becomes compact avatars. No <video> is ever re-parented.
+   ========================================================= */
+
+.livekit-grid.is-presenting {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-flow: dense;
+    align-items: stretch;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-share-main {
+    grid-column: span 12;
+    min-height: 340px;
+    background: #000;
+    border-color: rgba(255, 209, 102, 0.45);
+}
+
+.livekit-grid.is-presenting .lk-tile.is-share-main > video {
+    height: clamp(300px, 48vh, 560px);
+    object-fit: contain;
+    background: #000;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-share-main.is-active-share {
+    box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.45);
+}
+
+/* Two simultaneous shares: side by side on wide screens. */
+.livekit-grid.is-presenting.shares-2 .lk-tile.is-share-main {
+    grid-column: span 6;
+}
+
+/* Three+ shares: keep every presentation readable (never postage-stamp). */
+.livekit-grid.is-presenting.shares-many .lk-tile.is-share-main {
+    grid-column: span 6;
+    min-height: 260px;
+}
+
+.livekit-grid.is-presenting.shares-many .lk-tile.is-share-main > video {
+    height: clamp(220px, 32vh, 380px);
+}
+
+.livekit-grid.is-presenting .lk-tile.is-share-main .lk-screen-tag {
+    z-index: 3;
+}
+
+/* Presenter identity bar (name + 3-dot menu stay reachable). */
+.livekit-grid.is-presenting .lk-tile.is-share-main .lk-name {
+    font-size: 12.5px;
+    padding: 6px 12px;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-share-main .lk-menu-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    z-index: 4;
+}
+
+/* =========================================================
+   PRESENTER CAMERA PiP — real camera <video> overlay.
+   The presenter's camera track is attached to <video.lk-pip-video>
+   inside the share tile; initials (.lk-pip-avatar) + name are the
+   fallback when the camera is off/unavailable. pointer-events:none
+   keeps the tile's own 3-dot menu as the only action surface, and
+   the PiP never blocks presenter controls.
+   ========================================================= */
+.lk-tile.is-share-main .lk-pip {
+    position: absolute;
+    right: 12px;
+    bottom: 46px;
+    /* ~24% of the presentation width on desktop, hard-capped. */
+    width: clamp(112px, 24%, 340px);
+    aspect-ratio: 16 / 9;
+    border-radius: 14px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: rgba(4, 8, 24, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* Camera frames. The box keeps a 16:9 aspect; object-fit: cover means the
+   video is never distorted. Explicit box rules (width/height !important)
+   so the tile-level stage/fullscreen video sizing can never stretch it. */
+.lk-tile.is-share-main .lk-pip video.lk-pip-video {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none;
+    object-fit: cover;
+    background: #000;
+    display: none;
+}
+
+.lk-tile.is-share-main .lk-pip.is-live video.lk-pip-video {
+    display: block;
+}
+
+.lk-pip-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 14.5px;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: linear-gradient(135deg, #2f81ff, #22d3ee);
+}
+
+/* Presenter name caption (avatar / waiting / degraded states only). */
+.lk-pip-name {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    max-width: calc(100% - 12px);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(4, 8, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    padding: 2px 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: none;
+}
+
+/* Connecting… / Camera off caption — the PiP is never an empty box. */
+.lk-pip-state {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    max-width: calc(100% - 12px);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(4, 8, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    padding: 2px 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: none;
+}
+
+.lk-tile.is-share-main .lk-pip.is-avatar .lk-pip-name,
+.lk-tile.is-share-main .lk-pip.is-waiting .lk-pip-name,
+.lk-tile.is-share-main .lk-pip.is-degraded .lk-pip-name {
+    display: block;
+}
+
+.lk-tile.is-share-main .lk-pip.is-waiting .lk-pip-state,
+.lk-tile.is-share-main .lk-pip.is-degraded .lk-pip-state {
+    display: block;
+}
+
+/* Live camera: video only + a small green "camera on" dot. */
+.lk-tile.is-share-main .lk-pip.is-live .lk-pip-avatar {
+    display: none;
+}
+
+.lk-tile.is-share-main .lk-pip.is-live {
+    border-color: rgba(47, 214, 138, 0.55);
+}
+
+.lk-tile.is-share-main .lk-pip.is-live::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #2fd68a;
+    box-shadow: 0 0 6px rgba(47, 214, 138, 0.8);
+    z-index: 2;
+}
+
+/* The presenter's own camera tile: hidden from the grid while their
+   screen has presentation priority — no duplicate A-camera + A-screen. */
+.livekit-grid.is-presenting .lk-tile.is-presenter-cam {
+    display: none !important;
+}
+
+/* Non-presenting participants become compact (avatar + name + mic). */
+.livekit-grid.is-presenting .lk-tile.is-compact {
+    grid-column: span 2;
+    min-height: 96px;
+    padding: 10px 6px 30px;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-compact video {
+    display: none !important;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-compact .lk-avatar {
+    display: grid !important;
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-compact .lk-name {
+    position: static;
+    max-width: 100%;
+    font-size: 10.5px;
+    padding: 3px 8px;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-compact .lk-flags {
+    top: auto;
+    bottom: 6px;
+    right: 6px;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-compact .lk-flags span {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+}
+
+.livekit-grid.is-presenting .lk-tile.is-compact.speaking {
+    border-color: rgba(47, 214, 138, 0.8);
+    box-shadow: 0 0 0 2px rgba(47, 214, 138, 0.35);
+}
+
+/* Per-presentation native fullscreen: only that tile fills the screen. */
+.lk-tile.is-share-main:fullscreen {
+    background: #000;
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.lk-tile.is-share-main:fullscreen > video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Fullscreen presentation: the presenter camera PiP stays visible and
+   scales up a little (it is a child overlay of the fullscreened tile). */
+.lk-tile.is-share-main:fullscreen .lk-pip {
+    width: clamp(150px, 16vw, 360px);
+    right: 20px;
+    bottom: 20px;
+}
+
+/* Tablet: stage stays dominant, roster wraps below. */
+@media (max-width: 1024px) {
+    .livekit-grid.is-presenting .lk-tile.is-share-main {
+        grid-column: span 12;
+    }
+    .livekit-grid.is-presenting .lk-tile.is-share-main > video {
+        height: clamp(240px, 38vh, 420px);
+    }
+    .livekit-grid.is-presenting .lk-tile.is-compact {
+        grid-column: span 3;
+    }
+}
+
+/* Mobile: presentation -> presenter identity -> horizontal roster strip.
+   Controls and Leave stay reachable (never position:fixed over them). */
+@media (max-width: 650px) {
+    .livekit-grid.is-presenting {
+        display: flex;
+        flex-direction: column;
+    }
+    .livekit-grid.is-presenting .lk-tile.is-share-main > video {
+        height: 240px;
+    }
+    /* Mobile: smaller PiP, still bottom-right, controls stay reachable. */
+    .lk-tile.is-share-main .lk-pip {
+        width: clamp(84px, 32%, 132px);
+        right: 8px;
+        bottom: 44px;
+        border-radius: 10px;
+    }
+    .lk-tile.is-share-main .lk-pip .lk-pip-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 11px;
+    }
+    .livekit-grid.is-presenting .lk-tile.is-compact {
+        min-height: 84px;
+    }
 }
