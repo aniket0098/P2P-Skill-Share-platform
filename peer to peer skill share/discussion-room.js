@@ -21,6 +21,9 @@ function liveMedia() {
         async toggleMic() {},
         async toggleCam() {},
         async toggleScreen() {},
+        async toggleHand() {},
+        async togglePresentation() {},
+        async exitPresentation() {},
         setAppCount() {},
         syncButtons() {},
     };
@@ -37,6 +40,7 @@ let lastMessageId = 0;
 let pollTimer = null;
 let pollTick = 0;
 let sending = false;
+let meetingTimerInterval = null;
 
 /* ================= DOM (null-safe: one bad id can never blank the page) ================= */
 
@@ -244,9 +248,15 @@ async function loadRoom() {
     ]);
 
     /* 5. Connect LiveKit Cloud for real mic/camera/screen (non-blocking:
-       the app room is already rendered; media failure never blanks it). */
+       the app room is already rendered; media failure never blanks it).
+       Control wiring is isolated so a wiring defect can never again
+       prevent the media connection from starting. */
     try { liveMedia().syncButtons(); } catch (e) {}
-    wireLivekitControls();
+    try {
+        wireLivekitControls();
+    } catch (e) {
+        console.log("[LiveKit] control wiring issue:", e);
+    }
     liveMedia().connect(roomId).catch(() => {});
 
     if (participantsFailed) {
@@ -302,6 +312,23 @@ function renderRoom() {
             room.status === "LIVE"
                 ? '<span class="live-dot"></span> LIVE'
                 : escapeHTML(room.status);
+    }
+
+    /* private-room indicator + meeting timer (header) */
+    const privacyPill = $("roomPrivacyPill");
+    if (privacyPill) privacyPill.hidden = !room.is_private;
+    updateMeetingTimer();
+
+    /* host/moderator join-request panel (private rooms, open rooms only) */
+    const jrp = $("joinRequestsPanel");
+    if (jrp) {
+        if (room.is_private && isOpen()
+            && (isHost() || room.my_role === "MODERATOR")) {
+            jrp.hidden = false;
+            loadJoinRequests().catch(() => {});
+        } else {
+            jrp.hidden = true;
+        }
     }
 
     /* participants count */
@@ -398,15 +425,39 @@ function updateChatAvailability() {
     if (previousNote) previousNote.remove();
 
     if (!isMember() && isOpen()) {
-        /* Non-member opened a shared link. */
+        /* Non-member opened a shared link. Public rooms offer a direct
+           Join; private rooms show the real request state instead. */
         input.disabled = true;
         sendBtn.disabled = true;
         input.placeholder = "Join the room to send messages…";
         const note = document.createElement("div");
         note.className = "chat-closed-note";
-        note.innerHTML =
-            '<button class="primary-btn" type="button" onclick="joinRoom()">' +
-            '<i class="fa-solid fa-right-to-bracket"></i> Join this room</button>';
+        const reqState = room.my_join_request;
+        if (room.is_private && reqState === "pending") {
+            note.innerHTML =
+                '<div class="jr-state pending"><i class="fa-solid fa-hourglass-half"></i> ' +
+                "Request pending — the host must approve you before you can join.</div>";
+        } else if (room.is_private && reqState === "rejected") {
+            note.innerHTML =
+                '<div class="jr-state rejected"><i class="fa-solid fa-ban"></i> ' +
+                "Your request was declined.</div>" +
+                '<button class="primary-btn" type="button" onclick="requestToJoinHere()">' +
+                '<i class="fa-solid fa-rotate-right"></i> Request Again</button>';
+        } else if (room.is_private && reqState === "accepted") {
+            note.innerHTML =
+                '<div class="jr-state accepted"><i class="fa-solid fa-circle-check"></i> ' +
+                "The host approved you — welcome!</div>" +
+                '<button class="primary-btn" type="button" onclick="joinRoom()">' +
+                '<i class="fa-solid fa-right-to-bracket"></i> Join this room</button>';
+        } else if (room.is_private) {
+            note.innerHTML =
+                '<button class="primary-btn" type="button" onclick="requestToJoinHere()">' +
+                '<i class="fa-solid fa-lock"></i> Request to Join</button>';
+        } else {
+            note.innerHTML =
+                '<button class="primary-btn" type="button" onclick="joinRoom()">' +
+                '<i class="fa-solid fa-right-to-bracket"></i> Join this room</button>';
+        }
         chatPanel.insertBefore(note, chatInputRow);
     } else if (room.status === "ENDED" || room.status === "CANCELLED") {
         input.disabled = true;
@@ -424,6 +475,112 @@ function updateChatAvailability() {
 }
 
 /* ================= JOIN / SHARE ================= */
+
+/* PRIVATE ROOMS: request the host's approval from inside the room page. */
+async function requestToJoinHere() {
+    const API = window.SkillShareAPI;
+    try {
+        await API.requestDiscussionJoin(roomId);
+        showToast("Request sent — waiting for the host to approve.");
+        await loadRoomReload();
+    } catch (error) {
+        showToast(errorMessage(error), true);
+    }
+}
+
+/* ---- Meeting timer (header): real elapsed time while the room is LIVE ---- */
+function updateMeetingTimer() {
+    const stat = $("meetingTimerStat");
+    if (!stat) return;
+    const startedIso = room && room.status === "LIVE" ? room.started_at : null;
+    if (!startedIso) {
+        if (meetingTimerInterval) {
+            clearInterval(meetingTimerInterval);
+            meetingTimerInterval = null;
+        }
+        stat.hidden = true;
+        return;
+    }
+    const started = new Date(startedIso).getTime();
+    if (isNaN(started)) { stat.hidden = true; return; }
+    stat.hidden = false;
+    const pad = (n) => String(n).padStart(2, "0");
+    const tick = () => {
+        const totalSec = Math.max(0, Math.floor((Date.now() - started) / 1000));
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        safeText("meetingTimer",
+            h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`);
+    };
+    tick();
+    if (!meetingTimerInterval) meetingTimerInterval = setInterval(tick, 1000);
+}
+
+/* ---- Host/moderator: manage private-room join requests ---- */
+async function loadJoinRequests() {
+    if (!room || !room.is_private) return;
+    const list = $("joinRequestsList");
+    if (!list) return;
+    const data = await window.SkillShareAPI.getDiscussionJoinRequests(roomId, "pending");
+    const requests = data.requests || [];
+    const chip = $("joinRequestsChip");
+    if (chip) chip.textContent = String(requests.length);
+    if (!requests.length) {
+        list.innerHTML = '<p class="empty-note">No pending requests.</p>';
+        return;
+    }
+    list.innerHTML = requests.map((r) => {
+        const u = r.user || {};
+        return `
+        <div class="join-request" data-request="${r.id}">
+            ${avatarHTML(u, "p-avatar")}
+            <div class="p-info">
+                <b>${escapeHTML(u.name || "Member")}</b>
+                <small>${u.username ? "@" + escapeHTML(u.username) : "Member"}</small>
+            </div>
+            <div class="jr-actions">
+                <button class="jr-accept" type="button" title="Accept"
+                    onclick="decideJoinRequest(${r.id}, 'accept')">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+                <button class="jr-reject" type="button" title="Reject"
+                    onclick="decideJoinRequest(${r.id}, 'reject')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+async function decideJoinRequest(requestId, decision) {
+    const API = window.SkillShareAPI;
+    try {
+        const data = decision === "accept"
+            ? await API.acceptDiscussionJoinRequest(roomId, requestId)
+            : await API.rejectDiscussionJoinRequest(roomId, requestId);
+        const who =
+            (data.request && data.request.user && data.request.user.name) || "The user";
+        showToast(decision === "accept"
+            ? `${who} can now join the room.`
+            : `${who}'s request was declined.`);
+        await loadJoinRequests();
+    } catch (error) {
+        showToast(errorMessage(error), true);
+        await loadJoinRequests().catch(() => {});
+    }
+}
+
+/* ---- Participants panel search (larger rooms) ---- */
+function filterParticipants() {
+    const input = $("participantSearch");
+    if (!input) return;
+    const term = input.value.trim().toLowerCase();
+    document.querySelectorAll("#participantsList .participant").forEach((el) => {
+        const name = (el.textContent || "").toLowerCase();
+        el.style.display = !term || name.includes(term) ? "" : "none";
+    });
+}
 
 async function joinRoom() {
     const API = window.SkillShareAPI;
@@ -824,7 +981,32 @@ function wireLivekitControls() {
     on("micBtn", () => liveMedia().toggleMic());
     on("camBtn", () => liveMedia().toggleCam());
     on("screenBtn", () => liveMedia().toggleScreen());
+    on("handBtn", () => liveMedia().toggleHand());
+    on("presentBtn", () => liveMedia().togglePresentation());
+    on("exitPresentationBtn", () => liveMedia().exitPresentation());
     on("livekitRetryBtn", () => liveMedia().connect(roomId));
+    /* Active-share selector: pick which shared screen presentation shows. */
+    const shareSel = $("shareSelector");
+    if (shareSel) {
+        shareSel.addEventListener("click", (e) => {
+            const btn = e.target.closest(".share-option");
+            if (!btn) return;
+            const media = liveMedia();
+            if (media.setActiveShare) {
+                media.setActiveShare(btn.dataset.share);
+                /* Selecting another shared screen must not exit Present mode
+                   — only enter it when not presenting yet (D10). */
+                if (!media.presentMode) media.togglePresentation();
+            }
+        });
+    }
+    /* Participant search uses the "input" event (not "click"): it is wired
+       directly because the click-only helper above requires a function. */
+    const pSearch = $("participantSearch");
+    if (pSearch && !pSearch.dataset.lkWired) {
+        pSearch.dataset.lkWired = "1";
+        pSearch.addEventListener("input", filterParticipants);
+    }
     window.addEventListener("beforeunload", () => {
         try { liveMedia().disconnect(); } catch (e) {}
     });
@@ -848,10 +1030,26 @@ function startPolling() {
         if (pollTick % 3 === 0) {
             try {
                 const data = await window.SkillShareAPI.getDiscussion(roomId);
+                const prevReq = room.my_join_request;
+                const prevPending = room.pending_requests_count;
                 if (data.room.status !== room.status ||
-                    data.room.participant_count !== room.participant_count) {
+                    data.room.participant_count !== room.participant_count ||
+                    data.room.my_join_request !== prevReq ||
+                    data.room.pending_requests_count !== prevPending) {
                     room = data.room;
                     renderRoom();
+                    /* Approval / rejection notifications (real state changes
+                       only — the backend is the source of truth). */
+                    if (data.room.my_join_request !== prevReq) {
+                        if (data.room.my_join_request === "accepted") {
+                            showToast("The host approved your request — you can join now.");
+                        } else if (data.room.my_join_request === "rejected") {
+                            showToast("The host declined your request.", true);
+                        }
+                    }
+                    if (isHost() && data.room.pending_requests_count !== prevPending) {
+                        loadJoinRequests().catch(() => {});
+                    }
                 }
                 await loadParticipants();
                 await loadResources();

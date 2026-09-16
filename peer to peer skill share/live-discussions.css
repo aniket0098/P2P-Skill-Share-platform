@@ -843,6 +843,26 @@ a { text-decoration: none; color: inherit; }
     .modal { padding: 22px 18px; }
 }
 
+/* =========================================================
+   PRIVATE-ROOM BADGE (additive)
+   ========================================================= */
+
+.privacy-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: #ffd9a0;
+    background: rgba(255, 176, 32, 0.12);
+    border: 1px solid rgba(255, 176, 32, 0.45);
+    white-space: nowrap;
+}
+
 
 
 

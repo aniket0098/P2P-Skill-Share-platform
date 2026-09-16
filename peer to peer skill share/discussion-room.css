@@ -979,6 +979,147 @@ input, select, textarea { font-family: inherit; }
     .mobile-only { display: none !important; }
 }
 
+/* =========================================================
+   MEETING UPGRADE (additive) — private-room indicator,
+   join-request panel, participant search.
+   ========================================================= */
+
+/* PRIVATE pill in the room header */
+.privacy-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 5px 10px;
+    border-radius: 999px;
+    color: #ffd9a0;
+    background: rgba(255, 176, 32, 0.12);
+    border: 1px solid rgba(255, 176, 32, 0.45);
+    white-space: nowrap;
+}
+
+/* host/moderator join-request panel */
+.join-requests-panel .join-requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.join-request {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+}
+
+.join-request .p-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.join-request .p-info b {
+    display: block;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.join-request .p-info small {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.jr-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.jr-accept,
+.jr-reject {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+.jr-accept {
+    color: #0b1026;
+    background: var(--green);
+}
+
+.jr-accept:hover { filter: brightness(1.1); }
+
+.jr-reject {
+    color: #ffc9ce;
+    background: rgba(255, 93, 108, 0.14);
+    border: 1px solid rgba(255, 93, 108, 0.5);
+}
+
+.jr-reject:hover { background: rgba(255, 93, 108, 0.28); }
+
+/* private-room request states shown in the chat panel */
+.jr-state {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 13px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 9px;
+}
+
+.jr-state.pending {
+    color: #ffd9a0;
+    background: rgba(255, 176, 32, 0.1);
+    border: 1px solid rgba(255, 176, 32, 0.4);
+}
+
+.jr-state.rejected {
+    color: #ffc9ce;
+    background: rgba(255, 93, 108, 0.1);
+    border: 1px solid rgba(255, 93, 108, 0.4);
+}
+
+.jr-state.accepted {
+    color: #b8f4d6;
+    background: rgba(47, 214, 138, 0.1);
+    border: 1px solid rgba(47, 214, 138, 0.4);
+}
+
+/* participant search (participants panel) */
+.participant-search {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12.5px;
+    outline: none;
+}
+
+.participant-search:focus {
+    border-color: rgba(47, 129, 255, 0.6);
+}
+
+@media (max-width: 650px) {
+    .join-request { flex-wrap: wrap; }
+    .jr-actions { margin-left: auto; }
+}
+
 
 
 
