@@ -390,6 +390,11 @@ input, select, textarea { font-family: inherit; }
 .header-stat b { color: #fff; }
 .header-stat i { font-size: 11px; color: var(--cyan); }
 
+/* Paid window (credits): server-anchored countdown chip. Display only —
+   the backend refuses token mints once expires_at passes. */
+.header-stat.ended { color: var(--amber); border-color: rgba(255, 176, 32, 0.4); }
+.header-stat.ended i { color: var(--amber); }
+
 .room-header-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 
 /* ================= ROOM LAYOUT ================= */

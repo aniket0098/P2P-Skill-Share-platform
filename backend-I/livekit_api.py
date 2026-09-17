@@ -25,7 +25,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 import config
+from discussion_expiry import apply_expiry, is_expired, remaining_seconds
 from discussions_models import (
+    DiscussionJoinRequest,
     DiscussionParticipant,
     DiscussionRoom,
     livekit_room_name_for,
@@ -63,8 +65,30 @@ def register_livekit(app, get_db, get_current_user_model):
             )
         room = _require_room(db, int(data.room_id))
 
+        # PAID WINDOW (server-authoritative): a room whose paid minutes are
+        # over is closed in PostgreSQL here and NO token is minted. Legacy
+        # rooms (expires_at IS NULL) are untouched and never expire.
+        # NOTE: this runs BEFORE the generic ENDED check so an expired paid
+        # room deterministically reports "paid time is over" instead of the
+        # generic "has ended" (the read path may already have flipped it to
+        # ENDED via the listing sweep).
+        if is_expired(room):
+            apply_expiry(db, room)
+            db.commit()
+            raise HTTPException(
+                status_code=409,
+                detail="This discussion's paid time is over. The room has ended.",
+            )
+
         if (room.status or "").upper() in ("ENDED", "CANCELLED"):
             raise HTTPException(status_code=409, detail="This discussion has ended.")
+
+        if apply_expiry(db, room):
+            db.commit()
+            raise HTTPException(
+                status_code=409,
+                detail="This discussion's paid time is over. The room has ended.",
+            )
 
         membership = (
             db.query(DiscussionParticipant)
@@ -75,11 +99,36 @@ def register_livekit(app, get_db, get_current_user_model):
             .first()
         )
         is_host = room.host_id == current_user.id
+        is_moderator = bool(
+            membership and membership.role in ("HOST", "MODERATOR")
+        )
         is_member = bool(membership and membership.status == "joined")
-        if not (is_host or is_member):
+        if not (is_host or is_moderator or is_member):
             raise HTTPException(
                 status_code=403, detail="Join the discussion before joining live audio/video."
             )
+
+        # PRIVATE ROOMS (backend-authoritative): a joined membership alone is
+        # not enough for a non-host member — the underlying join request must
+        # be "accepted". Pending / rejected / missing request => 403, no token.
+        # This check runs on the SERVER so an unauthorized private user can
+        # never obtain a LiveKit token, regardless of what the UI shows.
+        if room.is_private and not (is_host or is_moderator):
+            request = (
+                db.query(DiscussionJoinRequest)
+                .filter(
+                    DiscussionJoinRequest.room_id == room.id,
+                    DiscussionJoinRequest.user_id == current_user.id,
+                )
+                .first()
+            )
+            if not request or request.status != "accepted":
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        "The host has not approved you for this private room yet."
+                    ),
+                )
 
         active = (
             db.query(DiscussionParticipant)
@@ -109,12 +158,19 @@ def register_livekit(app, get_db, get_current_user_model):
             can_publish=True,
             can_subscribe=True,
         )
+        # Token lifetime never outlives the room's paid window: a 2h token
+        # cannot keep a 10-minute room connected past its expiry.
+        ttl = timedelta(hours=2)
+        remaining = remaining_seconds(room)
+        if remaining is not None:
+            ttl = min(ttl, timedelta(seconds=max(remaining, 1)))
+
         token = (
             AccessToken(config.LIVEKIT_API_KEY, config.LIVEKIT_API_SECRET)
             .with_identity(identity)
             .with_name(display_name)
             .with_grants(grants)
-            .with_ttl(timedelta(hours=2))
+            .with_ttl(ttl)
             .to_jwt()
         )
 

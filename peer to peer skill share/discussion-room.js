@@ -42,6 +42,13 @@ let pollTick = 0;
 let sending = false;
 let meetingTimerInterval = null;
 
+/* PAID WINDOW state. `remaining` + `readAt` are anchored on the value the
+   SERVER returned (room.seconds_remaining) at the moment of the fetch; the
+   countdown only measures ELAPSED time since then. The browser never decides
+   when a room expires — /api/livekit/token refuses an expired window. */
+let paidWindowAnchor = null;
+let paidWindowInterval = null;
+
 /* ================= DOM (null-safe: one bad id can never blank the page) ================= */
 
 const $ = (id) => document.getElementById(id);
@@ -116,6 +123,74 @@ function formatDateOnly(value) {
     return d.toLocaleDateString(undefined, {
         month: "short", day: "numeric", year: "numeric",
     });
+}
+
+/* ================= PAID WINDOW (credits) =================
+   Server-owned values only. `credit_cost` and `expires_at` are written by the
+   backend at create/go-LIVE; the client just displays them. */
+
+function formatCreditAmount(value) {
+    return Number(value || 0).toLocaleString("en-IN");
+}
+
+function primePaidWindow() {
+    /* Anchor the countdown on the authoritative server reading. */
+    if (!room || room.expires_at == null) {
+        paidWindowAnchor = null;
+        return;
+    }
+    paidWindowAnchor = {
+        remaining: Math.max(0, Number(room.seconds_remaining || 0)),
+        readAt: Date.now(),
+    };
+}
+
+function paidWindowRemaining() {
+    if (!paidWindowAnchor) return null;
+    const elapsed = (Date.now() - paidWindowAnchor.readAt) / 1000;
+    return Math.max(0, Math.floor(paidWindowAnchor.remaining - elapsed));
+}
+
+function formatRemaining(totalSec) {
+    const pad = (n) => String(n).padStart(2, "0");
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function updatePaidWindow() {
+    const stat = $("paidWindowStat");
+    const text = $("paidWindowText");
+    if (!stat || !text) return;
+
+    const remaining = paidWindowRemaining();
+    if (remaining === null) {
+        stat.hidden = true;
+        return;
+    }
+
+    stat.hidden = false;
+    const expired = remaining <= 0 || room.is_expired;
+    stat.classList.toggle("ended", expired);
+    stat.title = expired
+        ? "The paid time for this room has ended"
+        : (room.credit_cost != null
+            ? `${formatCreditAmount(room.credit_cost)} credits paid · time remaining`
+            : "Paid time remaining");
+    text.textContent = expired ? "Expired" : formatRemaining(remaining);
+}
+
+function startPaidWindowTicker() {
+    primePaidWindow();
+    updatePaidWindow();
+    if (paidWindowAnchor && !paidWindowInterval) {
+        paidWindowInterval = setInterval(updatePaidWindow, 1000);
+    }
+    if (!paidWindowAnchor && paidWindowInterval) {
+        clearInterval(paidWindowInterval);
+        paidWindowInterval = null;
+    }
 }
 
 let toastTimer;
@@ -388,6 +463,23 @@ function renderRoom() {
         ["Participant limit", String(room.max_participants)],
         ["Participants", String(room.participant_count || 0)],
     ];
+
+    /* Paid window: charged rooms only (legacy rooms have credit_cost NULL and
+       never expire, so they show nothing here). */
+    if (room.credit_cost != null || room.expires_at) {
+        details.push([
+            "Room cost",
+            room.credit_cost != null
+                ? formatCreditAmount(room.credit_cost) + " credits"
+                : "—",
+        ]);
+        details.push([
+            "Paid until",
+            room.expires_at
+                ? formatDate(room.expires_at)
+                : "Starts at go-LIVE",
+        ]);
+    }
     safeHTML("detailGrid", details.map(([label, value]) => `
         <div class="detail-item">
             <small>${escapeHTML(label)}</small>
@@ -410,6 +502,9 @@ function renderRoom() {
     /* resources "add" — host only */
     const addRes = $("addResourceBtn");
     if (addRes) addRes.hidden = !isHost();
+
+    /* Paid window (credits) — display only, server value is the authority. */
+    startPaidWindowTicker();
 
     updateChatAvailability();
 }
@@ -1030,6 +1125,16 @@ function startPolling() {
         if (pollTick % 3 === 0) {
             try {
                 const data = await window.SkillShareAPI.getDiscussion(roomId);
+
+                /* Re-anchor the paid-window countdown on the fresh server
+                   reading (display only: the backend still decides expiry and
+                   token validity). This keeps the header clock from drifting. */
+                if (data.room) {
+                    room.seconds_remaining = data.room.seconds_remaining;
+                    room.is_expired = data.room.is_expired;
+                    startPaidWindowTicker();
+                }
+
                 const prevReq = room.my_join_request;
                 const prevPending = room.pending_requests_count;
                 if (data.room.status !== room.status ||

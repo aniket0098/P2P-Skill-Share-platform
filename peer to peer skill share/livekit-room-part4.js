@@ -1,5 +1,14 @@
 /* controls: mic/cam/screen/disconnect */
 "use strict";
+/* Reflect capability state (e.g. disabled Share on unsupported devices)
+   as soon as the page is interactive, not only after the room connects. */
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+        try { window.DiscussionMedia.syncButtons(); } catch (e) {}
+    });
+} else {
+    try { window.DiscussionMedia.syncButtons(); } catch (e) {}
+}
 window.DiscussionMedia.syncButtons = function () {
     const mic = document.getElementById("micBtn");
     const cam = document.getElementById("camBtn");
@@ -14,8 +23,29 @@ window.DiscussionMedia.syncButtons = function () {
         cam.innerHTML = '<i class="fa-solid fa-video' + (this.camOn ? "" : "-slash") + '"></i><span>Camera</span>';
     }
     if (scr) {
-        scr.classList.toggle("live", !!this.sharing);
-        scr.innerHTML = '<i class="fa-solid fa-display"></i><span>' + (this.sharing ? "Stop" : "Share") + "</span>";
+        /* Capability-first state: on devices/browsers without real screen
+           capture the button stays visible but disabled, with the exact
+           unsupported-device explanation (button title + inline note). */
+        const sup = (typeof this.screenSupport === "function") ? this.screenSupport() : { supported: true, secure: true };
+        const note = document.getElementById("screenShareNote");
+        if (!sup.supported && !this.sharing) {
+            const msg = sup.secure ? this.SCREEN_UNSUPPORTED_MSG : this.SCREEN_INSECURE_MSG;
+            scr.disabled = true;
+            scr.classList.add("unsupported");
+            scr.classList.remove("live");
+            scr.title = msg;
+            scr.setAttribute("aria-label", msg);
+            scr.innerHTML = '<i class="fa-solid fa-display"></i><span>Share</span>';
+            try { this.ensureScreenNote(msg); } catch (e) {}
+        } else {
+            scr.disabled = false;
+            scr.classList.remove("unsupported");
+            scr.title = "Share your screen";
+            scr.setAttribute("aria-label", scr.title);
+            scr.classList.toggle("live", !!this.sharing);
+            scr.innerHTML = '<i class="fa-solid fa-display"></i><span>' + (this.sharing ? "Stop" : "Share") + "</span>";
+            if (note) note.hidden = true;
+        }
     }
     if (hand) {
         hand.classList.toggle("live", !!this.handRaised);
@@ -111,15 +141,104 @@ window.DiscussionMedia.toggleCam = async function () {
         showToast("Camera unavailable: " + ((err && err.message) || "permission denied") + ". Room stays usable.", true);
     }
 };
+/* ---- screen-share capability (Parts 4-6: detect, never assume) ------
+   Same feature test LiveKit itself uses (supportsScreenSharing in
+   @livekit/components-core): getDisplayMedia presence. A secure context
+   is also required — without HTTPS (or localhost) navigator.mediaDevices
+   does not exist at all, so mic/cam/screen would all be unavailable. */
+window.DiscussionMedia.SCREEN_UNSUPPORTED_MSG =
+    "Screen sharing is not supported by this browser/device. Please use a supported browser or desktop device.";
+window.DiscussionMedia.SCREEN_INSECURE_MSG =
+    "Screen sharing needs a secure (HTTPS) connection. Reopen this page over HTTPS to share your screen.";
+window.DiscussionMedia.screenSupport = function () {
+    if (this._screenSupport) return this._screenSupport;
+    const secure = (typeof window.isSecureContext === "boolean") ? window.isSecureContext : true;
+    const hasApi = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === "function");
+    this._screenSupport = { supported: secure && hasApi, secure: secure, hasApi: hasApi };
+    return this._screenSupport;
+};
+window.DiscussionMedia.ensureScreenNote = function (message) {
+    const btn = document.getElementById("screenBtn");
+    const controls = btn ? btn.closest(".livekit-controls") : null;
+    if (!controls) return;
+    let note = document.getElementById("screenShareNote");
+    if (!note) {
+        note = document.createElement("div");
+        note.id = "screenShareNote";
+        note.className = "control-note";
+        note.setAttribute("role", "note");
+        if (controls.parentNode) controls.parentNode.insertBefore(note, controls.nextSibling);
+    }
+    note.textContent = message;
+    note.hidden = false;
+};
+/* Safety net: if the user stops sharing from the browser/OS UI the
+   MediaStreamTrack ends; mirror the LocalTrackUnpublished cleanup so the
+   tile disappears even if the SDK event has not arrived yet (idempotent —
+   both paths check this.sharing and the tile map). */
+window.DiscussionMedia.watchLocalScreenTrack = function () {
+    try {
+        if (!this.local) return;
+        const Lk = window.LivekitClient;
+        const pub = (Lk && this.local.getTrackPublication)
+            ? this.local.getTrackPublication(Lk.Track.Source.ScreenShare) : null;
+        const mst = pub && pub.track ? pub.track.mediaStreamTrack : null;
+        if (!mst) return;
+        const self = this;
+        this._screenMst = mst;
+        this._screenEnded = function () {
+            console.log("[LiveKit] Screen capture ended by the browser/OS");
+            if (!self.sharing) return;
+            self.sharing = false;
+            self.unwatchLocalScreenTrack();
+            try {
+                const sid = self.local ? self.local.identity + "#screen" : null;
+                const tile = sid && self.tiles.get(sid);
+                if (tile) {
+                    try { self.clearPresenterPiP(tile); } catch (e) {}
+                    tile.remove(); self.tiles.delete(sid);
+                }
+                if (self.presentOrder) {
+                    self.presentOrder = self.presentOrder.filter(function (id) { return id !== sid; });
+                }
+                if (self.activeShareIdentity === sid) self.activeShareIdentity = null;
+                if (self.updateShareSelector) self.updateShareSelector();
+                try { self.queueLayout(); } catch (e) {}
+            } catch (e) {}
+            try { self.syncButtons(); } catch (e) {}
+        };
+        mst.addEventListener("ended", this._screenEnded);
+    } catch (e) {}
+};
+window.DiscussionMedia.unwatchLocalScreenTrack = function () {
+    try {
+        if (this._screenMst && this._screenEnded) this._screenMst.removeEventListener("ended", this._screenEnded);
+    } catch (e) {}
+    this._screenMst = null;
+    this._screenEnded = null;
+};
 window.DiscussionMedia.toggleScreen = async function () {
     try {
         if (!this.room || !this.local) { showToast("Join the live room first (retry if needed).", true); return; }
+        if (this._screenBusy) { console.log("[LiveKit] Screen toggle already in progress"); return; }
+        /* Real capability check before touching LiveKit: unsupported
+           devices get the explanation, never a raw SDK error. */
+        const sup = (typeof this.screenSupport === "function") ? this.screenSupport() : { supported: true, secure: true };
+        if (!this.sharing && !sup.supported) {
+            const msg = sup.secure ? this.SCREEN_UNSUPPORTED_MSG : this.SCREEN_INSECURE_MSG;
+            try { this.syncButtons(); } catch (e) {}
+            showToast(msg, true);
+            try { this.ensureScreenNote(msg); } catch (e) {}
+            return;
+        }
+        this._screenBusy = true;
         if (!this.sharing) {
             await this.local.setScreenShareEnabled(true); this.sharing = true;
             try {
                 const pub = this.local.getTrackPublication(window.LivekitClient.Track.Source.ScreenShare);
                 if (pub && pub.track) this.attachTrack(pub.track, this.local, true);
             } catch (e) {}
+            this.watchLocalScreenTrack();
             /* The screen track may need a tick before frames flow — repaint
                shortly after start so the tile picks up real dimensions. */
             try {
@@ -134,6 +253,7 @@ window.DiscussionMedia.toggleScreen = async function () {
             console.log("[LiveKit] Screen share started");
         } else {
             await this.local.setScreenShareEnabled(false); this.sharing = false;
+            this.unwatchLocalScreenTrack();
             const tile = this.tiles.get(this.local.identity + "#screen");
             if (tile) {
                 /* Release the presenter camera PiP with the share tile. */
@@ -154,7 +274,17 @@ window.DiscussionMedia.toggleScreen = async function () {
         this.syncButtons();
     } catch (err) {
         if (err && err.name === "NotAllowedError") showToast("Screen-share permission was dismissed.", true);
+        else if (err && (err.name === "NotSupportedError" || err.name === "TypeError"
+            || /getDisplayMedia not supported/i.test(String(err.message || "")))) {
+            /* Remember the result so the button reflects reality immediately. */
+            this._screenSupport = { supported: false, secure: true, hasApi: false };
+            const msg = this.SCREEN_UNSUPPORTED_MSG;
+            showToast(msg, true);
+            try { this.ensureScreenNote(msg); } catch (e) {}
+        }
         else showToast("Screen share failed: " + ((err && err.message) || "unknown error"), true);
+    } finally {
+        this._screenBusy = false;
     }
 };
 window.DiscussionMedia.disconnect = async function () {
@@ -167,6 +297,8 @@ window.DiscussionMedia.disconnect = async function () {
     this.activeShareIdentity = null;
     this.presentMode = false;
     this.presentOrder = [];
+    this.unwatchLocalScreenTrack();
+    this._screenBusy = false;
     try { this.exitPresentation(); } catch (e) {}
     try { if (this.updateShareSelector) this.updateShareSelector(); } catch (e) {}
     try { this.syncButtons(); } catch (e) {}
@@ -193,6 +325,8 @@ window.DiscussionMedia.resetForReload = function () {
     this.micOn = false; this.camOn = false; this.sharing = false;
     this.presentMode = false; this.presentOrder = [];
     this._busy = false;
+    this.unwatchLocalScreenTrack();
+    this._screenBusy = false;
     try {
         this.tiles.forEach(function (t) { try { t.remove(); } catch (e) {} });
         this.tiles.clear();

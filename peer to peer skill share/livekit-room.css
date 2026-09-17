@@ -199,6 +199,29 @@
     border-color: rgba(255, 93, 108, 0.5);
 }
 
+/* Screen-share capability states (additive): the Share button stays
+   visible but disabled on devices/browsers without real screen capture,
+   with the explanation shown as the button title and an inline note. */
+.control-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.control-btn:disabled:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.control-btn.unsupported {
+    border-style: dashed;
+}
+
+.control-note {
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--muted, #8ea0c0);
+    margin-top: 8px;
+}
+
 .lk-empty {
     grid-column: 1 / -1;
     padding: 16px;

@@ -18,17 +18,36 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from hashlib import sha256
+from uuid import uuid4
 
 from fastapi import Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, field_validator
 from sqlalchemy import func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 import auth as authmod
+from credits_models import CreditTransaction
+from credits_service import (
+    DEFAULT_ROOM_MINUTES,
+    lock_wallet,
+    renew,
+    room_cost,
+    spend,
+)
+from discussion_expiry import (
+    anchor_paid_window,
+    apply_expiry,
+    expire_due_rooms,
+    is_expired,
+    remaining_seconds,
+)
 from discussions_models import (
     DISCUSSION_PARTICIPANT_ROLES,
     DISCUSSION_ROOM_STATUSES,
     DISCUSSION_ROOM_TYPES,
+    DiscussionJoinRequest,
     DiscussionMessage,
     DiscussionParticipant,
     DiscussionResource,
@@ -110,7 +129,20 @@ def _get_membership(db: Session, room_id: int, user_id: int):
 
 def _serialize_room(db: Session, room: DiscussionRoom, current_user) -> dict:
     me = _get_membership(db, room.id, current_user.id)
-    return {
+    is_host = room.host_id == current_user.id
+
+    # Private-room request state for THIS user (None when no request row
+    # exists yet — public rooms never have one).
+    my_request = (
+        db.query(DiscussionJoinRequest)
+        .filter(
+            DiscussionJoinRequest.room_id == room.id,
+            DiscussionJoinRequest.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    payload = {
         "id": room.id,
         "title": room.title,
         "description": room.description,
@@ -118,8 +150,16 @@ def _serialize_room(db: Session, room: DiscussionRoom, current_user) -> dict:
         "category": room.category,
         "room_type": room.room_type,
         "status": room.status,
+        "is_private": bool(room.is_private),
         "max_participants": room.max_participants,
         "duration_minutes": room.duration_minutes,
+        # Paid window (credits). `expires_at` is NULL for legacy/free rooms
+        # and those never expire; `is_expired`/`seconds_remaining` are
+        # derived from PostgreSQL time, never from the browser clock.
+        "expires_at": _iso(room.expires_at),
+        "is_expired": is_expired(room),
+        "seconds_remaining": remaining_seconds(room),
+        "credit_cost": room.credit_cost,
         "scheduled_at": _iso(room.scheduled_at),
         "started_at": _iso(room.started_at),
         "ended_at": _iso(room.ended_at),
@@ -129,12 +169,110 @@ def _serialize_room(db: Session, room: DiscussionRoom, current_user) -> dict:
         "host": _user_summary(room.host),
         "host_id": room.host_id,
         "participant_count": _active_count(db, room.id),
-        "is_host": room.host_id == current_user.id,
+        "is_host": is_host,
         "is_member": bool(me and me.status == "joined"),
         "my_role": (me.role if me else None),
+        "my_join_request": my_request.status if my_request else None,
         # Stable media-room identifier reserved for the NEXT stage
         # (LiveKit). This stage never connects to LiveKit.
         "livekit_room": livekit_room_name_for(room.id),
+    }
+
+    # Pending-request visibility: host/moderators only — never leak the
+    # requester list to ordinary participants.
+    if is_host or (me and me.role in ("HOST", "MODERATOR")):
+        payload["pending_requests_count"] = (
+            db.query(func.count(DiscussionJoinRequest.id))
+            .filter(
+                DiscussionJoinRequest.room_id == room.id,
+                DiscussionJoinRequest.status == "pending",
+            )
+            .scalar()
+            or 0
+        )
+    return payload
+
+
+def _serialize_join_request(r: DiscussionJoinRequest) -> dict:
+    """Safe join-request payload — requester summary only, no secrets."""
+    return {
+        "id": r.id,
+        "room_id": r.room_id,
+        "user": _user_summary(r.user),
+        "status": r.status,
+        "requested_at": _iso(r.requested_at),
+        "decided_at": _iso(r.decided_at),
+        "decided_by": _user_summary(r.decided_by_user) if r.decided_by else None,
+    }
+
+
+def _decide_join_request(
+    db: Session, room_id: int, request_id: int, current_user, decision: str
+) -> dict:
+    """Shared accept/reject logic for private-room join requests.
+
+    * The decider is ALWAYS the JWT user — host or moderator only.
+    * Idempotent for an already-decided request with the same decision
+      (duplicate accept must never create a duplicate participant).
+    * Accepting enforces the room capacity BEFORE flipping the status.
+    * Rejecting an already-joined member's request is a no-op 409.
+    """
+    room = _require_room(db, room_id)
+    membership = _get_membership(db, room.id, current_user.id)
+    if not (
+        room.host_id == current_user.id
+        or (membership and membership.role in ("HOST", "MODERATOR"))
+    ):
+        raise HTTPException(
+            status_code=403, detail="Only the host can manage join requests"
+        )
+
+    if room.status in ("ENDED", "CANCELLED"):
+        raise HTTPException(status_code=409, detail="This discussion has ended")
+
+    request = (
+        db.query(DiscussionJoinRequest)
+        .filter(
+            DiscussionJoinRequest.id == request_id,
+            DiscussionJoinRequest.room_id == room.id,
+        )
+        .first()
+    )
+    if not request:
+        raise HTTPException(
+            status_code=404, detail="Join request not found for this room"
+        )
+
+    if request.status == decision:
+        # Duplicate accept/reject — idempotent success, no side effects.
+        return {
+            "request": _serialize_join_request(request),
+            "message": f"Request was already {decision}",
+        }
+
+    if decision == "accepted":
+        if request.status == "rejected":
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "This request was declined. The user must send a new "
+                    "request before it can be accepted."
+                ),
+            )
+        if _active_count(db, room.id) >= room.max_participants:
+            raise HTTPException(status_code=409, detail="This room is full")
+    # A rejected decision on any pending/accepted request is always safe:
+    # existing "joined" members keep their membership (rejection only
+    # blocks FUTURE joins — see join_room).
+
+    request.status = decision
+    request.decided_at = _now()
+    request.decided_by = current_user.id
+    db.commit()
+    db.refresh(request)
+    return {
+        "request": _serialize_join_request(request),
+        "message": f"Join request {decision}",
     }
 
 
@@ -208,10 +346,15 @@ class RoomCreateIn(BaseModel):
     topic: str | None = None
     category: str | None = None
     room_type: str | None = None
+    is_private: bool = False
     max_participants: int = 10
     duration_minutes: int | None = None
     scheduled_at: str | None = None
     agenda: str | None = None
+    # Idempotency token generated by the browser (one per create attempt).
+    # Replaying the SAME value (double-click / second tab / retry) returns the
+    # SAME room instead of charging twice. Optional for older clients.
+    client_request_id: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -246,6 +389,7 @@ class RoomUpdateIn(BaseModel):
     topic: str | None = None
     category: str | None = None
     room_type: str | None = None
+    is_private: bool | None = None
     max_participants: int | None = None
     duration_minutes: int | None = None
     scheduled_at: str | None = None
@@ -325,6 +469,11 @@ def register_discussions(app, get_db, get_current_user_model):
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user_model),
     ):
+        # Rooms whose paid window ran out are closed BEFORE listing, so a
+        # stale LIVE badge can never be displayed. Legacy rooms
+        # (expires_at IS NULL) are not touched by the sweep.
+        expire_due_rooms(db)
+
         query = _base_query(db)
 
         term = (q or "").strip()
@@ -401,6 +550,59 @@ def register_discussions(app, get_db, get_current_user_model):
                 + ", ".join(DISCUSSION_ROOM_TYPES),
             )
 
+        # PRICING — server-side only: 100 credits per minute. A duration the
+        # client omitted costs the 10-minute default (1,000 credits), so the
+        # browser can never choose its own price. A free-text `credits` field
+        # in the request body is ignored by design (not part of the schema).
+        minutes = int(data.duration_minutes or DEFAULT_ROOM_MINUTES)
+        cost = room_cost(minutes)
+
+        request_id = (data.client_request_id or "").strip()
+        key = (
+            f"room_create:{current_user.id}:{request_id}"
+            if request_id
+            else f"room_create:{current_user.id}:{uuid4()}"
+        )
+        request_hash = sha256(
+            "|".join(
+                [
+                    data.title,
+                    str(minutes),
+                    str(bool(data.is_private)),
+                    str(data.max_participants),
+                    str(data.scheduled_at or ""),
+                    str(data.agenda or ""),
+                ]
+            ).encode("utf-8")
+        ).hexdigest()
+
+        # IDEMPOTENT REPLAY — the same client_request_id (double-click, second
+        # tab, retry after a dropped response) returns the SAME room and never
+        # charges a second time.
+        if request_id:
+            existing = (
+                db.query(CreditTransaction)
+                .filter(CreditTransaction.idempotency_key == key)
+                .first()
+            )
+            if existing:
+                if existing.request_hash and existing.request_hash != request_hash:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="This request id was already used for a different room.",
+                    )
+                prior = (
+                    db.get(DiscussionRoom, existing.room_id)
+                    if existing.room_id
+                    else None
+                )
+                if prior:
+                    return {
+                        "room": _serialize_room(db, prior, current_user),
+                        "message": "Discussion room created",
+                        "replayed": True,
+                    }
+
         room = DiscussionRoom(
             host_id=current_user.id,   # authority: JWT only
             title=data.title,
@@ -409,33 +611,82 @@ def register_discussions(app, get_db, get_current_user_model):
             category=(data.category or "").strip() or None,
             room_type=room_type,
             status="SCHEDULED",
+            is_private=bool(data.is_private),
             max_participants=data.max_participants,
-            duration_minutes=data.duration_minutes,
+            duration_minutes=minutes,
+            credit_cost=cost,
             scheduled_at=_parse_dt(data.scheduled_at),
             agenda=(data.agenda or "").strip() or None,
             livekit_room_name="",
         )
-        db.add(room)
-        db.flush()  # allocate room.id
+        # ONE TRANSACTION (atomic): renew the daily allowance, refuse when the
+        # balance cannot cover the room (HTTP 402), deduct daily-first, write
+        # the ledger row, then create the room + host membership. Any failure
+        # rolls the deduction back, so credits are never lost on an error and a
+        # room can never exist without having been paid for.
+        try:
+            wallet = lock_wallet(db, current_user.id)
+            renew(db, wallet)
+            txn = spend(db, wallet, cost, key, request_hash)
 
-        # Stable media-room identifier, reserved for the NEXT stage (LiveKit).
-        room.livekit_room_name = livekit_room_name_for(room.id)
+            db.add(room)
+            db.flush()  # allocate room.id
 
-        # Host automatically becomes the first participant.
-        db.add(
-            DiscussionParticipant(
-                room_id=room.id,
-                user_id=current_user.id,
-                role="HOST",
-                status="joined",
+            # Stable media-room identifier, reserved for the NEXT stage (LiveKit).
+            room.livekit_room_name = livekit_room_name_for(room.id)
+
+            # Links the spend to the room it paid for (UNIQUE -> one room, one
+            # charge; also what makes the replay path above resolve a room).
+            txn.room_id = room.id
+
+            # Host automatically becomes the first participant.
+            db.add(
+                DiscussionParticipant(
+                    room_id=room.id,
+                    user_id=current_user.id,
+                    role="HOST",
+                    status="joined",
+                )
             )
-        )
-        db.commit()
+            db.commit()
+        except HTTPException:
+            db.rollback()
+            raise
+        except IntegrityError:
+            # A concurrent request with the SAME client_request_id won the
+            # race: return ITS room rather than charging or erroring.
+            db.rollback()
+            winner = (
+                db.query(CreditTransaction)
+                .filter(CreditTransaction.idempotency_key == key)
+                .first()
+            )
+            prior = (
+                db.get(DiscussionRoom, winner.room_id)
+                if winner and winner.room_id
+                else None
+            )
+            if prior:
+                return {
+                    "room": _serialize_room(db, prior, current_user),
+                    "message": "Discussion room created",
+                    "replayed": True,
+                }
+            raise HTTPException(
+                status_code=409, detail="Duplicate room creation request"
+            )
+        except Exception:
+            db.rollback()
+            raise
+
         db.refresh(room)
 
         return {
             "room": _serialize_room(db, room, current_user),
             "message": "Discussion room created",
+            # Additive accounting receipt (existing clients simply ignore it).
+            "credits_spent": cost,
+            "credits_balance": wallet.daily_credits + wallet.purchased_credits,
         }
 
     # -----------------------------
@@ -449,6 +700,11 @@ def register_discussions(app, get_db, get_current_user_model):
         current_user=Depends(get_current_user_model),
     ):
         room = _require_room(db, room_id)
+        # Paid-window check on the READ path as well: an expired room is
+        # closed in PostgreSQL before it is serialized.
+        if apply_expiry(db, room):
+            db.commit()
+            db.refresh(room)
         return {"room": _serialize_room(db, room, current_user)}
 
     # -----------------------------
@@ -483,6 +739,8 @@ def register_discussions(app, get_db, get_current_user_model):
             if rt not in DISCUSSION_ROOM_TYPES:
                 raise HTTPException(status_code=422, detail="Invalid room type")
             room.room_type = rt
+        if data.is_private is not None:
+            room.is_private = bool(data.is_private)
         if data.max_participants is not None:
             if data.max_participants < 2 or data.max_participants > 200:
                 raise HTTPException(
@@ -533,6 +791,13 @@ def register_discussions(app, get_db, get_current_user_model):
             )
         room.status = "LIVE"
         room.started_at = _now()
+        # The PAID WINDOW starts here (not at creation — a room scheduled for
+        # next week must not burn its minutes today):
+        #     expires_at = started_at + duration_minutes
+        # Only a room that was actually charged gets a window; legacy rooms
+        # (credit_cost IS NULL) keep their existing never-expire behaviour.
+        if room.credit_cost is not None:
+            anchor_paid_window(room, room.started_at)
         db.commit()
         db.refresh(room)
         return {"room": _serialize_room(db, room, current_user)}
@@ -581,6 +846,11 @@ def register_discussions(app, get_db, get_current_user_model):
     ):
         room = _require_room(db, room_id)
 
+        # Expired paid window -> close the room here, then fall through to the
+        # existing "already ended" rule below (HTTP 409, no join).
+        if apply_expiry(db, room):
+            db.commit()
+
         if room.status in ("ENDED", "CANCELLED"):
             raise HTTPException(
                 status_code=409,
@@ -604,6 +874,36 @@ def register_discussions(app, get_db, get_current_user_model):
             raise HTTPException(
                 status_code=409, detail="This room is full"
             )
+
+        # PRIVATE ROOMS: an explicit host approval is required before the
+        # first join. Hosts/moderators and users whose join request is
+        # "accepted" may pass; pending/rejected/no-request users get 403.
+        # (The LiveKit token endpoint re-verifies the same rule.)
+        if room.is_private and not (
+            room.host_id == current_user.id
+            or (membership and membership.role in ("HOST", "MODERATOR"))
+        ):
+            request = (
+                db.query(DiscussionJoinRequest)
+                .filter(
+                    DiscussionJoinRequest.room_id == room.id,
+                    DiscussionJoinRequest.user_id == current_user.id,
+                )
+                .first()
+            )
+            if not request or request.status != "accepted":
+                if request and request.status == "rejected":
+                    raise HTTPException(
+                        status_code=403,
+                        detail=(
+                            "Your request to join this private room was declined. "
+                            "You can ask the host again."
+                        ),
+                    )
+                raise HTTPException(
+                    status_code=403,
+                    detail="This is a private room — the host must approve your join request first.",
+                )
 
         if membership:
             # Re-joining restores the previous membership row.
@@ -657,6 +957,131 @@ def register_discussions(app, get_db, get_current_user_model):
         membership.left_at = _now()
         db.commit()
         return {"message": "You left the discussion room"}
+
+    # -----------------------------
+    # PRIVATE ROOM JOIN REQUESTS
+    # (additive; the existing public join flow is untouched)
+    # -----------------------------
+
+    @app.post("/api/discussions/{room_id}/request")
+    def request_join(
+        room_id: int,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user_model),
+    ):
+        room = _require_room(db, room_id)
+
+        if room.status in ("ENDED", "CANCELLED"):
+            raise HTTPException(
+                status_code=409, detail="This discussion has ended"
+            )
+
+        if not room.is_private:
+            raise HTTPException(
+                status_code=409,
+                detail="This room is public — use the normal join flow",
+            )
+
+        membership = _get_membership(db, room.id, current_user.id)
+        if room.host_id == current_user.id or (membership and membership.status == "joined"):
+            raise HTTPException(
+                status_code=409, detail="You are already a participant of this room"
+            )
+
+        if _active_count(db, room.id) >= room.max_participants:
+            raise HTTPException(status_code=409, detail="This room is full")
+
+        request = (
+            db.query(DiscussionJoinRequest)
+            .filter(
+                DiscussionJoinRequest.room_id == room.id,
+                DiscussionJoinRequest.user_id == current_user.id,
+            )
+            .first()
+        )
+
+        if request and request.status == "pending":
+            raise HTTPException(
+                status_code=409, detail="You already have a pending request for this room"
+            )
+
+        if request and request.status == "accepted":
+            # Stale acceptance (user never joined) — let them straight in.
+            return {
+                "request": _serialize_join_request(request),
+                "message": "Your join request was already accepted — you can join now",
+            }
+
+        if request:
+            # Re-request after rejection: reuse the SAME row (unique
+            # constraint) and flip it back to pending.
+            request.status = "pending"
+            request.requested_at = _now()
+            request.decided_at = None
+            request.decided_by = None
+        else:
+            request = DiscussionJoinRequest(
+                room_id=room.id,
+                user_id=current_user.id,   # authority: JWT only
+                status="pending",
+            )
+            db.add(request)
+
+        db.commit()
+        db.refresh(request)
+        return {
+            "request": _serialize_join_request(request),
+            "message": "Join request sent to the host",
+        }
+
+    @app.get("/api/discussions/{room_id}/requests")
+    def list_join_requests(
+        room_id: int,
+        status: str = Query("pending", max_length=20),
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user_model),
+    ):
+        room = _require_room(db, room_id)
+        membership = _get_membership(db, room.id, current_user.id)
+        # Host/moderator only — requester lists are never public.
+        if not (
+            room.host_id == current_user.id
+            or (membership and membership.role in ("HOST", "MODERATOR"))
+        ):
+            raise HTTPException(
+                status_code=403, detail="Only the host can view join requests"
+            )
+
+        wanted = (status or "pending").lower()
+        if wanted not in ("pending", "accepted", "rejected", "all"):
+            wanted = "pending"
+
+        query = db.query(DiscussionJoinRequest).filter(
+            DiscussionJoinRequest.room_id == room.id
+        )
+        if wanted != "all":
+            query = query.filter(DiscussionJoinRequest.status == wanted)
+
+        rows = query.order_by(DiscussionJoinRequest.requested_at.asc()).all()
+        return {"requests": [_serialize_join_request(r) for r in rows]}
+
+    @app.post("/api/discussions/{room_id}/requests/{request_id}/accept")
+    def accept_join_request(
+        room_id: int,
+        request_id: int,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user_model),
+    ):
+        return _decide_join_request(db, room_id, request_id, current_user, "accepted")
+
+    @app.post("/api/discussions/{room_id}/requests/{request_id}/reject")
+    def reject_join_request(
+        room_id: int,
+        request_id: int,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user_model),
+    ):
+        return _decide_join_request(db, room_id, request_id, current_user, "rejected")
 
     # -----------------------------
     # PARTICIPANTS

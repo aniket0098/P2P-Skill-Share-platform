@@ -18,7 +18,10 @@
     <header class="app-head"><a class="app-brand" href="dashboard.html"><b>◇</b>SkillShare</a>
         <nav class="app-nav"><a href="dashboard.html">Dashboard</a><a href="explore.html">Explore</a><a
                 href="my-learning.html">Learning</a></nav>
-        <div class="head-right"><a href="profile.html"><img src="" alt="Profile"></a></div>
+        <div class="head-right"><a class="credits-chip" href="credits.html" data-credits-chip
+                title="Your credit balance"><span class="cc-coin">&#129473;</span><span class="cc-num"
+                    data-credits-value>—</span><span class="cc-label">Credits</span></a><div
+                id="profileDropdownContainer"></div></div>
     </header>
     <main class="page">
         <div class="page-heading">
@@ -32,15 +35,9 @@
         </section>
     </main>
     <div id="toast" class="toast"></div>
-    <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
+    <!-- STAGE 2 unify adapter: active nav + mobile drawer + shared
+         Credits chip + shared profile dropdown. No UI rewrite. -->
     <script src="portal-unify.js"></script>
 </body>
 
 </html>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        if (window.SkillShareProfileDropdown) {
-            SkillShareProfileDropdown.init("#profileDropdownContainer");
-        }
-    });
-</script>

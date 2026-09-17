@@ -2452,10 +2452,32 @@ button {
         gap: 8px;
     }
 
-    .profile-text,
-    .credits-pill {
+    .profile-text {
         display: none;
     }
+
+    /* Credits stays reachable on phones: compact pill instead of the
+       wide desktop one (mirrors the shared .credits-chip behaviour).
+       Previously it was display:none here, which hid the Credits
+       control entirely on mobile. */
+    .credits-pill {
+        display: flex;
+
+        min-width: auto;
+
+        padding: 7px 10px;
+
+        gap: 8px;
+    }
+
+    .credits-pill small {
+        display: none;
+    }
+
+    .credits-pill strong {
+        font-size: 13px;
+    }
+}
 
     .right-panel {
         display: none;

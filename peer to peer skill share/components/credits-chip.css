@@ -1,0 +1,124 @@
+/* =========================================================
+   SKILLSHARE — CREDITS CHIP (components/credits-chip.css)
+
+   Compact wallet pill for topbars. Additive only: pages that
+   already ship their own credits widget (.credits-box on the
+   Credits page, .credits-pill on Live Learning, #creditsWidget
+   on the dashboard) simply never mount it, so no page shows two
+   balances.
+
+   Visuals mirror the EXISTING gold .credits-box (credits.css):
+   same gold border/background tint over the header's own text
+   colour, so it adapts to light and dark headers by itself.
+   ========================================================= */
+
+.credits-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 200, 97, 0.35);
+    background: rgba(255, 200, 97, 0.08);
+    color: inherit;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.credits-chip:hover {
+    border-color: rgba(255, 200, 97, 0.65);
+    background: rgba(255, 200, 97, 0.14);
+}
+
+/* The notifications/bookmarks/calendar headers have no flex gap between
+   their right-side items — give the chip explicit breathing room when it
+   is followed by the profile control inside .head-right. */
+.head-right .credits-chip {
+    margin-right: 10px;
+}
+
+.credits-chip .cc-coin {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.credits-chip .cc-num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+}
+
+.credits-chip .cc-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: currentColor;
+    opacity: 0.65;
+}
+
+/* No session / wallet unreachable: dim the placeholder, keep the link. */
+.credits-chip.credits-chip-unavailable .cc-num {
+    opacity: 0.5;
+}
+
+@media (max-width: 650px) {
+    .credits-chip {
+        padding: 6px 10px;
+        font-size: 11.5px;
+    }
+
+    /* Keep the topbar one row tall on phones: coin + number only. */
+    .credits-chip .cc-label {
+        display: none;
+    }
+}
+
+/* ---------------------------------------------------------
+   NARROW VIEWPORTS: no horizontal overflow, ever.
+
+   The wallet chip is compact on phones (coin + real balance;
+   the "Credits" word is already dropped at <= 650px above) and
+   a header whose top-right group genuinely no longer fits its
+   row reflows inside that group instead of scrolling the page
+   sideways. The reflow only happens where the content really
+   does not fit, so a normal desktop header is untouched, and
+   no control is ever hidden.
+   --------------------------------------------------------- */
+@media (max-width: 1100px) {
+    header.topbar,
+    header.top-header,
+    header.header,
+    header.app-head,
+    .topbar-right,
+    .head-right,
+    .top-actions,
+    .header-actions {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+}
+
+@media (max-width: 520px) {
+    .credits-chip,
+    [data-credits-chip] {
+        padding: 5px 8px;
+        gap: 5px;
+    }
+
+    .credits-chip .cc-coin {
+        font-size: 12px;
+    }
+
+    .credits-chip .cc-num {
+        font-size: 11px;
+        letter-spacing: 0;
+    }
+
+    .head-right .credits-chip {
+        margin-right: 6px;
+    }
+}

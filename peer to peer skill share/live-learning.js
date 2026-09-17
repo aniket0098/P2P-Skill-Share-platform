@@ -140,7 +140,8 @@ document.addEventListener("DOMContentLoaded", () => {
         $(".back-btn");
 
     const creditElements =
-        $$(".credit-value, #creditBalance, #credits");
+        $$(".credit-value, #creditBalance, #credits")
+            .filter(el => !el.hasAttribute("data-credits-value"));
 
 
     /* =========================================================

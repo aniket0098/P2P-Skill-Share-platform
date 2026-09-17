@@ -166,27 +166,6 @@
         <div class="header-actions">
 
 
-          <!-- CREDIT BALANCE -->
-
-          <div class="credits-pill">
-
-            <span class="coin">
-              S
-            </span>
-
-            <div>
-
-              <strong id="creditBalance">0</strong>
-
-              <small>
-                Credits
-              </small>
-
-            </div>
-
-          </div>
-
-
           <!-- =================================================
                NOTIFICATION
           ================================================== -->
@@ -246,6 +225,29 @@
             </div>
 
           </div>
+
+
+          <!-- CREDIT BALANCE — real wallet via the shared chip component
+               (components/credits-chip.js). Sits beside Profile like every
+               other page; the page's booking simulation never writes here. -->
+
+          <a class="credits-pill" href="credits.html" data-credits-chip title="Your credit balance">
+
+            <span class="coin">
+              S
+            </span>
+
+            <div>
+
+              <strong id="creditBalance" data-credits-value>&#8212;</strong>
+
+              <small>
+                Credits
+              </small>
+
+            </div>
+
+          </a>
 
 
           <!-- =================================================
@@ -1227,9 +1229,16 @@
 
   <!-- JAVASCRIPT -->
 
+  <!-- Shared client layer (existing config.js + api-client.js contract):
+       lets the shared Credits chip read the REAL wallet balance. -->
+  <script src="config.js"></script>
+  <script src="api-client.js"></script>
+  <script src="components/credits-chip.js"></script>
+
   <script src="live-learning.js"></script>
 
-    <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
+    <!-- STAGE 2 unify adapter: active nav + mobile drawer + shared
+         Credits chip. No UI rewrite. -->
     <script src="portal-unify.js"></script>
 </body>
 </html>

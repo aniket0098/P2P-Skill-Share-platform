@@ -358,6 +358,14 @@ window.DiscussionMedia.connect = async function (appRoomId) {
     } catch (err) {
         const msg = (err && (err.detail || err.message)) || "Connection failed";
         console.log("[LiveKit] Connection failed:", msg);
-        this.setStatus("ERROR", msg + "  Chat still works. [Retry]");
+        /* 409 = the room's paid window (credits) has ended: the token mint is
+           refused server-side, so say why instead of a generic error. */
+        const expired = err && err.status === 409;
+        this.setStatus(
+            "ERROR",
+            (expired
+                ? "Paid time for this room has ended. Top up credits to host another session."
+                : msg) + "  Chat still works. [Retry]"
+        );
     } finally { this._busy = false; }
 };

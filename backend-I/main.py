@@ -3516,6 +3516,11 @@ try:
     import discussions_models  # registers the discussion tables on Base
     from discussions_api import register_discussions
     register_discussions(app, get_db, get_current_user_model)
+    # Additive privacy migration: adds discussion_rooms.is_private with
+    # ADD COLUMN IF NOT EXISTS (no-op when present). Never destructive.
+    _disc_privacy = discussions_models.run_discussion_privacy_migration(engine)
+    if _disc_privacy:
+        print(f"[discussions] privacy migration applied: {_disc_privacy}")
     # create_all ran earlier in boot — run again so the new (empty)
     # discussion_* tables are created. It never alters existing tables.
     Base.metadata.create_all(bind=engine)
@@ -3536,4 +3541,24 @@ try:
     print("[livekit] route registered: POST /api/livekit/token")
 except Exception as _lk_err:  # never break boot on additive stage
     print(f"[livekit] WARNING: livekit route not registered: {_lk_err}")
+
+
+# ================================================================
+# CREDITS (additive: /api/credits, /api/credits/history,
+# /api/credits/packages, /api/credits/purchase + credit_wallets,
+# credit_transactions, credit_purchases). PostgreSQL is the ONLY
+# source of truth for balances; the 1,000/day allowance is renewed
+# lazily server-side from the UTC date and never accumulates.
+# No existing route, table or row is touched.
+# ================================================================
+try:
+    import credits_models
+    # Adds discussion_rooms.expires_at / credit_cost (ADD COLUMN IF NOT
+    # EXISTS) and creates the three new credit tables. Non-destructive.
+    credits_models.migrate_credits(engine)
+    from credits_api import register_credits
+    register_credits(app, get_db, get_current_user_model)
+    print("[credits] routes registered: /api/credits*")
+except Exception as _credits_err:  # never break boot on additive stage
+    print(f"[credits] WARNING: credit routes not registered: {_credits_err}")
 
