@@ -155,6 +155,10 @@
                     Share
                 </button>
 
+                <!-- Credits wallet (real balance via the shared chip component) -->
+
+                <a class="credits-chip" href="credits.html" data-credits-chip title="Your credit balance"><span class="cc-coin">&#129473;</span><span class="cc-num" data-credits-value>&#8212;</span><span class="cc-label">Credits</span></a>
+
                 <div id="profileDropdownContainer"></div>
 
             </div>
@@ -245,6 +249,15 @@
                         <span class="header-stat" id="meetingTimerStat" hidden title="Meeting time">
                             <i class="fa-regular fa-hourglass-half"></i>
                             <span id="meetingTimer">00:00</span>
+                        </span>
+
+                        <!-- PAID WINDOW (credits). The value comes from the
+                             server (expires_at / seconds_remaining); this is a
+                             display-only countdown, the backend decides. -->
+                        <span class="header-stat" id="paidWindowStat" hidden
+                              title="Paid time remaining">
+                            <i class="fa-solid fa-coins"></i>
+                            <span id="paidWindowText">--:--</span>
                         </span>
 
                         <span class="header-stat" title="Participants">
@@ -642,8 +655,6 @@
 
     <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
     <script src="portal-unify.js?v=20260916d"></script>
-</body>
-</html>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -652,6 +663,8 @@
         }
     });
 </script>
+</body>
+</html>
 
 
 

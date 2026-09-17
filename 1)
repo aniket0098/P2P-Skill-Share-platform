@@ -1,0 +1,41 @@
+warning: in the working copy of 'peer to peer skill share/bookmarks.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/calendar.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/community.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/create-session.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/credits.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/live-learning.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/notifications.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/requests.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/setting.html', LF will be replaced by CRLF the next time Git touches it
+ backend-I/__pycache__/main.cpython-312.pyc     | Bin [31m166919[m -> [32m167586[m bytes
+ backend-I/discussions_api.py                   | 461 [32m+++++++++++++++++++++++[m[31m-[m
+ backend-I/discussions_models.py                |  82 [32m+++++[m
+ backend-I/livekit_api.py                       |  60 [32m+++[m[31m-[m
+ backend-I/main.py                              |  25 [32m++[m
+ peer to peer skill share/api-client.js         |  20 [32m++[m
+ peer to peer skill share/bookmarks.html        |   2 [32m+[m[31m-[m
+ peer to peer skill share/calendar.html         |   2 [32m+[m[31m-[m
+ peer to peer skill share/community.html        |   4 [32m+[m
+ peer to peer skill share/create-session.html   |   2 [32m+[m[31m-[m
+ peer to peer skill share/credits.html          |  52 [32m+[m[31m--[m
+ peer to peer skill share/credits.js            | 480 [32m+++++++++++++++++++++[m[31m----[m
+ peer to peer skill share/discussion-room.css   |   5 [32m+[m
+ peer to peer skill share/discussion-room.html  |  13 [32m+[m
+ peer to peer skill share/discussion-room.js    | 105 [32m++++++[m
+ peer to peer skill share/live-discussions.html |   4 [32m+[m
+ peer to peer skill share/live-discussions.js   |  59 [32m+++[m
+ peer to peer skill share/live-learning.css     |  24 [32m+[m[31m-[m
+ peer to peer skill share/live-learning.html    |  53 [32m+[m[31m--[m
+ peer to peer skill share/live-learning.js      |   3 [32m+[m[31m-[m
+ peer to peer skill share/livekit-room-part3.js |  10 [32m+[m[31m-[m
+ peer to peer skill share/livekit-room-part4.js | 138 [32m++++++[m[31m-[m
+ peer to peer skill share/livekit-room.css      |  23 [32m++[m
+ peer to peer skill share/messages.html         |   3 [32m+[m
+ peer to peer skill share/notifications.html    |  15 [32m+[m[31m-[m
+ peer to peer skill share/portal-shell.js       |  70 [32m+++[m[31m-[m
+ peer to peer skill share/portal-unify.js       | 156 [32m+++++++[m[31m-[m
+ peer to peer skill share/profile.html          |  15 [32m+[m[31m-[m
+ peer to peer skill share/projects.html         |  12 [32m+[m[31m-[m
+ peer to peer skill share/requests.html         |   1 [32m+[m
+ peer to peer skill share/setting.html          |  21 [32m+[m[31m-[m
+ 31 files changed, 1728 insertions(+), 192 deletions(-)

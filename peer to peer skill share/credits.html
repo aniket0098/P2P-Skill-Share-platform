@@ -173,56 +173,8 @@
                 </a>
 
 
-                <div class="profile-wrapper">
-
-                    <button
-                        class="profile-btn"
-                        id="profileBtn"
-                        aria-label="Open profile menu"
-                    >
-
-                        <div class="avatar">A</div>
-
-                        <div class="profile-info">
-                            <strong>—</strong>
-                            <span>Learner</span>
-                        </div>
-
-                        <i class="fa-solid fa-chevron-down"></i>
-
-                    </button>
-
-
-                    <div class="profile-menu" id="profileMenu" hidden>
-
-                        <a href="profile.html">
-                            <i class="fa-regular fa-user"></i>
-                            View Profile
-                        </a>
-
-                        <a href="my-learning.html">
-                            <i class="fa-solid fa-book-open"></i>
-                            My Learning
-                        </a>
-
-                        <a href="credits.html" class="active">
-                            <i class="fa-solid fa-coins"></i>
-                            Credits
-                        </a>
-
-                        <a href="notifications.html">
-                            <i class="fa-regular fa-bell"></i>
-                            Notifications
-                        </a>
-
-                        <a href="setting.html">
-                            <i class="fa-solid fa-gear"></i>
-                            Settings
-                        </a>
-
-                    </div>
-
-                </div>
+                <!-- Profile dropdown rendered by the shared component -->
+                <div id="profileDropdownContainer"></div>
 
             </div>
 
@@ -1525,9 +1477,7 @@
 
     <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
     <script src="portal-unify.js"></script>
-</body>
 
-</html>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         if (window.SkillShareProfileDropdown) {
@@ -1535,3 +1485,6 @@
         }
     });
 </script>
+</body>
+
+</html>

@@ -697,6 +697,26 @@ window.SkillShareAPI = (() => {
                 method: "POST",
                 body: JSON.stringify({ room_id: Number(roomId) }),
             }),
+        /* Credits: PostgreSQL is the ONLY source of truth for the balance —
+           the frontend never writes it. /api/credits also performs the lazy
+           server-side daily renewal, so it is the canonical wallet read. */
+        getCredits: () => request("/api/credits"),
+        getCreditsHistory: (filter = "all", limit = 100, offset = 0) =>
+            request(
+                `/api/credits/history?filter=${encodeURIComponent(filter)}` +
+                    `&limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`
+            ),
+        getCreditPackages: () => request("/api/credits/packages"),
+        /* Returns 202 with no credits allocated until a payment provider is
+           configured — the server decides, never the browser. */
+        purchaseCredits: (packageKey, clientRequestId) =>
+            request("/api/credits/purchase", {
+                method: "POST",
+                body: JSON.stringify({
+                    package_key: packageKey,
+                    client_request_id: clientRequestId,
+                }),
+            }),
     };
 })();
 

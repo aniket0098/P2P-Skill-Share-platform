@@ -5,11 +5,19 @@
     <title>Anonymous | SkillShare</title><link rel="stylesheet" href="profile.css"><script src="profile.js" defer></script>
 </head>
 <body class="public-page">
-    <header class="topbar"><a class="brand" href="dashboard.html"><span class="logo">◇</span>SkillShare</a><nav><a href="dashboard.html">Dashboard</a><a href="explore.html" class="active-link">Explore skills</a><a href="community.html">Community</a></nav><div class="top-actions"><a class="back" href="explore.html">← Back to explore</a><img src="" alt="Your profile"></div></header>
+    <header class="topbar"><a class="brand" href="dashboard.html"><span class="logo">◇</span>SkillShare</a><nav><a href="dashboard.html">Dashboard</a><a href="explore.html" class="active-link">Explore skills</a><a href="community.html">Community</a></nav><div class="top-actions"><a class="back" href="explore.html">← Back to explore</a><div id="profileDropdownContainer"></div></div></header>
     <main>
             <div class="empty-state">Tutor profile information will appear here once connected to the backend.</div>
-        
+    </main>
     <div class="toast" id="toast" role="status"></div>
+    <!-- Shared client layer: the existing config.js + api-client.js +
+         auth.js contract (same as every other legacy page) so
+         portal-unify.js can render the shared profile dropdown and the
+         REAL credit balance. -->
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+
     <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
     <script src="portal-unify.js"></script>
 </body>

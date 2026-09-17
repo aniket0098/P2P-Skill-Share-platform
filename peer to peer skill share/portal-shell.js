@@ -20,14 +20,14 @@ recruiter: [
 ["Industry", [["Industry Challenges", "&#127981;", "industry-challenges.html"]]],
 ["Communication", [["Messages", "&#128172;", "messages.html"], ["Calendar", "&#128197;", "calendar.html"]]],
 ["Analytics", [["Hiring Analytics", "&#128202;", "hiring-analytics.html"]]],
-["Company", [["Company Profile", "&#127981;", "company-profile.html"], ["Settings", "&#9881;", "recruiter-settings.html"]]]
+["Company", [["Company Profile", "&#127981;", "company-profile.html"], ["Settings", "&#9881;", "recruiter-settings.html"], ["Credits", "&#129473;", "credits.html"]]]
 ],
 faculty: [
 [null, [["Faculty Dashboard", "&#127968;", "faculty-dashboard.html"]]],
 ["Students", [["Students", "&#129489;", "students.html"], ["Skill Gap", "&#128201;", "skill-gap.html"]]],
 ["Industry", [["Industry Partners", "&#129309;", "industry-partners.html"], ["Challenges", "&#127981;", "faculty-challenges.html"]]],
 ["Career", [["Internship Tracking", "&#127891;", "internships-tracking.html"], ["Placement Analytics", "&#128202;", "placement-analytics.html"]]],
-["Profile", [["Profile", "&#128100;", "profile.html"], ["Settings", "&#9881;", "setting.html"]]]
+["Profile", [["Profile", "&#128100;", "profile.html"], ["Settings", "&#9881;", "setting.html"], ["Credits", "&#129473;", "credits.html"]]]
 ],
 shared: [
 [null, [["Dashboard", "&#127968;", "dashboard.html"]]],
@@ -85,8 +85,62 @@ b.addEventListener("click", function () { window.location.href = "notifications.
 }
 function initShellProfile() {
 var c = document.querySelector("#profileDropdownContainer");
-if (!c || c.children.length || !window.SkillShareProfileDropdown) return;
-try { window.SkillShareProfileDropdown.init("#profileDropdownContainer"); } catch (e) {}
+if (!c || c.children.length) return;
+if (window.SkillShareProfileDropdown) {
+    try { window.SkillShareProfileDropdown.init("#profileDropdownContainer"); } catch (e) {}
+    return;
+}
+/* Pages that already ship the API layer (config.js + api-client.js)
+   get the shared profile component on demand; pages without it keep
+   today's behaviour so no unexpected auth flow is introduced. */
+if (window.SkillShareAPI && typeof window.SkillShareAPI.getToken === "function") {
+    loadSharedScript("components/profile-dropdown.js", function () {
+        try { window.SkillShareProfileDropdown.init("#profileDropdownContainer"); } catch (e) {}
+    });
+}
+}
+function initShellCredits() {
+var chip = document.querySelector("[data-credits-chip]");
+if (!chip) return;
+if (window.SkillShareCreditsChip) {
+    try { window.SkillShareCreditsChip.mount("[data-credits-chip]"); } catch (e) {}
+    return;
+}
+if (window.SkillShareAPI && typeof window.SkillShareAPI.getToken === "function") {
+    loadSharedScript("components/credits-chip.js", function () {
+        try { window.SkillShareCreditsChip.mount("[data-credits-chip]"); } catch (e) {}
+    });
+}
+}
+function loadSharedScript(src, onload) {
+/* Dedupe by src so the shared component is never injected/executed
+   twice (no duplicate listeners, no duplicate API calls), even when
+   portal-shell.js and portal-unify.js both ask for it. */
+var s = document.querySelector('script[data-ss-src="' + src + '"]');
+if (!s) {
+    s = document.createElement("script");
+    s.src = src; s.async = true;
+    s.setAttribute("data-ss-src", src);
+    s.addEventListener("load", function () { s.dataset.ssLoaded = "1"; });
+    document.head.appendChild(s);
+}
+if (typeof onload === "function") {
+    if (s.dataset.ssLoaded) { onload(); return; }
+    s.addEventListener("load", onload);
+}
+}
+function ensureSharedStyles() {
+/* The shell-rendered profile container and credits chip need their
+   shared stylesheets on pages that never linked them. Marker-guarded
+   so portal-unify.js and portal-shell.js never inject twice. */
+["components/profile-dropdown.css", "components/credits-chip.css"].forEach(function (href) {
+    var key = href.split("/").pop();
+    if (document.querySelector('link[data-ss-shared="' + key + '"]')) return;
+    var l = document.createElement("link");
+    l.rel = "stylesheet"; l.href = href;
+    l.setAttribute("data-ss-shared", key);
+    document.head.appendChild(l);
+});
 }
 function render(role, page) {
 role = role || resolveRole();
@@ -97,6 +151,7 @@ var ds=document.createElement('link');ds.rel='stylesheet';ds.href='design-system
 document.head.appendChild(ds);
 }
 }catch(e){}
+try { ensureSharedStyles(); } catch (e) {}
 try { localStorage.setItem(STORE, role); } catch (e) {}
 const sections = window.PortalShellNavs[role] || window.PortalShellNavs.student;
 const side = document.getElementById("app-sidebar");
@@ -136,9 +191,16 @@ top.innerHTML = '<div class="topbar"><div class="topbar-left">' +
 "<div><h1>Welcome back, <span>" + esc(name) + "</span> 👋</h1><p>" + esc(TAGLINES[role] || TAGLINES.student) + "</p></div></div>" +
 '<div class="topbar-right"><div class="role-switch">' + pills + "</div>" +
 '<button class="notification-btn" type="button" aria-label="Notifications" data-notifs="1">🔔</button>' +
+/* Credits chip: [🔔 Notifications][🪙 Credits][👤 Profile] — links to the
+   EXISTING credits page and shows the REAL server-side balance via
+   SkillShareCreditsChip (read-only, no localStorage authority). */
+'<a class="credits-chip" href="credits.html" data-credits-chip title="Your credit balance">' +
+'<span class="cc-coin">&#129473;</span><span class="cc-num" data-credits-value>—</span>' +
+'<span class="cc-label">Credits</span></a>' +
 '<div id="profileDropdownContainer"></div></div></div>';
 bindShell(top);
 initShellProfile();
+initShellCredits();
 }
 }
 return { render: render, resolveRole: resolveRole, currentFile: currentFile };

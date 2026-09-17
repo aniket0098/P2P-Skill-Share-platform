@@ -1155,14 +1155,18 @@
 
     <!-- JAVASCRIPT -->
 
+    <!-- Shared client layer: the existing config.js + api-client.js + auth.js
+         contract (same as every other legacy page) so portal-unify.js can
+         render the shared profile dropdown and the REAL credit balance. -->
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
     <script src="projects.js?v=2"></script>
 
-    <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
     <!-- STAGE 6 projects bridge: real data for "My Projects" section. Additive. -->
     <script src="stage6-projects.js"></script>
-    <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
-    <script src="portal-unify.js?v=2"></script>
-
+    <!-- STAGE 2 unify adapter: active nav + mobile drawer + shared
+         Credits chip / profile dropdown. No UI rewrite. -->
     <script src="portal-unify.js?v=2"></script>
 </body>
 

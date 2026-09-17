@@ -14,6 +14,7 @@ let searchTimer = null;
 let latestQueryId = 0;      // guards against stale search results
 let roomsCache = [];        // last successful payload (per current filter)
 let creating = false;       // create-room in-flight guard (double-click safe)
+let createRequestId = null; // idempotency id for the CURRENT create attempt
 
 /* ================= HELPERS ================= */
 
@@ -29,6 +30,21 @@ const initialsOf = (name) =>
 
 function roomUrl(id) {
     return "discussion-room.html?room=" + encodeURIComponent(id);
+}
+
+/* Idempotency id for room creation. The client reuses ONE id for the whole
+   attempt, so a double-click / retry / lost response makes the server replay
+   the SAME room instead of charging the create cost twice. */
+function newRequestId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+    }
+    /* RFC-4122 v4 fallback for browsers without crypto.randomUUID. */
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+        const random = (Math.random() * 16) | 0;
+        const value = char === "x" ? random : (random & 0x3) | 0x8;
+        return value.toString(16);
+    });
 }
 
 function formatDate(value) {
@@ -396,6 +412,22 @@ function showFormError(message) {
     err.hidden = false;
 }
 
+/* 402 = the wallet cannot cover the room's credit cost. The message comes from
+   the server; the link sends the user to the wallet to top up (server-priced). */
+function showInsufficientCredits(message) {
+    const err = document.getElementById("createFormError");
+    if (!err) {
+        showToast(message, true);
+        return;
+    }
+    err.textContent = message + " ";
+    const link = document.createElement("a");
+    link.href = "credits.html";
+    link.textContent = "Buy credits";
+    err.appendChild(link);
+    err.hidden = false;
+}
+
 function hideFormError() {
     const err = document.getElementById("createFormError");
     if (err) err.hidden = true;
@@ -437,6 +469,10 @@ async function submitCreateRoom(event) {
 
     const durationRaw = document.getElementById("roomDuration").value;
 
+    /* SAME id across retries: if the first attempt actually reached the server
+       (response lost), the replay returns that room rather than charging again. */
+    if (!createRequestId) createRequestId = newRequestId();
+
     const payload = {
         title: title,
         description: document.getElementById("roomDescription").value.trim() || null,
@@ -448,6 +484,9 @@ async function submitCreateRoom(event) {
         duration_minutes: durationRaw ? parseInt(durationRaw, 10) : null,
         scheduled_at: scheduledAt,
         agenda: document.getElementById("roomAgenda").value.trim() || null,
+        /* Idempotency key: the server charges credits ONCE per id and replays
+           the room for any repeat of the same id + payload. */
+        client_request_id: createRequestId,
     };
 
     const button = document.getElementById("createSubmitBtn");
@@ -464,6 +503,14 @@ async function submitCreateRoom(event) {
         const room = (data && data.room) || data || {};
         if (!room.id) throw new Error("Room created but no ID was returned.");
 
+        // Charged exactly once, server-side; the id is spent, so the next room
+        // starts a fresh attempt id.
+        createRequestId = null;
+
+        /* Credits were spent server-side for this room — tell the top-right
+           balance widget to re-read the wallet before we navigate away. */
+        document.dispatchEvent(new CustomEvent("skillshare:credits-changed"));
+
         showToast("Room created. Opening it now...");
         // Direct route to the real room — no dead page in between.
         window.location.href = roomUrl(room.id);
@@ -471,6 +518,18 @@ async function submitCreateRoom(event) {
         creating = false;
         button.disabled = false;
         button.innerHTML = original;
+
+        // 402 = not enough credits for this room (server-computed price).
+        // 409 = the id was already used with a DIFFERENT payload.
+        if (error && error.status === 402) {
+            showInsufficientCredits(errorMessage(error));
+            return;
+        }
+        if (error && error.status === 409) {
+            // Same id, different content: retrying can never succeed. Start a
+            // new attempt without transferring anything, nothing was charged.
+            createRequestId = newRequestId();
+        }
         showFormError(errorMessage(error));
     }
 }

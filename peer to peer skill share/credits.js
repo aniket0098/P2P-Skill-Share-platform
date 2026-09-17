@@ -1,17 +1,17 @@
 /* =========================================================
    SKILLSHARE — CREDITS & REWARDS
-   Wallet · Rewards · Reputation (frontend prototype)
+   Wallet · Rewards · Reputation
 
-   DATA SOURCE: clearly-identified DEMO data below.
-   BACKEND (Flask + PostgreSQL) later:
+   DATA SOURCE: PostgreSQL through window.SkillShareAPI. The
+   server returns the balance and the ledger; the browser only
+   displays them (it never writes a credit value):
      GET  /api/credits           -> balance + monthly stats
      GET  /api/credits/history   -> activity list
-     GET  /api/credits/rewards   -> review reward tiers
-     GET  /api/reviews           -> reputation + reviews
-     POST /api/credits/purchase  -> real payment flow
+     GET  /api/credits/packages  -> purchasable credit packs
+     POST /api/credits/purchase  -> purchase intent (payment)
 
    SECURITY: the frontend never writes the credit balance.
-   Purchases/rewards must be validated server-side.
+   Purchases/rewards are validated server-side.
    ========================================================= */
 
 "use strict";
@@ -19,42 +19,120 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
-       1. DEMO DATA (isolated — replace with API responses)
+       1. WALLET STATE (PostgreSQL is the source of truth)
+       The balance is NEVER computed or stored in the browser:
+       this page only DISPLAYS what GET /api/credits and
+       GET /api/credits/history return for the logged-in user.
        type drives the filter tabs:
        earned | spent | purchased | rewards
     ===================================================== */
 
-    const CREDITS_DEMO = {
+    const CREDITS_EMPTY = {
         balance: 0,
+        dailyCredits: 0,
+        purchasedCredits: 0,
         earnedThisMonth: 0,
         spentThisMonth: 0,
         reviewsReceived: 0,
         averageRating: 0,
-        monthlyGoal: 0,
+        monthlyGoal: 500,
         activity: []
+    };
+
+    let creditsState = { ...CREDITS_EMPTY };
+
+    /* Tabs + purchase state (UI only — the server owns all credit values). */
+
+    let currentFilter = "all";
+
+    let selectedPackageKey = "Popular";
+
+    /* One id per buy attempt: reusing it makes a double-click / retry return
+       the SAME purchase instead of creating a second one server-side. */
+
+    let pendingPurchaseId = null;
+
+    /* Packages are priced by the SERVER; these keys only name the product. */
+
+    const CREDIT_PACKAGES_BY_CREDITS = {
+        500: "Starter",
+        1200: "Popular",
+        3000: "Pro",
+        7000: "Premium"
     };
 
 
     /* =====================================================
-       2. DATA LOADER (single replacement point for the API)
+       2. DATA LOADER (server only — no seeded demo values)
     ===================================================== */
 
-    function loadCreditsData() {
+    function creditsApi() {
+        return window.SkillShareAPI || null;
+    }
 
-        /* Future: return fetch("/api/credits").then(r => r.json())
-           — every renderer below consumes this object only.
-           Until the backend is wired, the wallet and every
-           counter render 0 — no seeded demo values reach the UI. */
+    function formatActivityWhen(iso) {
+        /* Server timestamps are ISO/UTC; the locale decides the display. */
+        const when = new Date(iso);
+        if (Number.isNaN(when.getTime())) return "";
+        return when.toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+    }
 
+    function mapActivityRow(row) {
         return {
-            balance: 0,
-            earnedThisMonth: 0,
-            spentThisMonth: 0,
-            reviewsReceived: 0,
-            averageRating: 0,
-            monthlyGoal: 0,
-            activity: []
+            id: row.id,
+            type: row.type || "rewards",
+            icon: row.icon || "fa-solid fa-coins",
+            title: row.title || "Credit activity",
+            detail: row.detail || "",
+            amount: Number(row.amount || 0),
+            date: formatActivityWhen(row.date),
+            room_id: row.room_id || null
         };
+    }
+
+    /* Single replacement point: every renderer below consumes this object. */
+    async function loadCreditsData() {
+
+        const api = creditsApi();
+
+        if (!api || !api.getCredits) {
+            showToast("Credits are unavailable right now.");
+            return { ...CREDITS_EMPTY };
+        }
+
+        try {
+
+            const [wallet, history] = await Promise.all([
+                api.getCredits(),
+                api.getCreditsHistory("all", 100)
+            ]);
+
+            return {
+                balance: Number(wallet.balance || 0),
+                dailyCredits: Number(wallet.daily_credits || 0),
+                purchasedCredits: Number(wallet.purchased_credits || 0),
+                earnedThisMonth: Number(wallet.earnedThisMonth || 0),
+                spentThisMonth: Number(wallet.spentThisMonth || 0),
+                reviewsReceived: Number(wallet.reviewsReceived || 0),
+                averageRating: Number(wallet.averageRating || 0),
+                monthlyGoal: Number(wallet.monthlyGoal || 500),
+                activity: (history.activity || []).map(mapActivityRow)
+            };
+
+        } catch (error) {
+
+            showToast(
+                (error && error.message) ||
+                    "Could not load your credits. Please try again."
+            );
+
+            return { ...CREDITS_EMPTY };
+
+        }
 
     }
 
@@ -183,16 +261,93 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderWallet(data) {
 
-        if (walletBalance) {
-            walletBalance.dataset.count = data.balance;
-        }
-
         if (topCredits) {
             topCredits.textContent = formatCredits(data.balance);
         }
 
-        /* All [data-count] figures (hero, stats, progress, rating)
-           count up when the reveal observer marks them visible. */
+        /* Every [data-count] figure is animated here (once), so the reveal
+           observer never re-runs it — dataset.counted is the same guard the
+           scroll reveal uses. */
+        setFigure(walletBalance, data.balance);
+        setFigure(document.getElementById("statAvailable"), data.balance);
+        setFigure(document.getElementById("statEarned"), data.earnedThisMonth);
+        setFigure(document.getElementById("statSpent"), data.spentThisMonth);
+        setFigure(document.getElementById("statReviews"), data.reviewsReceived);
+        setFigure(document.getElementById("statRating"), data.averageRating);
+        setFigure(
+            document.getElementById("progressCurrent"),
+            data.earnedThisMonth
+        );
+        setFigure(document.getElementById("ratingBig"), data.averageRating);
+
+        renderMonthlyNote(data);
+        renderMonthProgress(data);
+
+    }
+
+    function setFigure(element, value) {
+
+        if (!element) return;
+
+        element.dataset.count = value;
+        element.dataset.counted = "true";
+
+        animateCountUp(element);
+
+    }
+
+    function renderMonthlyNote(data) {
+
+        const note = document.querySelector(".wallet-month");
+
+        if (!note) return;
+
+        if (data.earnedThisMonth > 0) {
+
+            note.innerHTML =
+                '<i class="fa-solid fa-arrow-trend-up"></i> ' +
+                "+" +
+                formatCredits(data.earnedThisMonth) +
+                " credits earned this month.";
+
+        } else {
+
+            note.innerHTML =
+                '<i class="fa-solid fa-arrow-trend-up"></i> No earnings yet.';
+
+        }
+
+    }
+
+    function renderMonthProgress(data) {
+
+        const track = document.getElementById("monthProgress");
+
+        if (!track) return;
+
+        const goal = data.monthlyGoal || 500;
+
+        const percent = Math.min(
+            100,
+            Math.round((data.earnedThisMonth / goal) * 100)
+        );
+
+        track.setAttribute("aria-valuemax", goal);
+
+        track.setAttribute("aria-valuenow", data.earnedThisMonth);
+
+        const fill = track.querySelector(".progress-fill");
+
+        if (fill) {
+
+            fill.dataset.progress = percent;
+
+            /* The section may already be revealed — set the width directly so
+               the bar is correct no matter when the API answers. */
+
+            fill.style.width = percent + "%";
+
+        }
 
     }
 
@@ -205,9 +360,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!activityList) return;
 
-        const data = loadCreditsData();
+        /* Server rows only — the wallet is never recomputed in the browser. */
 
-        const items = data.activity.filter(item =>
+        const items = creditsState.activity.filter(item =>
             filter === "all" ? true : item.type === filter
         );
 
@@ -268,7 +423,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 button.classList.add("active");
                 button.setAttribute("aria-selected", "true");
 
-                renderActivity(button.dataset.filter);
+                currentFilter = button.dataset.filter || "all";
+
+                renderActivity(currentFilter);
 
             });
 
@@ -305,6 +462,192 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+    function packageKeyFor(button) {
+
+        return (
+            button.dataset.package ||
+            CREDIT_PACKAGES_BY_CREDITS[Number(button.dataset.credits || 0)] ||
+            "Popular"
+        );
+
+    }
+
+    function newRequestId() {
+
+        if (
+            window.crypto &&
+            typeof window.crypto.randomUUID === "function"
+        ) {
+            return window.crypto.randomUUID();
+        }
+
+        /* RFC-4122 v4 fallback for browsers without crypto.randomUUID. */
+
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+            /[xy]/g,
+            char => {
+
+                const random = (Math.random() * 16) | 0;
+
+                const value =
+                    char === "x" ? random : (random & 0x3) | 0x8;
+
+                return value.toString(16);
+
+            }
+        );
+
+    }
+
+    function selectPackage(button) {
+
+        selectedPackageKey = packageKeyFor(button);
+
+        /* New attempt => new idempotency id (held until the attempt ends). */
+
+        pendingPurchaseId = newRequestId();
+
+        if (buyModalCredits) {
+            buyModalCredits.textContent = formatCredits(
+                Number(button.dataset.credits || 0)
+            );
+        }
+
+        if (buyModalPrice) {
+            buyModalPrice.textContent =
+                "₹" + Number(button.dataset.price || 0);
+        }
+
+        openModal(buyModal);
+
+    }
+
+    /* The browser NEVER allocates credits: it only asks the server to start a
+       purchase. Until a payment provider is configured the API answers 202
+       with payment.status "not_configured" and allocates nothing. */
+
+    async function requestPurchase() {
+
+        const api = creditsApi();
+
+        if (!api || !api.purchaseCredits) {
+
+            showToast("Purchases are unavailable right now.");
+
+            return null;
+
+        }
+
+        const continueBtn = document.getElementById("buyModalContinue");
+
+        if (continueBtn) continueBtn.disabled = true;
+
+        try {
+
+            const purchase = await api.purchaseCredits(
+                selectedPackageKey,
+                pendingPurchaseId || newRequestId()
+            );
+
+            /* A purchase was recorded server-side — tell the top-right
+               balance widget to re-read the wallet. */
+            document.dispatchEvent(new CustomEvent("skillshare:credits-changed"));
+
+            return purchase;
+
+        } catch (error) {
+
+            showToast(
+                (error && error.message) || "Purchase request failed."
+            );
+
+            return null;
+
+        } finally {
+
+            if (continueBtn) continueBtn.disabled = false;
+
+        }
+
+    }
+
+    async function refreshCredits() {
+
+        creditsState = await loadCreditsData();
+
+        renderWallet(creditsState);
+
+        renderActivity(currentFilter);
+
+    }
+
+    /* The SERVER prices the packages (GET /api/credits/packages). The cards in
+       the markup carry the same keys, so their credits/price are re-synced from
+       the server: a server-side price change can never leave a stale price on
+       screen (the modal then sends only the KEY — never an amount). */
+    async function syncPackages() {
+
+        const api = creditsApi();
+
+        if (!api || !api.getCreditPackages) return;
+
+        try {
+
+            const data = await api.getCreditPackages();
+
+            (data.packages || []).forEach(pack => {
+
+                const button = document.querySelector(
+                    '.buy-btn[data-package="' + pack.key + '"]'
+                );
+
+                if (!button) return;
+
+                const credits = Number(pack.credits || 0);
+
+                const rupees = Number(pack.amount_minor || 0) / 100;
+
+                button.dataset.credits = String(credits);
+
+                button.dataset.price = String(rupees);
+
+                const card = button.closest(".package-card");
+
+                if (!card) return;
+
+                const creditsEl = card.querySelector(".package-credits");
+
+                if (creditsEl) creditsEl.textContent = formatCredits(credits);
+
+                const priceEl = card.querySelector(".package-price");
+
+                if (priceEl) priceEl.textContent = "₹" + rupees;
+
+                const valueEl = card.querySelector(".package-value");
+
+                if (valueEl && credits) {
+
+                    const perCredit = "₹" + (rupees / credits).toFixed(3)
+                        + " per credit";
+
+                    valueEl.textContent = card.classList.contains("popular")
+                        ? "Best value · " + perCredit
+                        : perCredit;
+
+                }
+
+            });
+
+        } catch (error) {
+
+            /* Non-fatal: the cards keep their shipped values. */
+
+            console.warn("Credit package sync failed:", error);
+
+        }
+
+    }
+
     function initializeBuyFlow() {
 
         /* Buy buttons carry package data via data-attributes. */
@@ -313,37 +656,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
             button.addEventListener("click", () => {
 
-                if (buyModalCredits) {
-                    buyModalCredits.textContent = formatCredits(
-                        Number(button.dataset.credits || 0)
-                    );
-                }
-
-                if (buyModalPrice) {
-                    buyModalPrice.textContent =
-                        "₹" + Number(button.dataset.price || 0);
-                }
-
-                openModal(buyModal);
+                selectPackage(button);
 
             });
 
         });
 
-        /* Continue = prototype only: no payment, no balance change.
-           BACKEND HOOK: POST /api/credits/purchase goes here. */
+        /* Continue asks the server to start the purchase. No client-side
+           balance change ever happens here. */
 
         const continueBtn =
             document.getElementById("buyModalContinue");
 
         if (continueBtn) {
 
-            continueBtn.addEventListener("click", () => {
+            continueBtn.addEventListener("click", async () => {
+
+                const result = await requestPurchase();
 
                 closeModal(buyModal);
 
+                pendingPurchaseId = null;
+
+                if (!result) return;
+
+                if (result.payment && result.payment.status === "paid") {
+
+                    showToast("Payment received — credits added.");
+
+                    await refreshCredits();
+
+                    return;
+
+                }
+
                 showToast(
-                    "Payment integration coming soon — no credits were charged."
+                    result.message ||
+                        "Payment integration coming soon — no credits were charged."
                 );
 
             });
@@ -362,7 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
             closeBtn.addEventListener("click", () => closeModal(buyModal));
         }
 
-        /* Wallet hero "Buy Credits" = default highlighted package. */
+        /* Wallet hero "Buy Credits" = default highlighted package (Popular). */
 
         const heroBuyBtn = document.getElementById("buyCreditsBtn");
 
@@ -370,11 +719,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
             heroBuyBtn.addEventListener("click", () => {
 
-                if (buyModalCredits) buyModalCredits.textContent = "1,200";
+                const popularBtn =
+                    document.querySelector('.buy-btn[data-credits="1200"]') ||
+                    document.querySelector(".buy-btn");
 
-                if (buyModalPrice) buyModalPrice.textContent = "₹99";
+                if (popularBtn) {
 
-                openModal(buyModal);
+                    selectPackage(popularBtn);
+
+                } else {
+
+                    selectPackage({
+                        dataset: { credits: 1200, price: 99, package: "Popular" }
+                    });
+
+                }
 
             });
 
@@ -585,13 +944,7 @@ document.addEventListener("DOMContentLoaded", () => {
        11. INIT
     ===================================================== */
 
-    function initializeCreditsPage() {
-
-        const data = loadCreditsData();
-
-        renderWallet(data);
-
-        renderActivity("all");
+    async function initializeCreditsPage() {
 
         initializeFilters();
 
@@ -607,8 +960,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         initializeMisc();
 
+        /* PostgreSQL is the source of truth: render ONLY after the server
+           answers (the page shows 0 / "no activity" until then). */
+
+        await syncPackages();
+
+        await refreshCredits();
+
         console.log(
-            "SkillShare Credits page loaded · prototype data"
+            "SkillShare Credits page loaded · live wallet data"
         );
 
     }

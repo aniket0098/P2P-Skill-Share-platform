@@ -48,6 +48,8 @@ DISCUSSION_ROOM_TYPES = (
 )
 DISCUSSION_PARTICIPANT_ROLES = ("HOST", "MODERATOR", "PARTICIPANT")
 DISCUSSION_PARTICIPANT_STATUSES = ("joined", "left", "removed")
+# Private-room join requests (Phase: private/public rooms — additive only).
+DISCUSSION_JOIN_REQUEST_STATUSES = ("pending", "accepted", "rejected")
 
 
 class DiscussionRoom(Base):
@@ -69,11 +71,18 @@ class DiscussionRoom(Base):
 
     status = Column(String(20), nullable=False, default="SCHEDULED", index=True)
 
+    # Private rooms require host approval before a user may join or
+    # receive a LiveKit token. Nullable + server-defaulted FALSE so the
+    # existing rows (and the existing API contract) keep working.
+    is_private = Column(Boolean, nullable=False, default=False, server_default="false")
+
     max_participants = Column(Integer, nullable=False, default=10)
     duration_minutes = Column(Integer, nullable=True)
 
     scheduled_at = Column(DateTime, nullable=True, index=True)
     started_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    credit_cost = Column(Integer, nullable=True)
     ended_at = Column(DateTime, nullable=True)
 
     # Agenda / discussion points defined by the host (plain text).
@@ -175,4 +184,77 @@ class DiscussionResource(Base):
 #   application room id  ->  LiveKit room name
 def livekit_room_name_for(room_id: int) -> str:
     return f"skillshare_discussion_{room_id}"
+
+
+class DiscussionJoinRequest(Base):
+    """Private-room join requests (additive; new table only).
+
+    Lifecycle:  pending -> accepted | rejected
+      * accepted user may call POST .../join and receive a LiveKit token
+        (the token endpoint re-verifies the accepted status server-side).
+      * a rejected user cannot re-enter until the host accepts a new
+        request (re-requesting flips the SAME row back to pending —
+        one row per room+user, enforced by a UNIQUE constraint).
+      * duplicate pending requests are rejected with 409 by the API.
+    """
+
+    __tablename__ = "discussion_join_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    room_id = Column(
+        Integer,
+        ForeignKey("discussion_rooms.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    status = Column(String(20), nullable=False, default="pending", index=True)
+
+    requested_at = Column(DateTime, default=func.now(), nullable=False)
+    decided_at = Column(DateTime, nullable=True)
+    # Host/moderator who accepted/rejected — always the JWT user, never
+    # a frontend-supplied id.
+    decided_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    user = relationship("User", foreign_keys=[user_id], lazy="joined")
+    decided_by_user = relationship("User", foreign_keys=[decided_by], lazy="joined")
+
+    __table_args__ = (
+        # One request row per user per room: re-requesting reuses the row.
+        UniqueConstraint("room_id", "user_id", name="uq_discussion_join_request"),
+    )
+
+
+def run_discussion_privacy_migration(engine) -> list[str]:
+    """Idempotent, NON-destructive migration for existing installs.
+
+    Base.metadata.create_all() creates missing TABLES but never adds
+    columns to existing ones, so `discussion_rooms.is_private` is added
+    with ADD COLUMN IF NOT EXISTS (a no-op when it already exists).
+    No DROP / TRUNCATE / data rewrite anywhere.
+    """
+    from sqlalchemy import text
+
+    applied: list[str] = []
+    statements = [
+        (
+            "ALTER TABLE discussion_rooms ADD COLUMN IF NOT EXISTS "
+            "is_private BOOLEAN NOT NULL DEFAULT FALSE",
+            "discussion_rooms.is_private",
+        ),
+    ]
+    for sql, label in statements:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(sql))
+                conn.commit()
+            applied.append(label)
+        except Exception as exc:  # never break boot on an additive migration
+            print(f"[discussions] WARNING: privacy migration '{label}' skipped: {exc}")
+    return applied
 
