@@ -98,5 +98,85 @@ table.data tr:last-child td{border-bottom:none;}
   .mobile-menu-btn{display:inline-flex !important;}
   .portal-head h1{font-size:20px;}
 }
+/* =========================================================
+   MOBILE APP SHELL (additive) — drawer UX + header fit.
+   Every rule below is inside a max-width media query, so
+   >=901px desktop behaviour is byte-for-byte unchanged.
+   ========================================================= */
+
+/* Backdrop behind the mobile drawer. Below the sidebar (z-index 1000),
+   above the page. Element is created once by portal-shell.js. */
+#portalShellBackdrop{position:fixed;inset:0;z-index:950;background:rgba(3,6,18,.55);
+  opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease;}
+#portalShellBackdrop.show{opacity:1;visibility:visible;}
+@media (min-width:901px){#portalShellBackdrop{display:none;}}
+
+/* The shell goes off-canvas from 900px down, but the existing
+   .app-main reset only covered <=860px, which left a dead sidebar
+   gap in the 861-900px band. Same values, matching band. */
+@media (max-width:900px){
+  .app-main{margin-left:0 !important;width:100% !important;}
+  /* Sidebar: mobile browser chrome aware, independent scrolling,
+     no scroll chaining into the page behind. height falls back to
+     100vh where 100dvh is unsupported. */
+  #app-sidebar{height:100vh;height:100dvh;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  .sidebar{overscroll-behavior:contain;}
+  /* Scroll lock while the drawer is open — mobile only. */
+  body.portal-nav-open{overflow:hidden;}
+}
+/* Desktop guard: a stale .open (e.g. toggled before a resize) must
+   never leave the fixed sidebar translated away on desktop. */
+@media (min-width:901px){
+  #app-sidebar.open{transform:none;}
+}
+
+/* TOPBAR FIT.
+   The shell topbar is a fixed-height single row. At <=1100px the
+   credits chip's wrap rule made .topbar-right fold onto a second
+   line that spilled out of the 78px bar. One row always fits now,
+   and the bar can grow instead of clipping if it ever must. */
+#app-topbar .topbar-right{flex-wrap:nowrap;}
+#app-topbar .topbar-left{min-width:0;}
+@media (max-width:1100px){
+  #app-topbar{height:auto;min-height:64px;}
+  #app-topbar .topbar{height:auto;min-height:64px;}
+}
+@media (max-width:600px){
+  #app-topbar{min-height:56px;}
+  #app-topbar .topbar{height:auto;padding:10px 14px;align-items:center;gap:8px;}
+  #app-topbar .topbar-left{flex:1 1 auto;gap:8px;overflow:hidden;}
+  /* The h1 wrapper div must be allowed to shrink, or the nowrap title
+     paints underneath the role pills / bell / credits chip (the h1 box
+     stayed at its min-content width and overflowed .topbar-left). */
+  #app-topbar .topbar-left div{min-width:0;flex:1 1 auto;overflow:hidden;}
+  /* Hit areas: the hamburger is the primary mobile nav control and the
+     bell was 34x34 — both below a comfortable touch target. */
+  #app-topbar .mobile-menu-btn{min-width:40px;min-height:40px;flex:0 0 auto;align-items:center;justify-content:center;}
+  #app-topbar .notification-btn{min-width:40px;min-height:40px;}
+  #app-topbar .topbar-left h1{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #app-topbar .topbar-right{flex:0 0 auto;gap:6px;}
+  #app-topbar .role-switch{gap:3px;padding:3px;}
+  #app-topbar .role-switch button{padding:7px 10px;}
+}
+/* Very narrow phones: role pills become initials only. The full label
+   stays available to assistive tech (aria-label/title on the button)
+   and the short form is drawn from data-short — no markup text change. */
+@media (max-width:430px){
+  /* Below 431px a single row cannot fit the greeting plus menu,
+     three role pills, bell, credits chip and avatar without
+     truncating the greeting to ~0px. Two compact rows instead:
+     greeting row, controls row. >=431px stays single-row. */
+  #app-topbar .topbar{flex-wrap:wrap;row-gap:8px;}
+  #app-topbar .topbar-left{flex:1 1 100%;}
+  #app-topbar .topbar-right{flex:1 1 100%;justify-content:space-between;}
+  #app-topbar .role-switch button{font-size:0;padding:7px 9px;min-width:40px;min-height:38px;}
+  #app-topbar .role-switch button::after{content:attr(data-short);font-size:11px;font-weight:700;}
+}
+@media (max-width:360px){
+  #app-topbar .topbar{padding:10px 10px;}
+  .page-content{padding:18px 12px 40px;}
+}
+
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
+
 

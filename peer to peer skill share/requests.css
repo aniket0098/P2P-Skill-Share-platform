@@ -1263,3 +1263,12 @@ button { font-family: inherit; }
 
     .search-item { padding: 11px 13px; }
 }
+
+
+/* MOBILE POLISH PASS — touch targets: "Clear filters" was 66x17. */
+@media (max-width: 600px) {
+    #clearFilters {
+        min-height: 40px;
+        padding: 10px 12px;
+    }
+}

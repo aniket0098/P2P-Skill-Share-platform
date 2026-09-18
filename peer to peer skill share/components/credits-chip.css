@@ -107,6 +107,8 @@
     [data-credits-chip] {
         padding: 5px 8px;
         gap: 5px;
+        /* Touch target: the chip measured 50x24 on phones. */
+        min-height: 38px;
     }
 
     .credits-chip .cc-coin {

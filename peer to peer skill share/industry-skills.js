@@ -1498,32 +1498,25 @@ Learn. Share. Get Hired.
 
 
     /* =====================================
-       RESIZE CHARTS
+       RESIZE CHARTS (debounced — one redraw per gesture, not per pixel)
     ===================================== */
 
-    window.addEventListener(
-        "resize",
-        () => {
-
-            drawSpotlightChart(
-                Number(
-                    document
-                        .getElementById(
-                            "spotlightPeriod"
-                        )
-                        .value
-                )
-            );
-
-            drawMarketChart(
-                document
-                    .getElementById(
-                        "marketPeriod"
-                    )
-                    .value
-            );
-
-        }
-    );
+    var chartsResizeT = 0;
+    function redrawCharts() {
+        var sp = document.getElementById("spotlightPeriod");
+        drawSpotlightChart(Number(sp && sp.value ? sp.value : 6));
+        var mp = document.getElementById("marketPeriod");
+        drawMarketChart(mp && mp.value ? mp.value : "month");
+    }
+    window.addEventListener("resize", function () {
+        if (chartsResizeT) clearTimeout(chartsResizeT);
+        chartsResizeT = setTimeout(redrawCharts, 150);
+    });
+    if (window.matchMedia) {
+        var chartsMQ = window.matchMedia("(orientation: portrait)");
+        var onChartsMQ = function () { redrawCharts(); };
+        if (chartsMQ.addEventListener) chartsMQ.addEventListener("change", onChartsMQ);
+        else if (chartsMQ.addListener) chartsMQ.addListener(onChartsMQ);
+    }
 
 });

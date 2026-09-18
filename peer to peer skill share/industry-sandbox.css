@@ -61,3 +61,14 @@
     .sandbox-workspace { grid-template-columns: 1fr; }
     .sandbox-challenges-grid { grid-template-columns: 1fr; }
 }
+
+/* Very narrow phones: the auto-fill 320px card minimum and the roomy hero
+   padding both overflow a 320-430px viewport, so stack and relax padding. */
+@media (max-width: 430px) {
+    .sandbox-hero { padding: 20px; }
+    .sandbox-challenges-grid { grid-template-columns: 1fr; }
+    .sandbox-filters { padding: 12px; }
+    .sandbox-filters input,
+    .sandbox-filters select { min-width: 0; flex: 1 1 100%; width: 100%; }
+    .sandbox-stats { grid-template-columns: repeat(2, 1fr); }
+}

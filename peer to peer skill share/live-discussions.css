@@ -826,6 +826,9 @@ a { text-decoration: none; color: inherit; }
     .teach-card { display: none; }
     .sidebar-nav a { justify-content: center; padding: 0; }
     .main { margin-left: 74px; width: calc(100% - 74px); padding: 20px 16px 32px; }
+    /* Below 900px the shared drawer replaces this icon rail, so the main
+       column takes the full width again (the sidebar itself is off-canvas). */
+    .main { margin-left: 0; width: 100%; }
     .right-panel { grid-template-columns: 1fr 1fr; }
     .page-heading p { display: none; }
 }

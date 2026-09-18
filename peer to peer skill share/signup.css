@@ -1512,3 +1512,23 @@ button {
 .signup-toast.info {
     background: linear-gradient(100deg, #4a3fc9, #6740ef);
 }
+/* =========================================================
+   PHONES — body centres the card with 25px padding while .shell
+   is min(96vw), so 25px + 96vw > 100vw below ~625px (332px doc on
+   a 320px phone). Also, `place-items:center` clips tall forms at
+   the TOP when the on-screen keyboard opens. On phones only: flow
+   from the top and give the card the real remaining width.
+   >=601px (grid-centred, 96vw) is untouched.
+========================================================= */
+@media (max-width: 600px) {
+
+    body {
+        display: block;
+        padding: 14px;
+    }
+
+    .shell {
+        width: min(1300px, 100%);
+        min-height: 0;
+    }
+}

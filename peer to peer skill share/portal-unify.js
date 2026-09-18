@@ -48,11 +48,21 @@
       "#portalDrawerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.55);",
       "z-index:998;display:none;}",
       "#portalDrawerOverlay.show{display:block;}",
+      "aside.sidebar,#sidebar{overscroll-behavior:contain;}",
       "@media (max-width:900px){",
       "aside.sidebar,#sidebar{position:fixed !important;left:0;top:0;bottom:0;",
       "z-index:999;transform:translateX(-105%);transition:transform .25s ease;",
-      "max-width:270px;width:82vw;}",
-      "aside.sidebar.open,#sidebar.open{transform:none !important;}}",
+      "max-width:270px;width:82vw;height:100vh;height:100dvh;-webkit-overflow-scrolling:touch;}",
+      "aside.sidebar.open,#sidebar.open{transform:none !important;}",
+      "body[data-portal-drawer]{overflow:hidden;}",
+      /* Pages whose own CSS hides the sidebar at mobile widths
+         (.sidebar{display:none}) would otherwise make the shared
+         drawer open an invisible panel. This only applies where the
+         shared drawer was actually created (body marker set by
+         drawer() below), so intentionally hidden sidebars on pages
+         with their own nav are untouched. */
+      "body[data-portal-drawer] aside.sidebar,body[data-portal-drawer] #sidebar{display:block !important;}",
+      "}",
       ".portal-menu-btn{display:none;}",
       "@media (max-width:900px){.portal-menu-btn{display:inline-flex !important;}}",
       "a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{",
@@ -89,6 +99,9 @@
     var side = document.querySelector("aside.sidebar, #sidebar");
     if (!side || document.getElementById("portalMenuBtn")) return;
     if (document.getElementById("app-sidebar")) return; /* JS-rendered shell has own button */
+    /* Pages that already ship their own mobile menu button (credits.html,
+       community.html, innovation-lab*) must not get a second hamburger. */
+    if (document.querySelector(".mobile-menu-btn, .mobile-menu, #mobileMenu")) return;
     var header = document.querySelector("header.topbar, header");
     if (!header) return;
     var btn = document.createElement("button");
@@ -96,20 +109,40 @@
     btn.className = "portal-menu-btn";
     btn.type = "button";
     btn.setAttribute("aria-label", "Open menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-controls", side.id || "portal-drawer");
+    if (!side.id) side.id = "portal-drawer";
     btn.textContent = "☰";
     btn.style.cssText = "align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;font-size:17px;cursor:pointer;";
     header.insertBefore(btn, header.firstChild);
     var overlay = document.createElement("div");
     overlay.id = "portalDrawerOverlay";
     document.body.appendChild(overlay);
-    function close() { side.classList.remove("open"); overlay.classList.remove("show"); }
+    function setOpen(open) {
+      side.classList.toggle("open", open);
+      overlay.classList.toggle("show", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      /* Scroll lock lives in the <=900px media query, so it can only
+         ever take effect on the mobile drawer. */
+      document.body.toggleAttribute("data-portal-drawer", open);
+    }
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
-      var open = side.classList.toggle("open");
-      overlay.classList.toggle("show", open);
+      setOpen(!side.classList.contains("open"));
     });
-    overlay.addEventListener("click", close);
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    overlay.addEventListener("click", function () { setOpen(false); });
+    /* Selecting a destination closes the drawer on phones. */
+    side.addEventListener("click", function (e) {
+      var t = e.target;
+      var link = t && t.closest ? t.closest("a") : null;
+      if (!link) return;
+      if (window.matchMedia && window.matchMedia("(max-width:900px)").matches) {
+        setOpen(false);
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") setOpen(false);
+    });
   }
   function loadSharedScript(src, onload) {
     /* Dedupe by src: pages that include portal-unify.js twice (or that

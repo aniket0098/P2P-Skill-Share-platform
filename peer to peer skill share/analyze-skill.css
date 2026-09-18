@@ -1484,3 +1484,17 @@ button{
     }
 
 }
+
+/* MOBILE POLISH PASS — touch targets: .text-btn was ~16px tall
+   and the notification bell 16x32 on phones. */
+@media (max-width: 600px) {
+    .text-btn {
+        min-height: 40px;
+        padding: 8px 4px;
+    }
+
+    .notification-btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}

@@ -3267,3 +3267,15 @@ img {
     }
 
 }
+
+
+/* MOBILE POLISH PASS — touch targets: "View all" (121x15) and
+   the spend links (242x19) were thin tap targets on phones. */
+@media (max-width: 600px) {
+    .view-all-btn,
+    .spend-link {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+    }
+}

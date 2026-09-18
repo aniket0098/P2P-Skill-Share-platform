@@ -11,3 +11,12 @@
     background: #ffe8ec;
     color: #d44759
 }
+
+/* MOBILE POLISH PASS — "Explore more skills" link was 123x17. */
+@media (max-width: 600px) {
+    .outline {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+    }
+}

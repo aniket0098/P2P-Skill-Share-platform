@@ -2732,3 +2732,11 @@ footer {
   }
 
 }
+/* Decorative radar rings/sweep are absolutely positioned and the
+   rotating sweep paints outside the hero column on 1024px tablets,
+   widening the page (doc 1069px vs 1024px viewport). Clip the radar
+   to its visual: rings max 520px inside a 580px-tall container, so
+   desktop rendering is unchanged. */
+.radar-visual {
+  overflow: hidden;
+}

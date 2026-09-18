@@ -4119,3 +4119,24 @@ select:disabled {
 /* =========================================================
    END OF SKILLSHARE SETTINGS CSS
    ========================================================= */
+
+/* =========================================================
+   MOBILE POLISH PASS — settings grid items could not shrink
+   (min-width:auto), so the layout viewport expanded to 339px
+   on a 320px phone. Let the rail and panels shrink; the tab
+   rail itself is already overflow-x:auto.
+   ========================================================= */
+@media (max-width: 430px) {
+    .settings-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings-layout > * {
+        min-width: 0;
+    }
+
+    .settings-nav {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
