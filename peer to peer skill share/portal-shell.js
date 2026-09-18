@@ -65,6 +65,56 @@ if (!r) { try { r = localStorage.getItem(STORE); } catch (e) {} }
 if (!r) r = "student";
 return window.PortalShellNavs[r] ? r : "student";
 }
+/* ---- Mobile drawer (additive, mobile-only behaviour) ----
+   The existing off-canvas CSS in dashboard.css / portal.css /
+   portal-shell.css is untouched; this only adds the interaction the
+   drawer was missing: backdrop, tap-outside close, Escape close,
+   close on nav selection, scroll lock and aria state. */
+var shellDrawerBound = false;
+function shellNavOpen() {
+var s = document.getElementById("app-sidebar");
+return !!(s && s.classList.contains("open"));
+}
+function setShellNav(open) {
+var s = document.getElementById("app-sidebar");
+if (!s) return;
+s.classList.toggle("open", open);
+var b = document.getElementById("portalShellBackdrop");
+if (b) b.classList.toggle("show", open);
+var btn = document.getElementById("mobileMenuBtn");
+if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+/* portal-nav-open is only honoured by the <=900px media query in
+   portal-shell.css, so desktop scrolling can never be affected. */
+document.body.classList.toggle("portal-nav-open", open);
+}
+function initShellDrawer() {
+if (shellDrawerBound) return;
+shellDrawerBound = true;
+var backdrop = document.createElement("div");
+backdrop.id = "portalShellBackdrop";
+document.body.appendChild(backdrop);
+backdrop.addEventListener("click", function () { setShellNav(false); });
+document.addEventListener("keydown", function (e) {
+if (e.key === "Escape" && shellNavOpen()) setShellNav(false);
+});
+var side = document.getElementById("app-sidebar");
+if (side) {
+side.addEventListener("click", function (e) {
+var t = e.target;
+var link = t && t.closest ? t.closest("a") : null;
+if (!link) return;
+if (window.matchMedia && window.matchMedia("(max-width:900px)").matches) {
+setShellNav(false);
+}
+});
+}
+if (window.matchMedia) {
+var mq = window.matchMedia("(min-width:901px)");
+var onMQ = function () { if (mq.matches) setShellNav(false); };
+if (mq.addEventListener) mq.addEventListener("change", onMQ);
+else if (mq.addListener) mq.addListener(onMQ);
+}
+}
 function bindShell(root) {
 root.querySelectorAll("[data-goto]").forEach(function (b) {
 b.addEventListener("click", function () { window.location.href = b.getAttribute("data-goto"); });
@@ -73,12 +123,10 @@ root.querySelectorAll("[data-role-link]").forEach(function (b) {
 b.addEventListener("click", function () { try { localStorage.setItem(STORE, b.getAttribute("data-role-link")); } catch (e) {} });
 });
 var mb = root.querySelector("#mobileMenuBtn");
-if (mb) mb.addEventListener("click", function () {
-var s = document.getElementById("app-sidebar");
-if (!s) return;
-var open = s.classList.toggle("open");
-mb.setAttribute("aria-expanded", open ? "true" : "false");
-});
+if (mb) {
+mb.setAttribute("aria-controls", "app-sidebar");
+mb.addEventListener("click", function () { setShellNav(!shellNavOpen()); });
+}
 root.querySelectorAll("[data-notifs]").forEach(function (b) {
 b.addEventListener("click", function () { window.location.href = "notifications.html"; });
 });
@@ -185,9 +233,12 @@ top.dataset.bound = "1";
 let name = "member";
 try { const u = window.SkillShareAPI && window.SkillShareAPI.getUser && window.SkillShareAPI.getUser(); if (u && u.name) name = u.name.split(" ")[0]; } catch (e) {}
 const pills = [["student", "dashboard.html"], ["recruiter", "recruiter-dashboard.html"], ["faculty", "faculty-dashboard.html"]]
-.map(p => '<button type="button" data-goto="' + p[1] + '" data-role-link="' + p[0] + '" class="' + (role === p[0] ? "active" : "") + '">' + p[0][0].toUpperCase() + p[0].slice(1) + "</button>").join("");
+.map(p => '<button type="button" data-goto="' + p[1] + '" data-role-link="' + p[0] + '"' +
+' data-short="' + p[0][0].toUpperCase() + '"' +
+' aria-label="Switch to ' + p[0] + ' view" title="Switch to ' + p[0] + ' view"' +
+' class="' + (role === p[0] ? "active" : "") + '">' + p[0][0].toUpperCase() + p[0].slice(1) + "</button>").join("");
 top.innerHTML = '<div class="topbar"><div class="topbar-left">' +
-'<button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open menu" aria-expanded="false">☰</button>' +
+'<button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="app-sidebar">☰</button>' +
 "<div><h1>Welcome back, <span>" + esc(name) + "</span> 👋</h1><p>" + esc(TAGLINES[role] || TAGLINES.student) + "</p></div></div>" +
 '<div class="topbar-right"><div class="role-switch">' + pills + "</div>" +
 '<button class="notification-btn" type="button" aria-label="Notifications" data-notifs="1">🔔</button>' +
@@ -199,6 +250,7 @@ top.innerHTML = '<div class="topbar"><div class="topbar-left">' +
 '<span class="cc-label">Credits</span></a>' +
 '<div id="profileDropdownContainer"></div></div></div>';
 bindShell(top);
+initShellDrawer();
 initShellProfile();
 initShellCredits();
 }

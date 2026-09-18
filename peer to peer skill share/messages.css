@@ -688,6 +688,7 @@ input, textarea { font: inherit; color: inherit; }
 .composer {
     display: flex; align-items: flex-end; gap: 6px;
     padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--line);
     background: rgba(13, 20, 38, 0.6);
     position: relative;
@@ -1258,6 +1259,12 @@ img.chat-head-avatar { width: 42px; height: 42px; border-radius: 12px; object-fi
 .mobile-back { display: none; }
 @media (max-width: 900px) {
     .mobile-back { display: inline-grid; }
+    /* The sidebar leaves the grid for the off-canvas drawer, so the
+       workspace must stop reserving its 250px column. */
+    .app-shell {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "topbar" "workspace";
+    }
     .comm-workspace {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas: "chat";
@@ -1280,7 +1287,30 @@ img.chat-head-avatar { width: 42px; height: 42px; border-radius: 12px; object-fi
     .topbar nav { display: none; }
     .comm-workspace .info { width: 92vw !important; min-width: 92vw !important; }
     .conv-avatar > img { width: 40px; height: 40px; }
-    .chat-tools .icon-btn { width: 34px; height: 34px; }
+    /* Touch targets: chat tools and the info close button were 34/38px. */
+    .chat-tools .icon-btn { width: 40px; height: 40px; }
+    .info-head .icon-btn { width: 40px; height: 40px; }
+}
+
+/* =========================================================
+   MOBILE POLISH PASS — the info sheet must start CLOSED.
+   The <=900px rules turn .info into a fixed 92vw sheet, but
+   nothing hid it while closed, so it covered the conversation
+   list on load (taps near the top-right hit #infoClose instead
+   of #newChatBtn). It now slides off-canvas and only the
+   existing .open class (toggleInfoPanel) reveals it.
+   ========================================================= */
+@media (max-width: 900px) {
+    .comm-workspace .info {
+        transform: translateX(105%);
+        visibility: hidden;
+        transition: transform 0.28s ease, visibility 0.28s ease;
+    }
+
+    .comm-workspace .info.open {
+        transform: none;
+        visibility: visible;
+    }
 }
 
 

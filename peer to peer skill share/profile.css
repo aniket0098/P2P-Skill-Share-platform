@@ -2869,3 +2869,28 @@ select:focus {
     border-radius: 10px;
     transition: width 0.4s ease;
 }
+
+/* MOBILE POLISH PASS — touch targets: inline edit buttons were
+   29x26 / 31x16, the avatar camera button 31x31 and the skill
+   chip remove buttons 19x19 on phones. */
+@media (max-width: 600px) {
+    .text-btn {
+        min-height: 40px;
+        padding: 8px 4px;
+    }
+
+    .inline-edit-btn {
+        min-width: 40px;
+        min-height: 34px;
+    }
+
+    .camera-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .skill-remove {
+        width: 30px;
+        height: 30px;
+    }
+}

@@ -8,6 +8,35 @@
 .cc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .cc-grid .full { grid-column: 1/-1; }
 @media (max-width: 900px) { .cc-grid { grid-template-columns: 1fr; } }
+
+/* PHONES — comfortable chat, composer and snapshot grid.
+   Additive: desktop/tablet rules above are untouched. */
+@media (max-width: 600px) {
+  .cc-header h1 { font-size: 1.3rem; }
+  /* Inline style on the section sets 4 columns; reflow the snapshot. */
+  .cc-grid[style*="repeat(4,1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
+  .cc-panel[style*="min-height:600px"] { min-height: 0 !important; }
+  .cc-chat-messages { min-height: 180px; }
+  #cc-chat { max-height: 55vh; }
+  .cc-msg { max-width: 88%; font-size: 0.8rem; }
+  .cc-chat-input input,
+  #cc-chat-input { font-size: 16px; } /* stops iOS zoom-on-focus */
+  #cc-chat-form { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+  .cc-weekly { grid-template-columns: repeat(3, 1fr); }
+  .cc-day { min-height: 48px; }
+  .cc-roadmap { padding: .4rem 0; }
+  /* Panel min-content, not the viewport, was forcing the page wider than a
+     320px phone: grid items default to min-width:auto (= min-content), and
+     the "Conversation" header row (title + conversation select) plus the
+     chat composer (input + Send) are wider than a phone-width panel. Let
+     those rows wrap and allow the items to shrink. */
+  .cc-grid > * { min-width: 0; }
+  .cc-panel .section-head { flex-wrap: wrap; gap: .5rem; }
+  .cc-panel .section-head > div { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; min-width: 0; }
+  .cc-panel .section-head select { min-width: 0; max-width: 100%; }
+  #cc-chat-form { flex-wrap: wrap; }
+  #cc-chat-input { flex: 1 1 100%; width: 100%; min-width: 0; }
+}
 .cc-panel { background: var(--panel,#1e2030); border: 1px solid var(--border,#2a2d44); border-radius: 12px; padding: 1rem; }
 .cc-panel h2 { font-size: 1rem; font-weight: 700; margin-bottom: .75rem; }
 .cc-panel .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
@@ -74,3 +103,14 @@
 .cc-day.project { border-top: 2px solid #34d399; }
 .cc-day.review { border-top: 2px solid #fbbf24; }
 .cc-day.rest { border-top: 2px solid #6b7280; }
+
+
+/* MOBILE POLISH PASS — chat header selects were 28px tall
+   (also triggers iOS zoom-on-focus below 16px font). */
+@media (max-width: 600px) {
+    #cc-conv-select,
+    #cc-chat-mode,
+    #cc-new-conv {
+        min-height: 40px;
+    }
+}

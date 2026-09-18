@@ -967,6 +967,9 @@ input, select, textarea { font-family: inherit; }
        full-width panels — no overlap, no horizontal overflow. */
     .side-col { display: flex; }
     .top-actions .ghost-btn span { display: none; }
+    /* The sidebar is an off-canvas drawer here, so the main column must
+       stop reserving the old 74px icon-rail offset. */
+    .main { margin-left: 0; width: 100%; padding-bottom: max(30px, env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 650px) {

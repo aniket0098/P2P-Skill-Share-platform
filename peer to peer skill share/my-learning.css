@@ -77,3 +77,5 @@ body{background:var(--ml-bg);color:var(--ml-text);font-family:Inter,"Segoe UI",R
 #toast.show{transform:none;opacity:1}
 @media(max-width:1150px){.stat-grid{grid-template-columns:repeat(3,1fr)}.card-grid{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}
 @media(max-width:820px){.app-main{margin-left:0}.page-content{padding:18px 14px 50px}.card-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+
+@media(max-width:600px){.text-button{min-height:40px;padding:10px 8px}}

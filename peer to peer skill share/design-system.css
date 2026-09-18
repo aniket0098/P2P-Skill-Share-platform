@@ -74,7 +74,7 @@ table.data{border-collapse:separate!important;border-spacing:0!important}
 table.data th{color:var(--text-muted)!important;font-size:10px!important;letter-spacing:.12em;text-transform:uppercase;font-weight:700!important;padding:10px 12px!important;border-bottom:1px solid var(--border)!important}
 table.data td{padding:13px 12px!important;border-bottom:1px solid var(--border-subtle)!important;vertical-align:middle}
 table.data tbody tr:hover{background:rgba(148,163,205,.06)!important}
-.table-wrap{border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--bg-2)}
+.table-wrap{border:1px solid var(--border);border-radius:var(--radius-md);overflow-x:auto;overflow-y:hidden;background:var(--bg-2)}
 .tabs button.active{color:#fff!important;background:var(--page-accent-soft)!important}
 #app-sidebar{background:linear-gradient(180deg,#0d1328,#080c1a)!important;border-right:1px solid var(--border)!important}
 .sidebar-nav a.active{background:linear-gradient(90deg,var(--page-accent-soft),transparent)!important;border:1px solid var(--border)!important;color:#fff!important}
@@ -168,3 +168,23 @@ body[data-page="opportunities.html"] .panel[data-name]:hover{transform:translate
 .portal-head .eyebrow,.portal-head .crumb{color:var(--page-accent-2)!important;letter-spacing:.14em}
 .portal-head h1 span{background:linear-gradient(120deg,var(--page-accent),var(--page-accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
 
+
+
+/* =========================================================
+   MOBILE POLISH PASS — app-head hit areas. On bookmarks /
+   calendar / notifications / create-session / session-room the
+   brand, nav links and bell were ~19px tall tap targets.
+   Desktop (>=651px) is untouched.
+   ========================================================= */
+@media (max-width: 650px) {
+    .app-head a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 40px;
+    }
+
+    .app-head .bell {
+        padding: 0 10px;
+        justify-content: center;
+    }
+}

@@ -828,3 +828,13 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* MOBILE POLISH PASS — event titles were silently cut at the
+   cell edge (overflow:hidden without text-overflow). */
+@media (max-width: 650px) {
+    .event {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}

@@ -2986,3 +2986,12 @@ a {
         grid-template-columns: 1fr;
     }
 }     
+
+/* MOBILE POLISH PASS — touch targets: "View All" text buttons
+   were ~19px tall on phones. */
+@media (max-width: 600px) {
+    .text-button {
+        min-height: 40px;
+        padding: 10px 8px;
+    }
+}

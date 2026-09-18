@@ -2772,6 +2772,14 @@ img {
             1fr;
     }
 
+    /* Grid items are min-width:auto (= min-content) by default, so the
+       widest inline row inside a card (the 6-button discussion tab strip,
+       which is wider than a phone) pushed the whole page wider than the
+       viewport. Let the items shrink; the tab strip itself wraps at 750px. */
+    .content-grid>* {
+        min-width: 0;
+    }
+
     .right-sidebar {
         display: grid;
 
@@ -2898,6 +2906,13 @@ img {
 
     .discussion-cta .primary-btn {
         width: 100%;
+    }
+
+    /* Six filters on one nowrap row are wider than a phone. Wrapping keeps
+       every filter reachable and stops the row forcing page-wide overflow. */
+    .discussion-tabs {
+        flex-wrap: wrap;
+        overflow-x: visible;
     }
 
     .right-sidebar {
@@ -3075,4 +3090,22 @@ img {
     background:
         linear-gradient(#895bff,
             #43c8ff);
+}
+
+/* =========================================================
+   MOBILE POLISH PASS — the Create-Post modal's decorative
+   ::before glow extended ~70px past the card, making the
+   overlay's content 361px wide on a 320px phone (horizontal
+   overflow inside the modal). Clip it inside the card on
+   phones and give the close button a real touch target.
+   ========================================================= */
+@media (max-width: 430px) {
+    .modal {
+        overflow: hidden;
+    }
+
+    .modal-close {
+        width: 40px;
+        height: 40px;
+    }
 }

@@ -1758,6 +1758,13 @@ button {
         width: calc(100% - 75px);
     }
 
+    /* Below 900px the shared drawer replaces this icon rail, so the main
+       column takes the full width again (the sidebar itself is off-canvas). */
+    .main {
+        margin-left: 0;
+        width: 100%;
+    }
+
     .middle-grid,
     .spotlight-content {
         grid-template-columns: 1fr;
@@ -1816,4 +1823,48 @@ button {
         gap: 12px;
     }
 
+}
+
+/* =========================================================
+   MOBILE POLISH PASS — narrow-screen overflow fix.
+   .middle-grid kept its 2-column template below 650px while
+   .growth-item's fixed 110px/43px columns force a ~320px
+   min-content row, expanding the layout viewport to 333px on
+   a 320px phone. Stack the panels and let the rows shrink.
+   ========================================================= */
+@media (max-width: 650px) {
+    .middle-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .middle-grid > * {
+        min-width: 0;
+    }
+}
+
+@media (max-width: 430px) {
+    .growth-item {
+        grid-template-columns:
+            18px 20px minmax(0, 1fr) minmax(64px, 110px) minmax(36px, 43px);
+        gap: 5px;
+    }
+
+    .growth-item > * {
+        min-width: 0;
+
+/* MOBILE POLISH PASS — the skill search input was 15px tall
+   (iOS zoom-on-focus) and the search button 42x22. */
+@media (max-width: 600px) {
+    .search-section input {
+        min-height: 40px;
+        font-size: 16px;
+    }
+
+    #searchBtn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+    }
 }
