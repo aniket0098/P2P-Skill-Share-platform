@@ -84,28 +84,43 @@ COLUMN_STATEMENTS = [
 
 
 def run_communication_migrations(engine):
-    """Execute additive migrations, one statement per transaction.
+    """Execute additive migrations: one connection, one commit per statement.
 
-    Each statement commits independently so a single failure can never
-    block the others (and never rolls back user data). Returns the
-    number of successfully applied statements.
+    A single connection is reused for the whole batch. The previous version
+    opened a separate ``engine.begin()`` block for every statement, so each
+    of the 41 statements paid its own checkout / pool pre-ping round trip -
+    tens of seconds against a remote PostgreSQL such as Neon.
+
+    Every statement is still committed on its own:
+      * "IF NOT EXISTS" keeps each statement idempotent and re-runnable;
+      * committing releases PostgreSQL's ACCESS EXCLUSIVE DDL lock
+        immediately. The batch is deliberately NOT wrapped in a single long
+        transaction, which would hold locks on live tables (conversations /
+        messages / users) for its entire duration;
+      * a failing statement is rolled back and the connection stays usable,
+        so one failure can never block the others.
+
+    Returns the number of successfully applied statements.
     """
     applied = 0
     errors = []
-    # Columns on existing tables first, then brand-new tables.
-    for stmt in COLUMN_STATEMENTS + TABLE_STATEMENTS:
-        try:
-            with engine.begin() as conn:
+    with engine.connect() as conn:
+        # Columns on existing tables first, then brand-new tables.
+        for stmt in COLUMN_STATEMENTS + TABLE_STATEMENTS:
+            try:
                 conn.execute(text(stmt))
-            applied += 1
-        except Exception as exc:  # noqa: BLE001 - idempotent best effort
-            errors.append(f"{str(exc)[:120]} :: {stmt[:80]}")
-    # Data repair (not destructive): legacy NULL types read as direct.
-    try:
-        with engine.begin() as conn:
+                conn.commit()
+                applied += 1
+            except Exception as exc:  # noqa: BLE001 - idempotent best effort
+                conn.rollback()
+                errors.append(f"{str(exc)[:120]} :: {stmt[:80]}")
+        # Data repair (not destructive): legacy NULL types read as direct.
+        try:
             conn.execute(text("UPDATE conversations SET conversation_type='direct' WHERE conversation_type IS NULL"))
-    except Exception as exc:  # noqa: BLE001
-        errors.append(f"{str(exc)[:120]} :: backfill conversation_type")
+            conn.commit()
+        except Exception as exc:  # noqa: BLE001
+            conn.rollback()
+            errors.append(f"{str(exc)[:120]} :: backfill conversation_type")
     if errors:
         print(f"[comm] migration notes ({len(errors)} skipped as already applied or deferred):")
         for err in errors[:8]:

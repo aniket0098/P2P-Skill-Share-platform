@@ -1,5 +1,7 @@
 import re
 import secrets
+import threading
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Depends, HTTPException
@@ -46,17 +48,127 @@ from stage7_api import register_stage7
 from email_service import send_admin_request_notification
 from email_service import send_admin_request_notification
 
-app = FastAPI()
+# ==========================================
+# DATABASE INITIALIZATION (background, once per process)
+# ==========================================
+# The HTTP port must bind even when PostgreSQL (Neon) is slow, waking up or
+# unavailable. uvicorn awaits lifespan startup BEFORE it binds the socket
+# (uvicorn/server.py: "await self.lifespan.startup()" runs before
+# "loop.create_server(...)"), and this initialization path performs many
+# database round trips, so it runs ONCE PER PROCESS on a dedicated background
+# thread started by lifespan below.
+#
+# Every step is the same additive / idempotent work that used to run at import
+# time - nothing was removed. Failures are logged with the exception type and
+# message (never a credential) and can no longer kill the HTTP process:
+# /docs and /openapi.json stay reachable, and a database endpoint simply
+# reports its usual database error.
 
-# Communication-hub additive migrations (new tables/columns only; never destructive).
-try:
-    from comm_migrate import run_communication_migrations
-    _comm_applied = run_communication_migrations(engine)
-    print(f"[comm] additive migrations applied: {_comm_applied} statements")
-except Exception as _comm_mig_err:  # never break boot
-    print(f"[comm] WARNING: communication migrations skipped: {_comm_mig_err}")
+_INIT_LOCK = threading.Lock()
+_INIT_STATE = {"started": False, "done": False, "ok": None, "error": None}
 
-Base.metadata.create_all(bind=engine)
+
+def _run_database_initialization() -> None:
+    """Existing startup database work: once per process, failure-isolated.
+
+    Every step is attempted even if an earlier one failed, and the failure
+    list decides the final state: a database that cannot be reached is
+    reported loudly (with exception type and message, never a credential)
+    while the HTTP server keeps serving /docs and /openapi.json.
+    """
+    failures = []
+    try:
+        # 1. Communication-hub additive migrations (new tables/columns only).
+        try:
+            from comm_migrate import run_communication_migrations
+            applied = run_communication_migrations(engine)
+            print(f"[comm] additive migrations applied: {applied} statements")
+        except Exception as exc:  # never break startup
+            failures.append(f"communication migrations: {type(exc).__name__}: {exc}")
+            print(f"[comm] WARNING: communication migrations skipped: {type(exc).__name__}: {exc}")
+
+        # 2. Create missing tables only (never alters existing tables/rows).
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as exc:
+            failures.append(f"create_all: {type(exc).__name__}: {exc}")
+            print(f"[startup] WARNING: create_all failed: {type(exc).__name__}: {exc}")
+
+        # 3. Additive column/index migrations + public_id backfill.
+        try:
+            _run_startup_migrations()
+        except Exception as exc:
+            failures.append(f"startup migrations: {type(exc).__name__}: {exc}")
+            print(f"[startup] WARNING: startup migrations failed: {type(exc).__name__}: {exc}")
+
+        # 4. Seed the skill catalogue when empty (session always closed).
+        try:
+            db = SessionLocal()
+            try:
+                _seed_skills_if_empty(db)
+            finally:
+                db.close()
+        except Exception as exc:
+            failures.append(f"skill seeding: {type(exc).__name__}: {exc}")
+            print(f"[startup] WARNING: skill seeding failed: {type(exc).__name__}: {exc}")
+
+        # 5. Stage 5 industry dataset (internal guard logs its own failure).
+        _seed_stage5_if_empty()
+
+        # 6. discussion_rooms.is_private + the discussion_* tables.
+        try:
+            import discussions_models
+            applied = discussions_models.run_discussion_privacy_migration(engine)
+            if applied:
+                print(f"[discussions] privacy migration applied: {applied}")
+            Base.metadata.create_all(bind=engine)
+        except Exception as exc:
+            failures.append(f"discussion schema: {type(exc).__name__}: {exc}")
+            print(f"[discussions] WARNING: discussion schema init skipped: {type(exc).__name__}: {exc}")
+
+        # 7. Credits accounting schema (two columns + three tables).
+        try:
+            import credits_models
+            credits_models.migrate_credits(engine)
+        except Exception as exc:
+            failures.append(f"credit schema: {type(exc).__name__}: {exc}")
+            print(f"[credits] WARNING: credit schema init failed; the credit endpoints "
+                  f"will report a database error: {type(exc).__name__}: {exc}")
+    except Exception as exc:  # last-resort guard: the HTTP server stays up
+        failures.append(f"unexpected: {type(exc).__name__}: {exc}")
+    finally:
+        if failures:
+            _INIT_STATE["ok"] = False
+            _INIT_STATE["error"] = "; ".join(failures)[:600]
+            print("[startup] database initialization failed; HTTP server remains available: "
+                  f"{_INIT_STATE['error']}")
+        else:
+            _INIT_STATE["ok"] = True
+            print("[startup] database initialization complete")
+        _INIT_STATE["done"] = True
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Bind the HTTP port first, initialize PostgreSQL in the background.
+
+    The thread is started at most once per process; the schema work is
+    additive and idempotent, so an interrupted run simply resumes on the
+    next start.
+    """
+    with _INIT_LOCK:
+        if not _INIT_STATE["started"]:
+            _INIT_STATE["started"] = True
+            threading.Thread(
+                target=_run_database_initialization,
+                name="skillshare-db-init",
+                daemon=True,
+            ).start()
+            print("[startup] HTTP server is up; database initialization running in the background")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 # ==========================================
@@ -143,14 +255,22 @@ def _run_startup_migrations():
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS image_url VARCHAR",
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
     ]
-    with engine.begin() as connection:
+    with engine.connect() as connection:
         for statement in statements:
             try:
                 connection.execute(text(statement))
+                # Commit per statement: PostgreSQL holds DDL locks until
+                # commit, so committing here releases them immediately;
+                # it also keeps one failed statement from aborting the
+                # rest of the batch (an aborted transaction fails every
+                # later statement with InFailedSqlTransaction and the
+                # whole batch would be silently rolled back).
+                connection.commit()
             except Exception as exc:
                 # SQLite used by local tests does not support every
                 # PostgreSQL index expression. Keep boot safe; search
                 # still works without the optional index.
+                connection.rollback()
                 print(f"[migrate] skipped optional statement: {exc}")
 
     # Backfill public IDs for existing users (idempotent).
@@ -173,7 +293,9 @@ def _run_startup_migrations():
                     break
 
 
-_run_startup_migrations()
+# (Previously executed here at import time. It now runs once per process
+#  inside _run_database_initialization(), on a background thread, so the
+#  HTTP port never waits for PostgreSQL.)
 
 
 def _seed_skills_if_empty(db: Session):
@@ -197,8 +319,8 @@ def _seed_skills_if_empty(db: Session):
     db.commit()
 
 
-# Seed the skill catalog on first startup (idempotent).
-_seed_skills_if_empty(SessionLocal())
+# Seed the skill catalog on first startup (idempotent): performed by
+# _run_database_initialization() in the background, never at import time.
 
 
 def _seed_stage5_if_empty():
@@ -210,7 +332,7 @@ def _seed_stage5_if_empty():
         print(f"[stage5] seed skipped: {exc}")
 
 
-_seed_stage5_if_empty()
+# (Invoked by _run_database_initialization() in the background.)
 
 
 # ==========================================
@@ -3516,14 +3638,10 @@ try:
     import discussions_models  # registers the discussion tables on Base
     from discussions_api import register_discussions
     register_discussions(app, get_db, get_current_user_model)
-    # Additive privacy migration: adds discussion_rooms.is_private with
-    # ADD COLUMN IF NOT EXISTS (no-op when present). Never destructive.
-    _disc_privacy = discussions_models.run_discussion_privacy_migration(engine)
-    if _disc_privacy:
-        print(f"[discussions] privacy migration applied: {_disc_privacy}")
-    # create_all ran earlier in boot — run again so the new (empty)
-    # discussion_* tables are created. It never alters existing tables.
-    Base.metadata.create_all(bind=engine)
+    # discussion_rooms.is_private and the discussion_* tables are created by
+    # _run_database_initialization() (background thread, see the top of this
+    # module). This import still registers them on Base.metadata first, so
+    # route registration never waits for PostgreSQL.
     print("[discussions] routes registered: /api/discussions/* + /ws/discussions/*")
 except Exception as _disc_err:  # never break boot on additive stage
     print(f"[discussions] WARNING: discussion routes not registered: {_disc_err}")
@@ -3552,13 +3670,15 @@ except Exception as _lk_err:  # never break boot on additive stage
 # No existing route, table or row is touched.
 # ================================================================
 try:
-    import credits_models
-    # Adds discussion_rooms.expires_at / credit_cost (ADD COLUMN IF NOT
-    # EXISTS) and creates the three new credit tables. Non-destructive.
-    credits_models.migrate_credits(engine)
+    import credits_models  # registers the credit tables on Base.metadata
+    # The credit schema (discussion_rooms.expires_at / credit_cost and the
+    # three credit tables) is installed by _run_database_initialization() in
+    # the background. If that schema init fails, the endpoints report a
+    # normal database error instead of disappearing from the app.
     from credits_api import register_credits
     register_credits(app, get_db, get_current_user_model)
     print("[credits] routes registered: /api/credits*")
 except Exception as _credits_err:  # never break boot on additive stage
     print(f"[credits] WARNING: credit routes not registered: {_credits_err}")
+
 

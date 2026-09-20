@@ -20,7 +20,11 @@ services:
     rootDir: backend-I
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /api/stats
+    # Process liveness, NOT database health: uvicorn binds the HTTP port before
+    # the background database initialization finishes, and Neon may be
+    # temporarily unavailable. "/" intentionally returns 404, so the DB-free
+    # FastAPI OpenAPI route is used as the liveness probe.
+    healthCheckPath: /openapi.json
     envVars:
       - key: DATABASE_URL
         sync: false          # Neon pooled connection string (entered in dashboard)
