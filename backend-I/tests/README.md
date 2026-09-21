@@ -107,9 +107,9 @@ tokens and credentials are never printed by the target-safety banner.
    the environment and are recorded as **SKIP** (never PASS/FAIL)
    otherwise; no tokens are minted, forged, or printed, and no user ids
    are hard-coded.
-3. `backend-I\test_part2_security.py` contains a hardcoded Neon
-   DATABASE_URL (line ~13): credential rotation is a separate security
-   task - do not touch that file here.
+3. `backend-I\test_part2_security.py` previously contained a hardcoded
+   Neon DATABASE_URL (line ~13); that hardcoded credential has since been
+   removed - the script now reads DATABASE_URL from the environment/.env.
 4. Known security limitation (redacted): the repository history contains
    previously committed credential-bearing files. Rotation/remediation
    of those credentials is a separate security stage - no secret values
