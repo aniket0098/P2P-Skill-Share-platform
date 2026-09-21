@@ -2,7 +2,16 @@
 <title>Applications — SkillShare</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
-<link rel="stylesheet" href="portal-shell.css"></head>
+<link rel="stylesheet" href="portal-shell.css">
+<style>
+/* Stage 2.5C — minimal additive helpers for the real student list.
+   Reuses the existing design tokens; no layout/branding changes. */
+.row-actions{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;}
+@media (max-width:480px){
+  .row-item{flex-wrap:wrap;}
+  .row-item .row-actions{margin-left:48px;}
+}
+</style></head>
 <body data-page="applications.html" data-role="shared">
 <div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
 <main class="page-content">
@@ -12,19 +21,43 @@
 <h1>Applications <span>pipeline</span></h1>
 <p>One file serves both roles. Students see their journey; recruiters see the candidate funnel.</p></div>
 <div class="role-switch shared-view"><button data-view="student">Student view</button><button data-view="recruiter">Recruiter view</button></div></div></header>
+<!-- Pipeline counts are live: refreshed from GET /api/applications/me
+     (per-status totals). Assessment/Offer/Joined have no backend
+     status yet and stay at 0 until those stages exist. -->
 <section class="pipeline">
-<div class="stage done"><h4>Applied</h4><b>12</b></div><div class="stage done"><h4>Under Review</h4><b>7</b></div>
-<div class="stage now"><h4>Shortlisted</h4><b>4</b></div><div class="stage"><h4>Assessment</h4><b>3</b></div>
-<div class="stage"><h4>Interview</h4><b>2</b></div><div class="stage"><h4>Selected</h4><b>1</b></div>
-<div class="stage"><h4>Offer</h4><b>1</b></div><div class="stage"><h4>Joined</h4><b>0</b></div>
+<div class="stage done"><h4>Applied</h4><b id="pipeApplied">0</b></div><div class="stage done"><h4>Under Review</h4><b id="pipeReviewing">0</b></div>
+<div class="stage now"><h4>Shortlisted</h4><b id="pipeShortlisted">0</b></div><div class="stage"><h4>Assessment</h4><b id="pipeAssessment">0</b></div>
+<div class="stage"><h4>Interview</h4><b id="pipeInterview">0</b></div><div class="stage"><h4>Selected</h4><b id="pipeSelected">0</b></div>
+<div class="stage"><h4>Offer</h4><b id="pipeOffer">0</b></div><div class="stage"><h4>Joined</h4><b id="pipeJoined">0</b></div>
 </section>
 <div data-view-student>
-<section class="panel"><div class="section-head"><h2>My applications</h2><a href="opportunities.html">Find more</a></div>
-<div class="row-list">
-<div class="row-item"><div class="avatar sm">PC</div><div class="grow"><h3>Frontend Developer Intern · PixelCraft</h3><p>Applied 2 days ago · 92% match</p></div><span class="badge blue">Under Review</span><a class="btn small ghost" href="opportunity-details.html">Open</a></div>
-<div class="row-item"><div class="avatar sm">IL</div><div class="grow"><h3>Data Analyst Intern · InsightLabs</h3><p>Shortlisted · assessment due Friday</p></div><span class="badge purple">Shortlisted</span><a class="btn small ghost" href="interviews.html">Prep</a></div>
-<div class="row-item"><div class="avatar sm">FS</div><div class="grow"><h3>UI/UX Apprentice · FormStudio</h3><p>Interview scheduled</p></div><span class="badge amber">Interview</span><a class="btn small ghost" href="interviews.html">Details</a></div>
-</div></section></div>
+<!-- Stage 2.5C: real data from GET /api/applications/me (JWT student).
+     Same panel/row design; status filters use the API's status param. -->
+<section class="panel">
+<div class="section-head"><h2>My applications</h2><span class="muted" id="appCount"></span><a href="opportunities.html">Find more</a></div>
+<div class="tabs" id="appFilters" aria-label="Application status filters">
+<button type="button" class="active" data-status="">All</button>
+<button type="button" data-status="applied">Applied</button>
+<button type="button" data-status="reviewing">Reviewing</button>
+<button type="button" data-status="shortlisted">Shortlisted</button>
+<button type="button" data-status="interview">Interview</button>
+<button type="button" data-status="selected">Selected</button>
+<button type="button" data-status="rejected">Rejected</button>
+<button type="button" data-status="withdrawn">Withdrawn</button>
+</div>
+<div class="row-list" id="appList"></div>
+<!-- LOADING: skeleton rows in the existing card style -->
+<div id="appLoading" hidden>
+<div class="row-item"><div class="avatar sm skel"></div><div class="grow"><div class="skel" style="width:55%"></div><div class="skel" style="width:32%;margin-top:8px"></div></div><div class="skel" style="width:74px;height:22px"></div></div>
+<div class="row-item"><div class="avatar sm skel"></div><div class="grow"><div class="skel" style="width:48%"></div><div class="skel" style="width:38%;margin-top:8px"></div></div><div class="skel" style="width:74px;height:22px"></div></div>
+<div class="row-item"><div class="avatar sm skel"></div><div class="grow"><div class="skel" style="width:60%"></div><div class="skel" style="width:28%;margin-top:8px"></div></div><div class="skel" style="width:74px;height:22px"></div></div>
+</div>
+<!-- EMPTY -->
+<div class="empty-state" id="appEmpty" hidden><div class="empty-icon">📭</div><h3>No applications yet</h3><p>Browse opportunities and apply to get started.</p><a class="btn small primary mt" href="opportunities.html">Find opportunities</a></div>
+<!-- ERROR (never falls back to placeholder data) -->
+<div class="empty-state state-error" id="appError" hidden><div class="empty-icon">⚠️</div><h3>Could not load your applications</h3><p id="appErrorMsg">Something went wrong. Please try again.</p><button class="btn small primary mt" id="appRetry" type="button">Retry</button></div>
+<div id="appLoadMoreWrap" hidden style="text-align:center"><button class="btn ghost small" id="appLoadMore" type="button">Load more</button></div>
+</section></div>
 <div data-view-recruiter style="display:none">
 <section class="panel"><div class="section-head"><h2>Candidate funnel — Frontend Intern</h2><a href="find-talent.html">Source talent</a></div>
 <div class="table-wrap"><table class="data"><tr><th>Candidate</th><th>Match</th><th>Stage</th><th>Evidence</th><th></th></tr>
@@ -32,6 +65,5 @@
 <tr><td><b>R. Iyer</b><br><span class="muted">5 projects · hackathon win</span></td><td>88%</td><td><span class="badge blue">Assessment</span></td><td><a href="talent-profile.html">Evidence →</a></td><td><button class="btn small primary" data-toast="Interview scheduled (frontend only).">Schedule</button></td></tr>
 <tr><td><b>S. Khan</b><br><span class="muted">2 projects · strong DSA</span></td><td>81%</td><td><span class="badge grey">Under Review</span></td><td><a href="talent-profile.html">Evidence →</a></td><td><button class="btn small" data-toast="Shortlisted (frontend only).">Shortlist</button></td></tr>
 </table></div></section></div>
-<section class="panel mt"><div class="empty-state" style="padding:12px"><div class="empty-icon">ℹ</div><h3>Frontend-only stage</h3><p>Counts and rows are placeholders. Wire to applications API later.</p></div></section>
 </main></div><div id="toast-root"></div>
-<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>
+<script src="config.js"></script><script src="api-client.js"></script><script src="auth.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script><script src="applications.js"></script></body></html>

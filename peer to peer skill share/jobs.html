@@ -2,18 +2,138 @@
 <title>Jobs — SkillShare</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="portal.css">
-<link rel="stylesheet" href="portal-shell.css"></head>
+<link rel="stylesheet" href="portal-shell.css">
+<style>
+/* STAGE 2.6/2.7 additive only. Reuses existing tokens/components. */
+[hidden]{display:none!important}
+.jobs-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.jobs-form-grid .span2{grid-column:1/-1}
+.jobs-modal{width:min(920px,100%)}
+.jobs-confirm-modal{width:min(460px,100%)}
+.jobs-confirm-modal .modal-header h2{font-size:15px}
+.jobs-skill-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 4px;border-bottom:1px solid var(--border)}
+.jobs-skill-row .grow{flex:1;min-width:140px}
+.jobs-skill-row select{background:#0b1020;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:11px;padding:7px 8px;max-width:100%}
+.jobs-search-results{display:flex;flex-direction:column;max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-top:8px}
+.jobs-search-results:empty{display:none}
+.jobs-search-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.jobs-search-item .grow{flex:1;min-width:0}
+.jobs-search-item small{color:var(--text-muted);font-size:10px}
+.jobs-preview{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:12px;line-height:1.65}
+.jobs-actions-row{display:flex;gap:8px;flex-wrap:wrap}
+/* STAGE 2.7 — opportunity cards (existing tokens only) */
+.jobs-card{display:flex;flex-direction:column;gap:10px;padding:15px 14px;border-bottom:1px solid var(--border)}
+.jobs-card:last-child{border-bottom:none}
+.jobs-card-head{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.jobs-card-head .grow{flex:1;min-width:0}
+.jobs-card-head h3{font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.jobs-card-head p{margin-top:3px;font-size:11px;overflow-wrap:anywhere}
+.jobs-card-head .badge{flex:0 0 auto}
+.jobs-card-meta{display:flex;gap:8px 18px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary)}
+.jobs-card-meta span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.jobs-card-meta b{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.jobs-card-skills{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.jobs-card-skills .jobs-skills-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);flex:0 0 auto}
+.jobs-card-skills .tag{max-width:100%;overflow-wrap:anywhere}
+.jobs-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.jobs-modal .modal-header{position:sticky;top:0}
+@media (max-width:760px){.jobs-form-grid{grid-template-columns:1fr}.jobs-modal{padding:20px 16px}}
+@media (max-width:480px){
+  .jobs-card{padding:13px 12px}
+  .jobs-card-meta{gap:6px 14px}
+  .jobs-card-actions .btn{flex:1 1 auto;justify-content:center}
+  .jobs-toolbar select{flex:1 1 46%;min-width:0}
+}
+/* Values shown from the API/profiles can be long and space-less. */
+#jobsCompanyName,#jobsCompanySub{overflow-wrap:anywhere}
+#jobsModalTitle{overflow-wrap:anywhere}
+</style></head>
 <body data-page="jobs.html" data-role="recruiter">
 <div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
 <main class="page-content">
-<!-- TODO: Replace with backend API data -->
 <header class="portal-head"><div class="portal-head-row"><div>
-<span class="eyebrow">Hiring · jobs</span><h1>Jobs <span>manager</span></h1><p>Create, publish and track full-time roles. Placeholder rows.</p></div>
-<div><button class="btn primary small" data-toast="Job composer opens (frontend only).">+ Post job</button></div></div></header>
-<section class="panel"><div class="table-wrap"><table class="data"><tr><th>Role</th><th>Status</th><th>Applicants</th><th>Deadline</th><th></th></tr>
-<tr><td><b>Backend Developer</b><br><span class="muted">Remote · Full-time</span></td><td><span class="badge green">Published</span></td><td>31</td><td>10 Oct</td><td><a class="btn small ghost" href="applications.html?role=recruiter">Applicants</a></td></tr>
-<tr><td><b>Frontend Developer</b><br><span class="muted">Hybrid</span></td><td><span class="badge amber">Draft</span></td><td>0</td><td>—</td><td><button class="btn small" data-toast="Published (frontend only).">Publish</button></td></tr>
-<tr><td><b>Product Designer</b><br><span class="muted">On-site</span></td><td><span class="badge grey">Closed</span></td><td>54</td><td>01 Sep</td><td><a class="btn small ghost" href="hiring-analytics.html">Report</a></td></tr>
-</table></div></section>
+<span class="eyebrow">Hiring · jobs</span><h1>Jobs <span>manager</span></h1><p>Create, publish and track roles. Live data from the Opportunities backend — drafts stay private until published.</p></div>
+<div><button class="btn primary small" id="jobsPostBtn" type="button">+ Post job</button></div></div></header>
+<div class="panel" id="jobsCompanyBanner" hidden><span class="muted">Posting as </span><b id="jobsCompanyName">—</b><span class="muted" id="jobsCompanySub"></span></div>
+<div class="panel mt" id="jobsProfileWarn" hidden><div class="empty-state" style="padding:14px"><div class="empty-icon">🏢</div><h3>Complete your recruiter/company profile before posting an opportunity.</h3><p>Add your company name in <a href="profile.html">Profile</a> — publishing is blocked until the backend sees it.</p></div></div>
+<div class="tabs mt" id="jobsTabs" role="tablist" aria-label="Opportunity status filter">
+<button type="button" class="active" data-status="">All</button>
+<button type="button" data-status="draft">Draft</button>
+<button type="button" data-status="published">Published</button>
+<button type="button" data-status="closed">Closed</button>
+</div>
+<div class="toolbar mt jobs-toolbar">
+<div class="search-box"><span>⌕</span><input id="jobsSearch" type="search" placeholder="Search opportunities..." aria-label="Search your opportunities" autocomplete="off"></div>
+<select id="jobsTypeFilter" aria-label="Filter by opportunity type">
+<option value="">All types</option><option value="internship">Internship</option><option value="job">Full-time</option><option value="placement">Placement</option><option value="apprenticeship">Apprenticeship</option><option value="mini_project">Mini project</option><option value="part_time">Part-time</option>
+</select>
+<select id="jobsModeFilter" aria-label="Filter by work mode">
+<option value="">All work modes</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">On-site</option>
+</select>
+</div>
+<section class="panel"><div class="section-head"><h2>My opportunities</h2><span class="muted" id="jobsCount"></span></div>
+<div id="jobsLoading"><div class="jobs-card"><div class="jobs-card-head"><div class="grow"><div class="skeleton" style="width:52%"></div><div class="skeleton" style="width:34%;margin-top:8px"></div></div><div class="skeleton" style="width:74px;height:22px"></div></div><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%"></div></div>
+<div class="jobs-card"><div class="jobs-card-head"><div class="grow"><div class="skeleton" style="width:44%"></div><div class="skeleton" style="width:30%;margin-top:8px"></div></div><div class="skeleton" style="width:74px;height:22px"></div></div><div class="skeleton" style="width:52%"></div><div class="skeleton" style="width:36%"></div></div></div>
+<div class="row-list" id="jobsRows" hidden></div>
+<div class="empty-state" id="jobsEmpty" hidden><div class="empty-icon">💼</div><h3>No opportunities yet</h3><p>Post your first role — it saves as a draft until you publish it.</p><button class="btn small primary mt" id="jobsEmptyPost" type="button">+ Post job</button></div>
+<div class="empty-state" id="jobsFilterEmpty" hidden><div class="empty-icon">🔎</div><h3>No opportunities match your filters</h3><p>Try a different search, status, type or work mode.</p><button class="btn small mt" id="jobsClearFilters" type="button">Clear filters</button></div>
+<div class="empty-state state-error" id="jobsError" hidden><div class="empty-icon">⚠️</div><h3>Could not load your opportunities</h3><p id="jobsErrorMsg">Something went wrong. Please try again.</p><button class="btn small primary mt" id="jobsRetry" type="button">Retry</button></div>
+</section>
+<section class="panel mt"><div class="empty-state" style="padding:14px"><div class="empty-icon">🎓</div><h3>Student view</h3><p>Students discover published roles in <a href="opportunities.html">Opportunities</a>.</p></div></section>
 </main></div><div id="toast-root"></div>
-<script src="config.js"></script><script src="api-client.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script></body></html>
+
+<div class="modal-overlay" id="jobsConfirm" hidden>
+<div class="modal jobs-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="jobsConfirmTitle" aria-describedby="jobsConfirmMsg">
+<div class="modal-header"><h2 id="jobsConfirmTitle">Are you sure?</h2><button class="modal-close" id="jobsConfirmX" type="button" aria-label="Close dialog">×</button></div>
+<p class="muted" id="jobsConfirmMsg" style="font-size:12px;line-height:1.6">—</p>
+<div class="form-actions jobs-actions-row" style="justify-content:flex-end;margin-top:16px">
+<button class="btn ghost small" id="jobsConfirmCancel" type="button">Cancel</button>
+<button class="btn small" id="jobsConfirmOk" type="button">Confirm</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="jobsModal" hidden>
+<div class="modal jobs-modal" role="dialog" aria-modal="true" aria-labelledby="jobsModalTitle">
+<div class="modal-header"><h2 id="jobsModalTitle">Post job</h2><button class="modal-close" id="jobsModalClose" type="button" aria-label="Close">×</button></div>
+<p class="muted" id="jobsEditingLine" hidden>Editing draft <b id="jobsEditingId"></b> · <span id="jobsEditingStatus"></span></p>
+<div class="empty-state state-error" id="jobsFormError" hidden style="padding:12px;margin-bottom:12px"><p id="jobsFormErrorMsg" style="font-size:12px"></p></div>
+<form id="jobsForm" novalidate>
+<div class="jobs-form-grid">
+<div class="form-group span2"><label for="f_title">Title *</label><input id="f_title" maxlength="180" placeholder="e.g. Backend Developer Intern" autocomplete="off"></div>
+<div class="form-group span2"><label for="f_description">Description *</label><textarea id="f_description" maxlength="8000" placeholder="What will the candidate work on?"></textarea></div>
+<div class="form-group"><label for="f_opportunity_type">Opportunity type *</label><select id="f_opportunity_type"><option value="job">Full-time job</option><option value="internship">Internship</option><option value="placement">Placement</option><option value="apprenticeship">Apprenticeship</option><option value="mini_project">Mini project</option><option value="part_time">Part-time</option></select></div>
+<div class="form-group"><label for="f_work_mode">Work mode</label><select id="f_work_mode"><option value="">— Not specified —</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">On-site</option></select></div>
+<div class="form-group span2"><label for="f_responsibilities">Responsibilities</label><textarea id="f_responsibilities" maxlength="8000" style="min-height:70px" placeholder="Day-to-day responsibilities (optional)"></textarea></div>
+<div class="form-group span2"><label for="f_eligibility_text">Eligibility notes</label><textarea id="f_eligibility_text" maxlength="4000" style="min-height:60px" placeholder="Who should apply? (optional)"></textarea></div>
+<div class="form-group"><label for="f_location">Location</label><input id="f_location" maxlength="180" placeholder="e.g. Remote (India)" autocomplete="off"></div>
+<div class="form-group"><label for="f_duration">Duration</label><input id="f_duration" maxlength="120" placeholder="e.g. 6 months" autocomplete="off"></div>
+<div class="form-group"><label for="f_compensation">Compensation</label><input id="f_compensation" maxlength="180" placeholder="e.g. Rs 25,000 / month" autocomplete="off"></div>
+<div class="form-group"><label for="f_openings">Openings</label><input id="f_openings" type="number" min="1" max="1000" step="1" placeholder="e.g. 3"></div>
+<div class="form-group"><label for="f_deadline">Application deadline</label><input id="f_deadline" type="date"></div>
+<div class="form-group"><label for="f_start_date">Start date</label><input id="f_start_date" type="date"></div>
+<div class="form-group"><label for="f_min_cgpa">Minimum CGPA (0-10)</label><input id="f_min_cgpa" type="number" min="0" max="10" step="0.01" placeholder="e.g. 7.0"></div>
+<div class="form-group"><label for="f_allowed_graduation_years">Allowed graduation years (CSV)</label><input id="f_allowed_graduation_years" placeholder="e.g. 2025, 2026" autocomplete="off"></div>
+<div class="form-group"><label for="f_min_graduation_year">Min graduation year</label><input id="f_min_graduation_year" type="number" min="1990" max="2100" step="1" placeholder="e.g. 2024"></div>
+<div class="form-group"><label for="f_max_graduation_year">Max graduation year</label><input id="f_max_graduation_year" type="number" min="1990" max="2100" step="1" placeholder="e.g. 2027"></div>
+<div class="form-group"><label for="f_eligible_degree">Eligible degree</label><input id="f_eligible_degree" maxlength="500" placeholder="e.g. B.Tech" autocomplete="off"></div>
+<div class="form-group"><label for="f_eligible_branch">Eligible branch</label><input id="f_eligible_branch" maxlength="500" placeholder="e.g. Computer Science" autocomplete="off"></div>
+</div>
+<div class="section-head mt"><h2>Required skills</h2><span class="muted" id="jobsSkillHint">At least one skill is required to publish.</span></div>
+<div class="form-group"><label for="jobsSkillSearch">Search the skills catalog</label><input id="jobsSkillSearch" placeholder="Type to search, e.g. Python" autocomplete="off"><div class="jobs-search-results" id="jobsSkillResults"></div></div>
+<div class="row-list" id="jobsSkillSelected"></div>
+<div class="empty-state" id="jobsSkillEmpty"><div class="empty-icon">🧩</div><h3>No required skills yet</h3><p>Search above and add at least one skill before publishing.</p></div>
+<div class="section-head mt"><h2>Preview</h2><button class="btn small ghost" id="jobsPreviewBtn" type="button">Refresh preview</button></div>
+<div class="jobs-preview" id="jobsPreview"><p class="muted">Fill the form to see the student-facing preview.</p></div>
+<div class="form-actions jobs-actions-row">
+<button class="btn ghost small" id="jobsCancelBtn" type="button">Cancel</button>
+<button class="btn small" id="jobsSaveDraftBtn" type="button">Save draft</button>
+<button class="btn small" id="jobsSaveChangesBtn" type="button" hidden>Save changes</button>
+<button class="btn small primary" id="jobsPublishBtn" type="button">Publish</button>
+<button class="btn small danger" id="jobsCloseBtn" type="button" hidden>Close opportunity</button>
+</div>
+</form>
+</div>
+</div>
+
+<script src="config.js"></script><script src="api-client.js"></script><script src="auth.js"></script><script src="portal-shell.js"></script><script src="portal.js"></script><script src="jobs.js"></script></body></html>

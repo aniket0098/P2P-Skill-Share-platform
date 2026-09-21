@@ -717,6 +717,124 @@ window.SkillShareAPI = (() => {
                     client_request_id: clientRequestId,
                 }),
             }),
+
+        /* --- Student applications (Stage 2.5C) ---
+           JWT-only: the backend derives the student from the token;
+           no student/user ids are ever sent from the frontend.
+           Additive only — existing contracts untouched. */
+        /* GET /api/applications/me — the JWT student's own applications
+           (status/limit/offset are optional). Returns
+           { applications|items, total, limit, offset, has_more }. */
+        getMyApplications: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.status) query.set("status", params.status);
+            if (params.limit) query.set("limit", String(params.limit));
+            if (params.offset) query.set("offset", String(params.offset));
+            const qs = query.toString();
+            return request("/api/applications/me" + (qs ? `?${qs}` : ""));
+        },
+        /* POST /api/applications/{id}/withdraw — owner only,
+           applied -> withdrawn (401/403/404/409 handled by caller). */
+        withdrawApplication: (applicationId) =>
+            request(`/api/applications/${encodeURIComponent(applicationId)}/withdraw`, {
+                method: "POST",
+            }),
+
+        /* --- Stage 2.9: student apply (opportunity details page) ---
+           POST /api/opportunities/{id}/apply — student-only. Identity,
+           eligibility, deadline, opportunity state and duplicate protection
+           are ALL decided server-side from the JWT; the only student-settable
+           field is the optional cover_note (backend caps it at 2000 chars).
+           No student/user ids are ever sent from the frontend. */
+        applyToOpportunity: (opportunityId, payload) =>
+            request(`/api/opportunities/${encodeURIComponent(opportunityId)}/apply`, {
+                method: "POST",
+                body: JSON.stringify(payload || {}),
+            }),
+
+        /* --- Recruiter opportunities (Stage 2.6) ---
+           JWT-only: the backend derives the owning recruiter from the
+           token and derives the company from RecruiterProfile.
+           Never send owner_user_id / recruiter_user_id / company_name
+           as ownership. Additive only — existing contracts untouched. */
+        /* POST /api/opportunities — recruiter-only, creates status=draft. */
+        createOpportunity: (data) =>
+            request("/api/opportunities", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        /* GET /api/opportunities/mine — owning recruiter's list. */
+        getMyOpportunities: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.status) query.set("status", params.status);
+            if (params.limit) query.set("limit", String(params.limit));
+            if (params.offset) query.set("offset", String(params.offset));
+            const qs = query.toString();
+            return request("/api/opportunities/mine" + (qs ? `?${qs}` : ""));
+        },
+        /* GET /api/opportunities/{id} — recruiter reads own draft/detail. */
+        getOpportunity: (id) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}`),
+        /* PATCH /api/opportunities/{id} — owner-only partial update. */
+        updateOpportunity: (id, data) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}`, {
+                method: "PATCH",
+                body: JSON.stringify(data || {}),
+            }),
+        /* PUT /api/opportunities/{id}/skills — full required-skill replacement. */
+        replaceOpportunitySkills: (id, skills) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}/skills`, {
+                method: "PUT",
+                body: JSON.stringify({ skills: skills || [] }),
+            }),
+        /* POST /api/opportunities/{id}/publish — draft -> published. */
+        publishOpportunity: (id) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}/publish`, {
+                method: "POST",
+            }),
+        /* POST /api/opportunities/{id}/close — published -> closed. */
+        closeOpportunity: (id) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}/close`, {
+                method: "POST",
+            }),
+        /* DELETE /api/opportunities/{id} — owner only, DRAFT-only (backend
+           answers 409 for published/closed). Additive Stage 2.7. */
+        deleteOpportunity: (id) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}`, {
+                method: "DELETE",
+            }),
+        /* GET /api/opportunities — published-only public discovery.
+           Stage 2.8 (additive): + `search` (backend matches title,
+           description, location) and + `company` (company_name ilike).
+           Existing contract untouched. */
+        listPublishedOpportunities: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.opportunity_type) query.set("opportunity_type", params.opportunity_type);
+            if (params.work_mode) query.set("work_mode", params.work_mode);
+            if (params.location) query.set("location", params.location);
+            if (params.search) query.set("search", params.search);
+            if (params.company) query.set("company", params.company);
+            if (params.limit) query.set("limit", String(params.limit));
+            if (params.offset) query.set("offset", String(params.offset));
+            const qs = query.toString();
+            return request("/api/opportunities" + (qs ? `?${qs}` : ""));
+        },
+        /* GET /api/opportunities/me/recommended — Stage 2.8 student
+           discovery personalization. JWT-only: the backend resolves the
+           student and computes eligibility + skill match server-side;
+           the frontend never scores or filters eligibility itself. */
+        getRecommendedOpportunities: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.opportunity_type) query.set("opportunity_type", params.opportunity_type);
+            if (params.work_mode) query.set("work_mode", params.work_mode);
+            if (params.location) query.set("location", params.location);
+            if (params.search) query.set("search", params.search);
+            if (params.company) query.set("company", params.company);
+            if (params.limit) query.set("limit", String(params.limit));
+            if (params.offset) query.set("offset", String(params.offset));
+            const qs = query.toString();
+            return request("/api/opportunities/me/recommended" + (qs ? `?${qs}` : ""));
+        },
     };
 })();
 

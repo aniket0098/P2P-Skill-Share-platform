@@ -3682,3 +3682,19 @@ except Exception as _credits_err:  # never break boot on additive stage
     print(f"[credits] WARNING: credit routes not registered: {_credits_err}")
 
 
+
+# ================================================================
+# STAGE 2.2B - ACADEMIA <-> INDUSTRY OPPORTUNITIES (additive:
+# /api/opportunities* and /api/applications*). Published-only public
+# discovery, recruiter ownership and student-only apply are enforced
+# server-side; PostgreSQL stays the source of truth for eligibility,
+# duplicates (UNIQUE opportunity+student) and deadlines. Static
+# routes (me/recommended, mine) register before {opportunity_id},
+# so nothing is shadowed. No existing route touched.
+# ================================================================
+try:
+    from opportunities_api import register_opportunities
+    register_opportunities(app, get_db, get_current_user_model)
+    print("[opportunities] routes registered: /api/opportunities* + /api/applications*")
+except Exception as _opp_err:  # never break boot on additive stage
+    print(f"[opportunities] WARNING: opportunity routes not registered: {_opp_err}")

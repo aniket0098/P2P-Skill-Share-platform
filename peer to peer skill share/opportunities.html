@@ -9,42 +9,110 @@
 <link rel="stylesheet" href="dashboard.css">
 <link rel="stylesheet" href="portal.css">
 <link rel="stylesheet" href="portal-shell.css">
+<style>
+/* STAGE 2.8 — real student discovery. Additive helpers only (same approach
+   as jobs.html / opportunity-details.html): every value comes from
+   GET /api/opportunities (published-only) or
+   GET /api/opportunities/me/recommended (server-side eligibility + match).
+   Fields the API does not return are hidden, never faked. */
+[hidden]{display:none!important}
+/* Long, space-less backend values must never push the layout sideways on a
+   320px screen (titles/companies come from the API, not from this file). */
+.opp-card h3,.opp-sub,.opp-meta,.opp-missing,.opp-note{overflow-wrap:anywhere}
+.opp-card{display:flex;flex-direction:column;gap:10px}
+.opp-card-head{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.opp-card-head .grow{flex:1;min-width:0}
+.opp-card-head h3{font-size:14px;line-height:1.35}
+.opp-card-head .badge{flex:0 0 auto}
+.opp-sub{font-size:11px;color:var(--text-muted);margin-top:3px}
+.opp-meta{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:11px;color:var(--text-muted)}
+.opp-meta span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opp-meta b{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.opp-skills{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.opp-skills .opp-skills-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);flex:0 0 auto}
+.opp-skills .tag{max-width:100%;overflow-wrap:anywhere}
+.opp-match{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.opp-match .match{flex:1;min-width:120px}
+.opp-elig{display:flex;flex-direction:column;gap:6px}
+.opp-missing{font-size:11px;color:var(--warning);display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start}
+.opp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.opp-note{font-size:11px;color:var(--text-muted)}
+.opp-filter-input{background:var(--bg-card);border:1px solid var(--border);color:#fff;border-radius:10px;padding:0 12px;height:46px;font-size:12px;outline:none;min-width:0;flex:0 1 150px}
+.opp-filter-input:focus{border-color:var(--border-hover)}
+.opp-filter-input::placeholder{color:var(--text-muted)}
+.opp-pager{display:flex;justify-content:center}
+@media (max-width:480px){
+  .page-content{padding-left:12px;padding-right:12px}
+  .opp-toolbar select,.opp-toolbar .opp-filter-input{flex:1 1 46%;min-width:0}
+  .opp-card{padding:13px 12px}
+  .opp-actions .btn{flex:1 1 auto;justify-content:center}
+}
+</style>
 </head>
 <body data-page="opportunities.html" data-role="student">
 <div id="app-sidebar"></div>
 <div class="app-main">
 <div id="app-topbar"></div>
 <main class="page-content">
-<!-- TODO: Replace with backend API data -->
 <header class="portal-head"><span class="eyebrow">Discover · SIH 2026</span>
 <h1>Opportunities <span>for you</span></h1>
-<p>Internships, jobs and apprenticeships matched to verified skills. Placeholder listings.</p></header>
-<section class="grid-3">
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">💼</span></div><b>128</b><span>Open opportunities</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b>82%</b><span>Average skill match</span></div>
-<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">⏰</span></div><b>9</b><span>Deadlines this week</span></div>
+<p>Live published internships, jobs and mini projects from the Opportunities backend — search and filter them, then see your server-side skill match.</p></header>
+
+<!-- REAL STATS (values filled from the API; "—" until loaded, never faked) -->
+<section class="grid-3" id="oppStats">
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">💼</span></div><b id="oppStatOpen">—</b><span>Open opportunities</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">🎯</span></div><b id="oppStatMatch">—</b><span>Best skill match for you</span></div>
+<div class="panel stat-card"><div class="stat-top"><span class="stat-icon">✅</span></div><b id="oppStatEligible">—</b><span id="oppStatEligibleSub">Eligible for you</span></div>
 </section>
-<div class="toolbar mt">
-<div class="search-box"><span>⌕</span><input data-filter="#oppGrid" data-empty="#oppEmpty" type="text" placeholder="Search roles, companies, skills..."></div>
-<select><option>All types</option><option>Internship</option><option>Full-time</option><option>Apprenticeship</option></select>
-<select><option>All locations</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select>
+
+<!-- RECOMMENDED (server-side eligibility + skill match, Stage 2.4 backend) -->
+<div class="section-head mt"><div><h2>Recommended for you</h2><p class="muted" id="recoHint">Ranked by the server: eligible first, then skill match, then deadline.</p></div><span class="muted" id="recoCount"></span></div>
+<section class="grid-3" id="recoLoading">
+<div class="panel"><div class="skeleton" style="width:52%"></div><div class="skeleton" style="width:34%;margin-top:8px"></div><div class="skeleton" style="width:70%;margin-top:14px"></div><div class="skeleton" style="width:46%;margin-top:10px"></div></div>
+<div class="panel"><div class="skeleton" style="width:44%"></div><div class="skeleton" style="width:30%;margin-top:8px"></div><div class="skeleton" style="width:60%;margin-top:14px"></div><div class="skeleton" style="width:38%;margin-top:10px"></div></div>
+<div class="panel"><div class="skeleton" style="width:48%"></div><div class="skeleton" style="width:36%;margin-top:8px"></div><div class="skeleton" style="width:64%;margin-top:14px"></div><div class="skeleton" style="width:42%;margin-top:10px"></div></div>
+</section>
+<section class="grid-3" id="recoGrid" hidden></section>
+<div class="panel filter-empty mt" id="recoEmpty" hidden><div class="empty-state"><div class="empty-icon">🎯</div><h3>No personalized matches yet.</h3><p id="recoEmptyMsg">—</p><div class="mt" id="recoEmptyActions" hidden><a class="btn small primary" href="profile.html">Complete your profile</a> <a class="btn small ghost" href="skill-mapping.html">Skill mapping</a></div></div></div>
+<div class="panel filter-empty mt" id="recoError" hidden><div class="empty-state state-error"><div class="empty-icon">⚠️</div><h3>Unable to load recommendations.</h3><p id="recoErrorMsg">Something went wrong. Please try again.</p><button class="btn small primary mt" id="recoRetry" type="button">Try again</button></div></div>
+<div class="opp-pager mt"><button class="btn small" id="recoMore" hidden type="button">Show more matches</button></div>
+<p class="muted mt" id="recoDisclaimer" hidden></p>
+<div class="toolbar mt opp-toolbar">
+<div class="search-box"><span>⌕</span><input id="oppSearch" type="search" placeholder="Search title, description, location..." aria-label="Search opportunities" autocomplete="off"></div>
+<select id="oppTypeFilter" aria-label="Filter by opportunity type">
+<option value="">All types</option><option value="internship">Internship</option><option value="job">Full-time</option><option value="placement">Placement</option><option value="apprenticeship">Apprenticeship</option><option value="mini_project">Mini project</option><option value="part_time">Part-time</option>
+</select>
+<select id="oppModeFilter" aria-label="Filter by work mode">
+<option value="">All work modes</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">On-site</option>
+</select>
+<input id="oppCompanyFilter" class="opp-filter-input" type="text" placeholder="Company" aria-label="Filter by company" autocomplete="off">
+<input id="oppLocationFilter" class="opp-filter-input" type="text" placeholder="Location" aria-label="Filter by location" autocomplete="off">
+<select id="oppSort" aria-label="Sort opportunities">
+<option value="newest">Newest first</option><option value="deadline">Deadline soonest</option>
+</select>
 <a class="btn ghost small" href="applications.html">My Applications →</a>
 </div>
-<section class="grid-3" id="oppGrid">
-<div class="panel" data-name="frontend developer intern pixelcraft react javascript"><span class="badge blue">Internship</span><h3 class="mt">Frontend Developer Intern</h3><p class="muted">PixelCraft · Remote · 6 months</p><div class="mt"><span class="tag">React</span><span class="tag">JavaScript</span></div><div class="match mt"><div class="bar"><i style="width:92%"></i></div>92%</div><p class="muted mt">Deadline 30 Sep · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
-<div class="panel" data-name="data analyst intern insightlabs python sql"><span class="badge blue">Internship</span><h3 class="mt">Data Analyst Intern</h3><p class="muted">InsightLabs · Hybrid · 3 months</p><div class="mt"><span class="tag">Python</span><span class="tag">SQL</span></div><div class="match mt"><div class="bar"><i style="width:78%"></i></div>78%</div><p class="muted mt">Deadline 02 Oct · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
-<div class="panel" data-name="ui ux design apprentice formstudio figma"><span class="badge purple">Apprenticeship</span><h3 class="mt">UI/UX Design Apprentice</h3><p class="muted">FormStudio · On-site · 12 months</p><div class="mt"><span class="tag">Figma</span><span class="tag">UX Research</span></div><div class="match mt"><div class="bar"><i style="width:71%"></i></div>71%</div><p class="muted mt">Deadline 05 Oct · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
-<div class="panel" data-name="backend developer edgetech node postgresql"><span class="badge green">Full-time</span><h3 class="mt">Backend Developer</h3><p class="muted">EdgeTech · Remote · Full-time</p><div class="mt"><span class="tag">Node.js</span><span class="tag">PostgreSQL</span></div><div class="match mt"><div class="bar"><i style="width:64%"></i></div>64%</div><p class="muted mt">Deadline 10 Oct · Salary (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
-<div class="panel" data-name="ml intern visionai python pytorch"><span class="badge blue">Internship</span><h3 class="mt">ML Intern</h3><p class="muted">VisionAI · Remote · 6 months</p><div class="mt"><span class="tag">Python</span><span class="tag">PyTorch</span></div><div class="match mt"><div class="bar"><i style="width:58%"></i></div>58%</div><p class="muted mt">Deadline 12 Oct · Stipend (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
-<div class="panel" data-name="technical content writer docuwise writing"><span class="badge amber">Part-time</span><h3 class="mt">Technical Content Writer</h3><p class="muted">DocuWise · Remote · 3 months</p><div class="mt"><span class="tag">Writing</span><span class="tag">Docs</span></div><div class="match mt"><div class="bar"><i style="width:84%"></i></div>84%</div><p class="muted mt">Deadline 15 Oct · Paid (placeholder)</p><div class="mt"><a class="btn small primary" href="opportunity-details.html">View details</a></div></div>
+<div class="section-head"><div><h2>All published opportunities</h2></div><span class="muted" id="oppCount"></span></div>
+<section class="grid-3" id="oppLoading">
+<p class="muted" style="flex-basis:100%">Loading opportunities...</p>
+<div class="panel"><div class="skeleton" style="width:52%"></div><div class="skeleton" style="width:34%;margin-top:8px"></div><div class="skeleton" style="width:70%;margin-top:14px"></div><div class="skeleton" style="width:46%;margin-top:10px"></div></div>
+<div class="panel"><div class="skeleton" style="width:44%"></div><div class="skeleton" style="width:30%;margin-top:8px"></div><div class="skeleton" style="width:60%;margin-top:14px"></div><div class="skeleton" style="width:38%;margin-top:10px"></div></div>
+<div class="panel"><div class="skeleton" style="width:48%"></div><div class="skeleton" style="width:36%;margin-top:8px"></div><div class="skeleton" style="width:64%;margin-top:14px"></div><div class="skeleton" style="width:42%;margin-top:10px"></div></div>
 </section>
-<div class="panel filter-empty mt" id="oppEmpty" style="display:none"><div class="empty-state"><div class="empty-icon">🔎</div><h3>No opportunities found</h3><p>Try a different search.</p></div></div>
+<section class="grid-3" id="oppGrid" hidden></section>
+<div class="panel filter-empty mt" id="oppEmpty" hidden><div class="empty-state"><div class="empty-icon">🔎</div><h3>No opportunities found.</h3><p>There are no published opportunities right now.</p></div></div>
+<div class="panel filter-empty mt" id="oppFilterEmpty" hidden><div class="empty-state"><div class="empty-icon">🔎</div><h3>No opportunities found.</h3><p>Try a different search, type, work mode, company or location.</p><button class="btn small mt" id="oppClearFilters" type="button">Clear filters</button></div></div>
+<div class="panel filter-empty mt" id="oppError" hidden><div class="empty-state state-error"><div class="empty-icon">⚠️</div><h3>Unable to load opportunities.</h3><p id="oppErrorMsg">Something went wrong. Please try again.</p><button class="btn small primary mt" id="oppRetry" type="button">Try again</button></div></div>
+<div class="opp-pager mt"><button class="btn small" id="oppMore" hidden type="button">Load more</button></div>
+<p class="muted mt" id="oppSortNote" hidden></p>
 </main>
 </div>
 <div id="toast-root"></div>
 <script src="config.js"></script>
 <script src="api-client.js"></script>
+<script src="auth.js"></script>
 <script src="portal-shell.js"></script>
 <script src="portal.js"></script>
+<script src="opportunities.js"></script>
 </body>
 </html>

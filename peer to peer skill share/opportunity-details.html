@@ -9,45 +9,150 @@
 <link rel="stylesheet" href="dashboard.css">
 <link rel="stylesheet" href="portal.css">
 <link rel="stylesheet" href="portal-shell.css">
+<style>
+/* STAGE 2.7 — real opportunity detail. Additive helpers only; the mock
+   opportunity was removed: every value below comes from
+   GET /api/opportunities/{id} and absent fields are hidden, never faked. */
+[hidden]{display:none!important}
+.opp-fact{display:flex;align-items:flex-start;gap:10px;padding:11px 4px;border-bottom:1px solid var(--border)}
+.opp-fact:last-child{border-bottom:none}
+.opp-fact .opp-ico{flex:0 0 auto;font-size:14px;line-height:1.4}
+.opp-fact h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.opp-fact p{margin-top:3px;font-size:12px;overflow-wrap:anywhere}
+.opp-skill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border);border-radius:9px;font-size:11px;margin:0 6px 6px 0;background:rgba(255,255,255,.03)}
+.opp-skill b{font-weight:600}
+.opp-skill small{color:var(--text-muted)}
+@media (max-width:480px){.page-content{padding-left:12px;padding-right:12px}}
+/* Long, space-less backend values must never push the layout sideways on a
+   320px screen (titles come from the API, not from this file). */
+#oppTitle,#oppEyebrow{overflow-wrap:anywhere}
+.opp-skill{max-width:100%;overflow-wrap:anywhere}
+.opp-skill b,.opp-skill small{overflow-wrap:anywhere}
+/* STAGE 2.9 — student apply + server-authored match. Additive helpers only;
+   every value below comes from GET /api/opportunities/{id},
+   POST /api/opportunities/{id}/apply or GET /api/applications/me.
+   Fields the API does not return are hidden, never faked. */
+.opp-apply-state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.opp-apply-state .row-item{padding:10px 4px}
+.opp-apply-note{font-size:11px;color:var(--text-muted);margin-top:8px}
+.opp-apply-msg{font-size:11px;margin-top:8px;overflow-wrap:anywhere}
+.opp-apply-msg.err{color:var(--danger)}
+.opp-apply-msg.warn{color:var(--warning)}
+.opp-apply-msg.ok{color:var(--success)}
+.opp-cover{margin-top:10px}
+.opp-cover label{display:block;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:5px}
+.opp-cover textarea{width:100%;box-sizing:border-box;min-height:74px;resize:vertical;background:var(--bg-card);
+  border:1px solid var(--border);color:#fff;border-radius:10px;padding:9px 11px;font-size:12px;font-family:inherit;line-height:1.45}
+.opp-cover textarea:focus{outline:none;border-color:var(--border-hover)}
+.opp-cover textarea:disabled{opacity:.55}
+.opp-cover-foot{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-size:10px;color:var(--text-muted);flex-wrap:wrap}
+.opp-cover-foot .over{color:var(--danger)}
+.opp-apply-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.opp-apply-actions .btn{flex:0 0 auto}
+.opp-apply-link{font-size:11px}
+.opp-match-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.opp-match-line .match{flex:1;min-width:120px}
+.opp-match-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.opp-match-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.opp-match-list .lab{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);flex:0 0 100%}
+.opp-match-reason{display:flex;gap:8px;align-items:flex-start;padding:9px 4px;border-bottom:1px solid var(--border);font-size:11px;overflow-wrap:anywhere}
+.opp-match-reason:last-child{border-bottom:none}
+.opp-match-reason .ico{flex:0 0 auto}
+.opp-match-reason p{overflow-wrap:anywhere}
+@media (max-width:480px){
+  .opp-apply-actions .btn{flex:1 1 100%;justify-content:center}
+  .opp-cover-foot{justify-content:flex-start}
+}
+</style>
 </head>
-<body data-page="opportunities.html" data-role="student">
+<body data-page="opportunity-details.html" data-role="student">
 <div id="app-sidebar"></div>
 <div class="app-main">
 <div id="app-topbar"></div>
 <main class="page-content">
-<!-- TODO: Replace with backend API data (GET /api/opportunities/:id) -->
-<p class="muted"><a href="opportunities.html">← Back to Opportunities</a></p>
-<header class="portal-head"><div class="portal-head-row"><div>
-<span class="eyebrow">PixelCraft · Remote · Placeholder</span>
-<h1>Frontend Developer <span>Intern</span></h1>
-<p>6-month remote internship. Stipend, eligibility and dates below are UI placeholders.</p>
-</div><div><span class="badge blue">Internship</span> <span class="badge green">92% skill match</span></div></div></header>
-<div class="grid-2">
+<p class="muted"><a href="opportunities.html" id="oppBackLink">← Back to Opportunities</a></p>
+
+<!-- LOADING -->
+<section class="panel" id="oppLoading" hidden>
+<div class="skeleton" style="width:38%;height:22px"></div>
+<div class="skeleton" style="width:55%;margin-top:10px"></div>
+<div class="skeleton" style="width:70%;margin-top:14px"></div>
+<div class="skeleton" style="width:60%;margin-top:10px"></div>
+<div class="skeleton" style="width:45%;margin-top:10px"></div>
+</section>
+
+<!-- EMPTY (no id in URL) -->
+<div class="empty-state" id="oppEmpty" hidden>
+<div class="empty-icon">💼</div>
+<h3>No opportunity selected</h3>
+<p>Pick an opportunity to see its details.</p>
+<a class="btn small primary mt" id="oppEmptyBrowse" href="opportunities.html">Browse opportunities</a>
+</div>
+
+<!-- ERROR -->
+<div class="empty-state state-error" id="oppError" hidden>
+<div class="empty-icon">⚠️</div>
+<h3 id="oppErrorTitle">Could not load this opportunity</h3>
+<p id="oppErrorMsg">Something went wrong. Please try again.</p>
+<button class="btn small primary mt" id="oppRetry" type="button">Retry</button>
+</div>
+
+<!-- REAL DATA -->
+<header class="portal-head" id="oppHead" hidden><div class="portal-head-row"><div>
+<span class="eyebrow" id="oppEyebrow">—</span>
+<h1 id="oppTitle">—</h1>
+<p class="muted" id="oppSummary"></p>
+</div><div id="oppBadges"></div></div></header>
+<div class="grid-2" id="oppBody" hidden>
 <section class="panel">
 <div class="section-head"><h2>Role overview</h2></div>
-<p class="muted">Build responsive interfaces for a live SaaS product, ship with mentors, and earn verified skill evidence for your Skill Passport.</p>
-<h3 class="mt">Required skills</h3>
-<div class="mt"><span class="tag">React</span><span class="tag">JavaScript</span><span class="tag">CSS</span><span class="tag">Git</span><span class="tag purple">Responsive Design</span></div>
-<h3 class="mt">Eligibility</h3>
-<div class="row-list"><div class="row-item"><div class="grow"><h3>Enrolled student, any year</h3><p>Verified college email required (future check)</p></div></div>
-<div class="row-item"><div class="grow"><h3>2+ frontend projects</h3><p>Portfolio or Projects page evidence</p></div></div>
-<div class="row-item"><div class="grow"><h3>Available 15+ hrs/week</h3><p>Remote-friendly schedule</p></div></div></div>
+<p class="muted" id="oppDescription"></p>
+<div id="oppResponsibilitiesWrap" hidden><h3 class="mt">Responsibilities</h3><p class="muted" id="oppResponsibilities" style="white-space:pre-wrap"></p></div>
+<div id="oppSkillsWrap" hidden><h3 class="mt">Required skills</h3><div class="mt" id="oppSkills"></div></div>
+<div id="oppEligibilityWrap" hidden><h3 class="mt">Eligibility</h3><div class="row-list mt" id="oppEligibility"></div></div>
+<!-- STAGE 2.9 — server-authored match (my_eligible / my_match / my_* skills).
+     Only rendered when the detail API returns the student personalization;
+     the frontend never computes an eligibility verdict or a match score. -->
+<div id="oppMatchWrap" hidden>
+<h3 class="mt">Your match</h3>
+<div class="opp-match-line mt" id="oppMatchScore" hidden>
+<div class="match" aria-label="Skill match"><div class="bar"><i id="oppMatchBarFill" style="width:0%"></i></div><span id="oppMatchPct">—</span></div>
+<span class="muted">Skill Match</span>
+</div>
+<div class="opp-match-badges" id="oppMatchBadges"></div>
+<div class="mt" id="oppMatchLists" hidden></div>
+<div class="mt" id="oppMatchChecks" hidden></div>
+<div class="mt" id="oppMatchReasonsWrap" hidden><h3>Server checks</h3><div class="row-list mt" id="oppMatchReasons"></div></div>
+<p class="muted mt" id="oppMatchDisclaimer" hidden>Skill match is a platform indicator (not a hiring probability).</p>
+</div>
 </section>
 <div>
 <section class="panel">
 <div class="section-head"><h2>Key facts</h2></div>
-<div class="row-list">
-<div class="row-item"><div class="grow"><h3>📍 Location</h3><p>Remote (India)</p></div></div>
-<div class="row-item"><div class="grow"><h3>🗓 Duration</h3><p>6 months</p></div></div>
-<div class="row-item"><div class="grow"><h3>💰 Stipend / salary</h3><p>₹25,000 / month (placeholder)</p></div></div>
-<div class="row-item"><div class="grow"><h3>⏰ Deadline</h3><p>30 September (placeholder)</p></div></div>
-</div>
-<div class="mt"><button class="btn primary" data-toast="Application submitted (frontend demo only).">Apply now</button> <button class="btn ghost" data-toast="Saved to your list (frontend only).">♡ Save</button></div>
-<p class="muted mt">Application states: draft → applied → under review. Track in <a href="applications.html">Applications</a>.</p>
+<div class="row-list" id="oppFacts"></div>
+<p class="muted mt" id="oppManageNote" hidden>Manage this opportunity from <a href="jobs.html">Jobs</a>.</p>
 </section>
-<section class="panel mt">
-<div class="section-head"><h2>About the company</h2><a href="company-profile.html">Preview</a></div>
-<p class="muted">PixelCraft builds design tooling for startups. 40 people, remote-first. (Placeholder profile.)</p>
+<!-- STAGE 2.9 — student apply panel. The server stays authoritative for
+     identity, eligibility, deadline, duplicate applications and opportunity
+     state; this UI only reflects what the backend answers. -->
+<section class="panel mt" id="oppApplyWrap" hidden>
+<div class="section-head"><h2>Application</h2></div>
+<div class="row-list" id="oppApplyState"></div>
+<div class="opp-cover" id="oppCoverNoteWrap" hidden>
+<label for="oppCoverNote">Cover note (optional)</label>
+<textarea id="oppCoverNote" maxlength="2000" rows="4" placeholder="Briefly introduce yourself (optional)..."></textarea>
+<div class="opp-cover-foot"><span id="oppCoverCount">0 / 2000</span><span>Optional &middot; max 2000 characters</span></div>
+</div>
+<p class="opp-apply-msg" id="oppApplyMsg" hidden></p>
+<div class="opp-apply-actions" id="oppApplyActions" hidden>
+<button class="btn small primary" id="oppApplyBtn" type="button">Apply Now</button>
+<a class="opp-apply-link" id="oppApplyLink" href="applications.html" hidden>My Applications &rarr;</a>
+</div>
+<p class="opp-apply-note" id="oppApplyNote" hidden></p>
+</section>
+<section class="panel mt" id="oppCompanyPanel" hidden>
+<div class="section-head"><h2>About the company</h2></div>
+<p class="muted" id="oppCompanyText"></p>
 </section>
 </div>
 </div>
@@ -56,7 +161,9 @@
 <div id="toast-root"></div>
 <script src="config.js"></script>
 <script src="api-client.js"></script>
+<script src="auth.js"></script>
 <script src="portal-shell.js"></script>
 <script src="portal.js"></script>
+<script src="opportunity-details.js"></script>
 </body>
 </html>

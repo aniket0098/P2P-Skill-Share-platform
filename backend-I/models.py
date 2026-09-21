@@ -77,6 +77,19 @@ class User(Base):
         "MentorProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
 
+    # Stage 2.2A (additive): a user may OWN opportunities (recruiter accounts)
+    # and SUBMIT applications (student accounts). Ownership is always the
+    # authenticated user id - never company_name. No existing relationship
+    # or column is touched.
+    opportunities = relationship(
+        "Opportunity", back_populates="owner", cascade="all, delete-orphan",
+        foreign_keys="Opportunity.owner_user_id",
+    )
+    applications = relationship(
+        "Application", back_populates="student", cascade="all, delete-orphan",
+        foreign_keys="Application.student_user_id",
+    )
+
 
 class StudentProfile(Base):
     """Extended academic/career data for student accounts."""
@@ -1329,6 +1342,210 @@ class CareerGoal(Base):
         )
 
 
+
+# ================================================================
+# STAGE 2.2A - ACADEMIA <-> INDUSTRY OPPORTUNITIES (ADDITIVE ONLY)
+# ================================================================
+# Three NEW tables: opportunities / opportunity_skills / applications.
+# No existing model, column, constraint or index is modified, and these
+# tables are created by the existing
+# Base.metadata.create_all(bind=engine) call on backend start
+# (CREATE TABLE only - never an ALTER of a live table).
+#
+# OWNERSHIP RULE (from the Stage 2.1 audit, non-negotiable):
+#   Opportunity.owner_user_id is the AUTHORITATIVE owner and is always the
+#   authenticated recruiter user id resolved server-side from the JWT.
+#   Opportunity.company_name is ONLY a display snapshot copied server-side
+#   from recruiter_profiles.company_name - never an ownership key.
+#   No company_id / companies table exists at this stage on purpose: the
+#   audit found "Acme" shared by six different recruiter users, so a
+#   company string must never be able to grant access to a resource.
+#
+# SKILL RULE:
+#   opportunity_skills.skill_id references the EXISTING skills catalog (the
+#   canonical student <-> skill system). No second skill catalog is created.
+#   required_level / importance / skill_type copy the RoleSkill (Stage 5)
+#   vocabulary so skill_engine.score_role() can score an opportunity
+#   directly and the gap / match maths needs no new engine.
+
+
+class Opportunity(Base):
+    """An internship / job / placement / apprenticeship / mini-project.
+
+    Column semantics follow SandboxChallenge (Stage 7) - the closest
+    existing precedent - so the two features stay consistent.
+    """
+
+    __tablename__ = "opportunities"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # AUTHORITATIVE owner: the authenticated recruiter user id, always
+    # resolved server-side from the JWT. Never a client-supplied value.
+    owner_user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+
+    # Display-only snapshot copied server-side from
+    # recruiter_profiles.company_name. NOT an ownership key, and there is
+    # deliberately NO company_id / companies table at this stage.
+    company_name = Column(String, nullable=True)
+
+    # Optional frozen company block (JSON text) so a detail page can render
+    # an "About the company" section without a Company entity.
+    company_profile_snapshot = Column(Text, nullable=True)
+
+    title = Column(String, nullable=False)
+
+    # Human-friendly unique identifier for links, e.g.
+    # "frontend-developer-intern-pixelcraft". Mirrors sandbox_challenges.slug
+    # (nullable so a later API layer may generate it after insert).
+    slug = Column(String, unique=True, index=True, nullable=True)
+
+    # internship | job | placement | apprenticeship | mini_project | part_time
+    opportunity_type = Column(String, nullable=False, default="internship", index=True)
+
+    description = Column(Text, nullable=False)
+    responsibilities = Column(Text, nullable=True)
+
+    # Human-readable eligibility shown to students. The machine-checkable
+    # rules live in the min_ / eligible_ / allowed_ columns below.
+    eligibility_text = Column(Text, nullable=True)
+
+    # remote | hybrid | onsite
+    work_mode = Column(String, nullable=True, index=True)
+    location = Column(String, nullable=True)
+    duration = Column(String, nullable=True)       # e.g. "6 months"
+    compensation = Column(String, nullable=True)   # e.g. "Rs 25,000 / month"
+    openings = Column(Integer, nullable=True, default=1)
+
+    # Applying after this instant is rejected server-side (later stage).
+    deadline = Column(DateTime, nullable=True, index=True)
+    start_date = Column(DateTime, nullable=True)
+
+    # draft | published | closed | archived - only "published" is public.
+    status = Column(String, nullable=False, default="draft", index=True)
+
+    # ---- Optional machine-checkable eligibility (NULL = not enforced) ----
+    min_cgpa = Column(Float, nullable=True)
+    allowed_graduation_years = Column(String, nullable=True)   # CSV, e.g. "2026, 2027"
+    min_graduation_year = Column(Integer, nullable=True)
+    max_graduation_year = Column(Integer, nullable=True)
+    eligible_degree = Column(String, nullable=True)            # CSV of degrees
+    eligible_branch = Column(String, nullable=True)            # CSV of branches
+
+    # Seeded/demo rows are always clearly labelled (never real listings).
+    is_demo = Column(Boolean, default=False, index=True)
+
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    published_at = Column(DateTime, nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+
+    owner = relationship(
+        "User", back_populates="opportunities", foreign_keys=[owner_user_id], lazy="joined"
+    )
+    skills = relationship(
+        "OpportunitySkill", back_populates="opportunity", cascade="all, delete-orphan"
+    )
+    applications = relationship(
+        "Application", back_populates="opportunity", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return (
+            f"<Opportunity id={self.id} type={self.opportunity_type!r} "
+            f"status={self.status!r} owner={self.owner_user_id}>"
+        )
+class OpportunitySkill(Base):
+    """Structured OPPORTUNITY -> SKILL requirement (same shape as RoleSkill).
+
+    skill_id points at the EXISTING skills catalog, so readiness / gap / match
+    maths in skill_engine.score_role() works on an opportunity with no second
+    skill system. required_level / importance / skill_type use the Stage 5
+    vocabulary (beginner|intermediate|advanced|expert,
+    critical|high|medium|low, required|preferred).
+    """
+
+    __tablename__ = "opportunity_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    opportunity_id = Column(Integer, ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    required_level = Column(String, nullable=False, default="intermediate")
+    importance = Column(String, nullable=False, default="medium")
+    skill_type = Column(String, nullable=False, default="required")
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("opportunity_id", "skill_id", name="uq_opportunity_skill"),
+    )
+
+    opportunity = relationship("Opportunity", back_populates="skills")
+    skill = relationship("Skill", lazy="joined")
+
+    def __repr__(self):
+        return (
+            f"<OpportunitySkill opportunity={self.opportunity_id} "
+            f"skill={self.skill_id} level={self.required_level!r}>"
+        )
+
+
+class Application(Base):
+    """A student application to one opportunity.
+
+    student_user_id is ALWAYS resolved server-side from the JWT - the API
+    layer never accepts a student id from the request body.
+
+    UNIQUE(opportunity_id, student_user_id) is the authoritative
+    duplicate-application guard: it holds even when two identical requests
+    arrive concurrently (the losing INSERT raises IntegrityError).
+    """
+
+    __tablename__ = "applications"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    opportunity_id = Column(Integer, ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # applied | under_review | shortlisted | interview | selected
+    # | rejected | withdrawn
+    status = Column(String, nullable=False, default="applied", index=True)
+
+    cover_note = Column(Text, nullable=True)
+
+    # Optional frozen eligibility snapshot (JSON text) taken at apply time so
+    # a later profile edit is never retroactive.
+    snapshot_json = Column(Text, nullable=True)
+
+    applied_at = Column(DateTime, default=func.now(), nullable=False, index=True)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    status_changed_at = Column(DateTime, nullable=True)
+
+    # Which recruiter acted last (audit trail). SET NULL keeps the
+    # application alive if that recruiter account is removed.
+    reviewed_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    recruiter_note = Column(Text, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("opportunity_id", "student_user_id", name="uq_opportunity_application"),
+    )
+
+    opportunity = relationship("Opportunity", back_populates="applications")
+    student = relationship(
+        "User", back_populates="applications", foreign_keys=[student_user_id], lazy="joined"
+    )
+    reviewed_by = relationship("User", foreign_keys=[reviewed_by_user_id])
+
+    def __repr__(self):
+        return (
+            f"<Application id={self.id} opportunity={self.opportunity_id} "
+            f"student={self.student_user_id} status={self.status!r}>"
+        )
 
 # === COMMUNICATION HUB EXTENSION (additive) ===
 # Registers ConversationPreference / MessageReaction / MessageAttachment /
