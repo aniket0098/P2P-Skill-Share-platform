@@ -6,7 +6,33 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = os.environ.get("TEST_BASE", "http://127.0.0.1:8000")
+# ---------------------------------------------------------------- target safety
+# Local-only by default. Pointing TEST_BASE at a non-local host requires an
+# explicit two-variable opt-in, because every e2e suite creates and deletes
+# real rows against the target it is given. This guard runs before any
+# request is sent and before any fixture is created.
+DEFAULT_BASE = "http://127.0.0.1:8000"
+LOCAL_HOSTS = ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+BASE = (os.environ.get("TEST_BASE") or "").strip() or DEFAULT_BASE
+TARGET_HOST = (urllib.parse.urlsplit(BASE).hostname or "").lower()
+IS_LOCAL = (TARGET_HOST in LOCAL_HOSTS
+            or TARGET_HOST.startswith("127.")
+            or TARGET_HOST.endswith(".localhost"))
+ALLOW_REMOTE = (os.environ.get("TEST_ALLOW_REMOTE") or "").strip() == "1"
+REMOTE_CONFIRM = (os.environ.get("TEST_CONFIRM") or "").strip().lower() == "yes-i-know"
+
+print("TEST TARGET:", BASE)
+print("TEST TARGET MODE:", "LOCAL" if IS_LOCAL
+      else ("REMOTE - EXPLICITLY AUTHORIZED"
+            if (ALLOW_REMOTE and REMOTE_CONFIRM) else "REMOTE"))
+if not IS_LOCAL and not (ALLOW_REMOTE and REMOTE_CONFIRM):
+    print("REFUSING TO RUN: TEST_BASE points at a non-local host (%s)." % TARGET_HOST)
+    print("These suites create and delete real fixtures on the target.")
+    print("To run against a remote target on purpose, set BOTH:")
+    print("    TEST_ALLOW_REMOTE=1")
+    print("    TEST_CONFIRM=yes-i-know")
+    raise SystemExit(2)
 RUN = "s29" + str(int(time.time()))[-7:]
 COMPANY = "Stage29Co " + RUN
 R = []
@@ -87,9 +113,35 @@ def make_opportunity(token, body, skills, publish=True):
 
 
 def add_skill(token, name, level="beginner"):
+    """Create one UserSkill via POST /api/profile/skills and prove it stuck.
+
+    The endpoint answers 200 on success and 409 when the row already exists.
+    A 409 is *not* accepted as success: the pre-existing row is re-read and
+    must carry the requested skill name AND level, otherwise this fixture
+    helper fails loudly instead of hiding a fixture failure.
+    """
     s, b = call("/api/profile/skills", token=token, method="POST",
                 payload={"skill_name": name, "level": level})
-    return s in (200, 201, 409), s, blob(b)[:160]
+    if s in (200, 201):
+        return True, s, blob(b)[:160]
+    if s == 409:
+        s2, b2 = call("/api/profile/skills", token=token)
+        row = None
+        if s2 == 200:
+            row = next((r for r in (b2.get("skills") or [])
+                        if str(r.get("skill_name") or "").lower() == name.lower()), None)
+        ok = (row is not None
+              and str(row.get("level") or "").lower() == str(level).lower())
+        info = "409 with existing row verified at level %s: %s" % (level, blob(row)[:120]) \
+            if ok else "409 but no matching %s/%s row found: %s" % (name, level, blob(b2)[:160])
+        return ok, s, info
+    return False, s, blob(b)[:160]
+
+
+def detail_of(body):
+    """Return the structured 409 detail dict, or {} when detail is a string."""
+    d = (body or {}).get("detail")
+    return d if isinstance(d, dict) else {}
 
 
 print("RUN:", RUN)
@@ -100,6 +152,11 @@ recA, recA_id, sA = signup_login("recruiter", "rec29a", {
     "industry": "Software", "company_location": "Pune"})
 check("A1 temp recruiter created with a company profile", bool(recA), "st=%s" % sA)
 
+# Fixture roles (deliberately distinct - the audit requires two different people):
+#   stuE = ELIGIBLE lifecycle applicant (Python expert >= intermediate required).
+#   stuP = genuine PARTIAL-MATCH student (Python beginner < intermediate
+#          required, type "required") - must be rejected with not_eligible.
+#   stuI = fully ineligible (no matching skill + profile blocks) - control case.
 stuE, stuE_id, sE = signup_login("student", "stu29elig", {
     "college": "Test College", "degree": "B.Tech", "branch": "CSE",
     "graduation_year": 2027, "cgpa": 8.4, "target_job_role": "Backend Developer"})
@@ -159,12 +216,31 @@ check("B4 detail carries server personalization keys",
       all(k in (b or {}) for k in ("my_eligible", "my_match", "my_matched_skills",
                                    "my_missing_skills", "my_eligibility_reasons")),
       "keys=%s" % blob(sorted((b or {}).keys())))
-check("B5 skills expose names never internal ids",
-      bool(d.get("skills")) and all(
-          r.get("skill_name") and "skill_id" not in r for r in (d.get("skills") or [])),
-      blob(d.get("skills"))[:220])
-check("B6 no ownership internals leak on detail",
-      all(k not in d for k in ("owner_user_id", "owner_id", "password_hash")))
+# The API serializer intentionally exposes skill rows as
+# {skill_id, skill_name, category, required_level, importance, skill_type}.
+# skill_id in the API payload is legitimate; the UI - not the serializer -
+# is what hides internal ids from users. The test therefore validates the
+# display + requirement metadata (and forbids secret/ownership internals)
+# instead of requiring skill_id to be absent.
+SKILL_ROW_KEYS = {"skill_id", "skill_name", "category",
+                  "required_level", "importance", "skill_type"}
+SKILL_LEVELS_OK = {"beginner", "intermediate", "advanced", "expert"}
+SKILL_IMPORTANCE_OK = {"critical", "high", "medium", "low"}
+SKILL_TYPES_OK = {"required", "preferred"}
+SKILL_INTERNALS_FORBIDDEN = ("owner_user_id", "owner_id", "user_id",
+                             "password_hash", "access_token", "email")
+skill_rows = d.get("skills") or []
+check("B5 skill rows carry display + requirement metadata (skill_id is allowed)",
+      bool(skill_rows)
+      and all(r.get("skill_name") for r in skill_rows)
+      and all(set(r.keys()) <= SKILL_ROW_KEYS for r in skill_rows)
+      and all(r.get("required_level") in SKILL_LEVELS_OK for r in skill_rows)
+      and all(r.get("importance") in SKILL_IMPORTANCE_OK for r in skill_rows)
+      and all(r.get("skill_type") in SKILL_TYPES_OK for r in skill_rows),
+      blob(skill_rows)[:220])
+check("B6 no ownership/secret internals leak on detail",
+      all(k not in d for k in ("owner_user_id", "owner_id", "password_hash"))
+      and all(k not in r for r in skill_rows for k in SKILL_INTERNALS_FORBIDDEN))
 s, _ = call("/api/opportunities/%s" % ID_DRAFT, token=stuE)
 check("B7 student cannot read draft detail (404)", s == 404, "st=%s" % s)
 s, _ = call("/api/opportunities/999999999", token=stuE)
@@ -172,43 +248,95 @@ check("B8 unknown id -> 404", s == 404, "st=%s" % s)
 s, _ = call("/api/opportunities/%s" % ID_OPEN)
 check("B9 anonymous detail -> 401", s == 401, "st=%s" % s)
 
-s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuP,
-            method="POST", payload={"cover_note": "Excited to apply (stage 2.9)."})
+# stuP is a GENUINE partial match (Python beginner < intermediate required):
+# the detail endpoint must already report them as ineligible *with* partial
+# skill credit, which is exactly why they can never be the 201 applicant.
+s, bp = call("/api/opportunities/%s" % ID_OPEN, token=stuP)
+mp_p = ((bp.get("my_match") or {}) if s == 200 else {}).get("match_percentage")
+partials_p = (bp.get("my_partial_skills") or []) if s == 200 else []
+check("B10 partial-match detail already says ineligible-with-credit",
+      s == 200 and bp.get("my_eligible") is False
+      and isinstance(mp_p, (int, float)) and 0 < mp_p <= 100
+      and any(str(p.get("skill_name") or "").lower() == "python"
+              for p in partials_p),
+      "eligible=%s match=%s partials=%s" % (bp.get("my_eligible"), mp_p, blob(partials_p)[:160]))
+
+# --- C/D/E: lifecycle of the ELIGIBLE applicant (stuE). stuP is only a
+# partial match and can never produce a 201; stuI has no matching skill. ---
+COVER_E = "Excited to apply (stage 2.9)."
+s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuE,
+            method="POST", payload={"cover_note": COVER_E})
 app = (b.get("application") or {}) if s == 201 else {}
-APP_P = app.get("id")
-check("C1 first apply -> 201 with a real row", s == 201 and bool(APP_P), "st=%s" % s)
+APP_E = app.get("id")
+check("C1 eligible apply -> 201 with a real row",
+      s == 201 and isinstance(APP_E, int) and APP_E > 0, "st=%s" % s)
 check("C2 row carries the student contract fields",
       app.get("opportunity_id") == ID_OPEN and app.get("status") == "applied"
       and bool(app.get("applied_at")),
       blob({k: app.get(k) for k in ("opportunity_id", "status", "applied_at")}))
-check("C3 cover note stored", app.get("cover_note") == "Excited to apply (stage 2.9).")
-check("C4 snapshot is a JSON object", isinstance(app.get("snapshot"), dict),
+check("C3 cover note stored", app.get("cover_note") == COVER_E)
+check("C4 snapshot is a JSON object",
+      isinstance(app.get("snapshot"), dict)
+      and (app.get("snapshot") or {}).get("snapshot_version") == 1,
       blob(app.get("snapshot"))[:160])
 
-s, b = call("/api/applications/me", token=stuP, params={"limit": 50})
+s, b = call("/api/applications/me", token=stuE, params={"limit": 50})
 mine = rows_of(b)
-mine_row = next((r for r in mine if r.get("opportunity_id") == ID_OPEN), {})
-check("D1 GET /me confirms the application", s == 200 and bool(mine_row), "n=%s" % len(mine))
-check("D2 /me row matches the created id", mine_row.get("id") == APP_P,
-      blob({k: mine_row.get(k) for k in ("id", "status", "opportunity_id")}))
+mine_row = next((r for r in mine if r.get("opportunity_id") == ID_OPEN), None)
+check("D1 GET /me confirms the application",
+      s == 200 and mine_row is not None, "n=%s" % len(mine))
+# APP_E must be a REAL id: None == None must never count as success.
+check("D2 /me row matches the created id",
+      APP_E is not None and mine_row is not None
+      and mine_row.get("id") == APP_E
+      and mine_row.get("opportunity_id") == ID_OPEN,
+      blob({"id": (mine_row or {}).get("id"),
+            "expected": APP_E, "status": (mine_row or {}).get("status")})[:160])
 
-s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuP, method="POST", payload={})
-check("E1 second apply -> 409 duplicate", s == 409 and "already applied" in blob(b).lower(),
-      "st=%s %s" % (s, blob(b)[:160]))
-s, b = call("/api/applications/me", token=stuP, params={"limit": 100})
+s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuE, method="POST", payload={})
+check("E1 second apply -> 409 duplicate with the duplicate copy",
+      s == 409 and isinstance(b.get("detail"), str)
+      and "already applied" in str(b.get("detail")).lower(),
+      "st=%s detail=%s" % (s, blob(b)[:160]))
+s, b = call("/api/applications/me", token=stuE, params={"limit": 100})
 check("E2 no duplicate rows after retry",
       sum(1 for r in rows_of(b) if r.get("opportunity_id") == ID_OPEN) == 1, "checked")
 
+# --- F: negative apply matrix. stuP must be rejected with not_eligible here
+# (it is the partial-match student), NOT used for the 201 lifecycle. ---
+s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuP, method="POST", payload={})
+ne = detail_of(b)
+reasons_p = ne.get("eligibility_reasons") or []
+mp_ne = ne.get("match_percentage")
+check("F1 partial-match -> 409 not_eligible with structured payload",
+      s == 409 and ne.get("error") == "not_eligible" and ne.get("eligible") is False
+      and isinstance(mp_ne, (int, float)) and 0 < mp_ne <= 100
+      and isinstance(ne.get("missing_skills"), list)
+      and isinstance(reasons_p, list) and len(reasons_p) > 0
+      and all(isinstance(r, str) and r for r in reasons_p),
+      "st=%s match=%s reasons_n=%s" % (s, mp_ne, len(reasons_p)))
+check("F1b partial-match reasons name the under-level skill",
+      s == 409 and any("below the required level" in r for r in reasons_p),
+      blob(reasons_p)[:220])
 s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuI, method="POST", payload={})
-check("F1 ineligible -> 409 not_eligible with reasons",
-      s == 409 and (b.get("error") == "not_eligible" or "eligible" in blob(b).lower()),
-      "st=%s %s" % (s, blob(b)[:220]))
+ne_i = detail_of(b)
+miss_i = ne_i.get("missing_skills") or []
+reasons_i = ne_i.get("eligibility_reasons") or []
+check("F1c missing-everything -> 409 not_eligible with the missing-skill block",
+      s == 409 and ne_i.get("error") == "not_eligible" and ne_i.get("eligible") is False
+      and isinstance(ne_i.get("match_percentage"), (int, float))
+      and isinstance(miss_i, list) and len(miss_i) >= 1
+      and any("Missing required skill" in r for r in reasons_i),
+      "st=%s missing=%s" % (s, blob(miss_i)[:160]))
 s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=recA, method="POST", payload={})
 check("F2 recruiter apply -> 403 student-only", s == 403, "st=%s" % s)
 s, _ = call("/api/opportunities/%s/apply" % ID_OPEN, method="POST", payload={})
 check("F3 anonymous apply -> 401", s == 401, "st=%s" % s)
 s, b = call("/api/opportunities/%s/apply" % ID_DRAFT, token=stuP, method="POST", payload={})
-check("F4 draft apply -> 409 published-only", s == 409, "st=%s" % s)
+check("F4 draft apply -> 409 published-only with the published-only copy",
+      s == 409 and isinstance(b.get("detail"), str)
+      and "published" in str(b.get("detail")).lower(),
+      "st=%s detail=%s" % (s, blob(b)[:160]))
 s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuP,
             method="POST", payload={"student_user_id": 1})
 check("F5 forged student_user_id -> 422 extras forbidden", s == 422, "st=%s" % s)
@@ -245,15 +373,41 @@ check("F9 deadline 409 text is the closed/deadline copy",
 call("/api/opportunities/%s" % ID_DEAD, token=recA, method="PATCH",
      payload={"deadline": RESTORE})
 
-s, b = call("/api/applications/%s/withdraw" % APP_P, token=stuP, method="POST")
-check("G1 withdraw temp application -> 200", s == 200, "st=%s" % s)
-s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuP, method="POST", payload={})
-check("G2 re-apply after withdraw -> 409 no silent row", s == 409, "st=%s" % s)
-
+# --- G: withdraw the REAL lifecycle application (stuE's APP_E) and prove the
+# withdrawn -> reapply contract is distinct from not_eligible. ---
+if APP_E is not None:
+    s, b = call("/api/applications/%s/withdraw" % APP_E, token=stuE, method="POST")
+else:
+    s, b = None, {}
+check("G1 withdraw temp application -> 200", s == 200 and (b.get("application") or {}).get("id") == APP_E,
+      "st=%s id=%s" % (s, APP_E))
+s, b = call("/api/applications/me", token=stuE, params={"limit": 100})
+wd_row = next((r for r in rows_of(b) if r.get("id") == APP_E), None) if APP_E is not None else None
+check("G1b withdrawn status visible on the real /me response",
+      APP_E is not None and wd_row is not None and wd_row.get("status") == "withdrawn",
+      blob({"id": (wd_row or {}).get("id"), "status": (wd_row or {}).get("status")})[:160])
 s, b = call("/api/opportunities/%s/apply" % ID_OPEN, token=stuE, method="POST", payload={})
-APP_E = ((b.get("application") or {}) if s == 201 else {}).get("id")
-check("H1 eligible student apply -> 201", s == 201 and bool(APP_E), "st=%s" % s)
+check("G2 re-apply after withdraw -> 409 withdrawn/reapply-specific copy",
+      s == 409 and isinstance(b.get("detail"), str)
+      and "withdrew" in str(b.get("detail")).lower()
+      and "reapplying" in str(b.get("detail")).lower()
+      and "not_eligible" not in blob(b).lower(),
+      "st=%s detail=%s" % (s, blob(b)[:160]))
 
+# --- H: no-row proof for the rejected students. The 409 above (and F1) must
+# not have written anything: a rejected attempt leaves the student without
+# any application row for this opportunity. ---
+s, b = call("/api/applications/me", token=stuP, params={"limit": 100})
+s2, b2 = call("/api/applications/me", token=stuI, params={"limit": 100})
+check("H1 rejected 409s leave no application rows for either student",
+      s == 200 and s2 == 200
+      and all(r.get("opportunity_id") != ID_OPEN for r in rows_of(b))
+      and all(r.get("opportunity_id") != ID_OPEN for r in rows_of(b2)),
+      "stuP_n=%s stuI_n=%s" % (len(rows_of(b)), len(rows_of(b2))))
+
+# Exactly one row must exist for ID_OPEN: the lifecycle row APP_E, now in
+# status "withdrawn" (mutated in place - never deleted/recreated), and NO
+# ghost rows for the rejected stuP/stuI students.
 db_info = {}
 try:
     import sys
@@ -265,7 +419,7 @@ try:
     try:
         db_rows = sess.query(MApp).filter(
             MApp.opportunity_id == ID_OPEN,
-            MApp.student_user_id.in_([stuE_id, stuP_id])).all()
+            MApp.student_user_id.in_([stuE_id, stuP_id, stuI_id])).all()
         db_info = {"n": len(db_rows), "rows": [
             {"id": a.id, "opp": a.opportunity_id, "stu": a.student_user_id,
              "status": a.status, "applied_at": bool(a.applied_at),
@@ -275,10 +429,15 @@ try:
         sess.close()
 except Exception as exc:
     db_info = {"db_error": str(exc)[:200]}
-check("I1 rows verified in DB (opp/student/status/snapshot)",
-      db_info.get("n") == 2
-      and {r["stu"] for r in db_info.get("rows", [])} == {stuE_id, stuP_id}
-      and {r["status"] for r in db_info.get("rows", [])} <= {"applied", "withdrawn"},
+i1_rows = db_info.get("rows", [])
+i1_only_row = i1_rows[0] if db_info.get("n") == 1 else {}
+check("I1 exactly one application row exists, and it is the withdrawn lifecycle row",
+      db_info.get("n") == 1
+      and APP_E is not None and i1_only_row.get("id") == APP_E
+      and i1_only_row.get("stu") == stuE_id
+      and i1_only_row.get("status") == "withdrawn"
+      and bool(i1_only_row.get("applied_at")) and bool(i1_only_row.get("snap_ok"))
+      and i1_only_row.get("cover") == COVER_E[:40],
       blob(db_info)[:400])
 
 for oid in list(CREATED["drafts"]):

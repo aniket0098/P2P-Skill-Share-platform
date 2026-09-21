@@ -15,7 +15,33 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = os.environ.get("TEST_BASE", "http://127.0.0.1:8000")
+# ---------------------------------------------------------------- target safety
+# Local-only by default. Pointing TEST_BASE at a non-local host requires an
+# explicit two-variable opt-in, because every e2e suite creates and deletes
+# real rows against the target it is given. This guard runs before any
+# request is sent and before any fixture is created.
+DEFAULT_BASE = "http://127.0.0.1:8000"
+LOCAL_HOSTS = ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+BASE = (os.environ.get("TEST_BASE") or "").strip() or DEFAULT_BASE
+TARGET_HOST = (urllib.parse.urlsplit(BASE).hostname or "").lower()
+IS_LOCAL = (TARGET_HOST in LOCAL_HOSTS
+            or TARGET_HOST.startswith("127.")
+            or TARGET_HOST.endswith(".localhost"))
+ALLOW_REMOTE = (os.environ.get("TEST_ALLOW_REMOTE") or "").strip() == "1"
+REMOTE_CONFIRM = (os.environ.get("TEST_CONFIRM") or "").strip().lower() == "yes-i-know"
+
+print("TEST TARGET:", BASE)
+print("TEST TARGET MODE:", "LOCAL" if IS_LOCAL
+      else ("REMOTE - EXPLICITLY AUTHORIZED"
+            if (ALLOW_REMOTE and REMOTE_CONFIRM) else "REMOTE"))
+if not IS_LOCAL and not (ALLOW_REMOTE and REMOTE_CONFIRM):
+    print("REFUSING TO RUN: TEST_BASE points at a non-local host (%s)." % TARGET_HOST)
+    print("These suites create and delete real fixtures on the target.")
+    print("To run against a remote target on purpose, set BOTH:")
+    print("    TEST_ALLOW_REMOTE=1")
+    print("    TEST_CONFIRM=yes-i-know")
+    raise SystemExit(2)
 RUN = "s27" + str(int(time.time()))[-7:]
 R = []
 CREATED = {"opps": [], "users": [], "drafts": []}
