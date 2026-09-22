@@ -47,6 +47,39 @@
 /* Values shown from the API/profiles can be long and space-less. */
 #jobsCompanyName,#jobsCompanySub{overflow-wrap:anywhere}
 #jobsModalTitle{overflow-wrap:anywhere}
+/* STAGE 9.3 — recruiter applicant review. Additive helpers only; every
+   value comes from GET /api/opportunities/{id}/applications or
+   PATCH /api/applications/{id}/status. Absent API fields are hidden,
+   never fabricated. */
+.app-skill-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.app-skill-tags .tag{max-width:100%;overflow-wrap:anywhere}
+.app-hint{font-size:10px;color:var(--text-muted);margin-top:4px}
+.app-err{font-size:11px;color:var(--danger);margin:6px 0 0;overflow-wrap:anywhere}
+.app-pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.jobs-review-modal{width:min(920px,100%);max-height:min(86vh,760px);overflow-y:auto}
+.jobs-review-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.jobs-review-col{min-width:0}
+.jobs-review-h{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px;overflow-wrap:anywhere}
+.jobs-fact{padding:9px 4px;border-bottom:1px solid var(--border);font-size:12px}
+.jobs-fact:last-child{border-bottom:none}
+.jobs-fact b{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:3px}
+.jobs-fact p{margin:0;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.jobs-applicant{display:flex;align-items:flex-start;gap:10px;padding:12px 10px;border-bottom:1px solid var(--border)}
+.jobs-applicant:last-child{border-bottom:none}
+.jobs-applicant .grow{flex:1;min-width:0}
+.jobs-applicant h3{font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.jobs-applicant p{margin-top:3px;font-size:11px;color:var(--text-secondary);overflow-wrap:anywhere}
+.jobs-applicant-meta{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);margin-top:6px}
+.jobs-applicant-meta span{overflow-wrap:anywhere}
+.jobs-applicant .badge{flex:0 0 auto;margin-top:2px}
+.jobs-applicant .btn{flex:0 0 auto}
+@media (max-width:760px){.jobs-review-grid{grid-template-columns:1fr}}
+@media (max-width:480px){
+  .jobs-applicant{flex-wrap:wrap}
+  .jobs-applicant .badge{order:3}
+  .jobs-applicant .btn{order:4}
+  #appStatusSelect,#appReasonInput{max-width:100%}
+}
 </style></head>
 <body data-page="jobs.html" data-role="recruiter">
 <div id="app-sidebar"></div><div class="app-main"><div id="app-topbar"></div>
@@ -89,6 +122,76 @@
 <div class="form-actions jobs-actions-row" style="justify-content:flex-end;margin-top:16px">
 <button class="btn ghost small" id="jobsConfirmCancel" type="button">Cancel</button>
 <button class="btn small" id="jobsConfirmOk" type="button">Confirm</button>
+</div>
+</div>
+</div>
+
+<!-- STAGE 9.3 — recruiter applicant review. Real data only, from
+     GET /api/opportunities/{id}/applications and
+     PATCH /api/applications/{id}/status (owner recruiter only).
+     The API returns no per-opportunity applicant counts, so cards show no
+     counts and no fake numbers are ever rendered. -->
+<section class="panel mt" id="applicantsPanel" hidden>
+<div class="section-head"><h2>Applicants — <span id="appOppTitle">—</span></h2><button class="btn ghost small" id="appCloseList" type="button">Close</button></div>
+<div class="jobs-toolbar" id="appToolbar" hidden>
+<div class="search-box"><span>⌕</span><input id="appSearch" type="search" placeholder="Search applicants by name or ID..." aria-label="Search applicants" autocomplete="off"></div>
+<select id="appStatusFilter" aria-label="Filter applicants by status">
+<option value="">All statuses</option><option value="applied">Applied</option><option value="reviewing">Reviewing</option><option value="shortlisted">Shortlisted</option><option value="interview">Interview</option><option value="selected">Selected</option><option value="rejected">Rejected</option><option value="withdrawn">Withdrawn</option>
+</select>
+</div>
+<div id="appListLoading" hidden><div class="row-item"><div class="grow"><div class="skeleton" style="width:40%"></div><div class="skeleton" style="width:62%;margin-top:8px"></div></div><div class="skeleton" style="width:86px;height:24px"></div></div>
+<div class="row-item"><div class="grow"><div class="skeleton" style="width:55%"></div><div class="skeleton" style="width:48%;margin-top:8px"></div></div><div class="skeleton" style="width:86px;height:24px"></div></div></div>
+<div class="empty-state" id="appListEmpty" hidden><div class="empty-icon">📭</div><h3>No applications yet</h3><p>Applications will appear here when students apply.</p></div>
+<div class="empty-state" id="appFilterEmpty" hidden><div class="empty-icon">🔎</div><h3>No applicants match your filters</h3><p>Try a different status or search term.</p></div>
+<div class="empty-state state-error" id="appListError" hidden><div class="empty-icon">⚠️</div><h3>Could not load applicants</h3><p id="appListErrorMsg">Something went wrong. Please try again.</p><button class="btn small primary mt" id="appRetry" type="button">Retry</button></div>
+<div class="row-list" id="appList" hidden></div>
+<div id="appLoadMoreWrap" hidden style="text-align:center"><button class="btn ghost small" id="appLoadMore" type="button">Load more</button></div>
+</section>
+
+<!-- STAGE 9.3 — applicant review modal (same modal system as the composer). -->
+<div class="modal-overlay" id="appReview" hidden>
+<div class="modal jobs-review-modal" role="dialog" aria-modal="true" aria-labelledby="appReviewTitle">
+<div class="modal-header"><h2 id="appReviewTitle">Applicant review</h2><button class="modal-close" id="appReviewX" type="button" aria-label="Close review">×</button></div>
+<div class="empty-state state-error" id="appReviewError" hidden style="padding:12px;margin-bottom:12px"><p id="appReviewErrorMsg" style="font-size:12px"></p><button class="btn small primary mt" id="appReviewRetry" type="button">Reload application</button></div>
+<div id="appReviewBody">
+<div class="jobs-review-grid">
+<div class="jobs-review-col">
+<h3 class="jobs-review-h">Applicant &amp; profile</h3>
+<div class="jobs-fact" id="appFactName"><b>Name</b><p>—</p></div>
+<div class="jobs-fact" id="appFactCollege" hidden><b>College</b><p></p></div>
+<div class="jobs-fact" id="appFactEdu" hidden><b>Education</b><p></p></div>
+<div class="jobs-fact" id="appFactCgpa" hidden><b>CGPA</b><p></p></div>
+<div class="jobs-fact" id="appFactRole" hidden><b>Target role</b><p></p></div>
+<div class="jobs-fact" id="appFactIndustry" hidden><b>Preferred industry</b><p></p></div>
+<div class="jobs-fact" id="appFactSkills" hidden><b>Skills</b><div class="app-skill-tags"></div></div>
+<div class="jobs-fact" id="appFactPublicId" hidden><b>Public ID</b><p></p></div>
+<h3 class="jobs-review-h mt">Application</h3>
+<div class="jobs-fact" id="appFactApplied" hidden><b>Applied</b><p></p></div>
+<div class="jobs-fact" id="appFactUpdated" hidden><b>Last update</b><p></p></div>
+<div class="jobs-fact" id="appFactCover" hidden><b>Cover note</b><p class="app-pre"></p></div>
+<div class="jobs-fact" id="appFactNote" hidden><b>Your note</b><p class="app-pre"></p></div>
+<div class="jobs-fact" id="appFactReject" hidden><b>Rejection reason</b><p class="app-pre"></p></div>
+<h3 class="jobs-review-h mt">Application snapshot <span class="muted" style="font-weight:400">(frozen at apply time — historical, not current)</span></h3>
+<div class="jobs-fact" id="appSnapEmpty" hidden><b>Snapshot</b><p>Not available for this application.</p></div>
+<div id="appSnapWrap" hidden>
+<div class="jobs-fact" id="appSnapApplied" hidden><b>Eligible at apply time</b><p></p></div>
+<div class="jobs-fact" id="appSnapMatch" hidden><b>Skill match</b><p></p></div>
+<div class="jobs-fact" id="appSnapMissing" hidden><b>Missing skills</b><p></p></div>
+</div>
+</div>
+<div class="jobs-review-col">
+<h3 class="jobs-review-h">Recruiter review</h3>
+<div class="jobs-fact"><b>Current status</b><div id="appReviewStatusBadge"></div></div>
+<div class="form-group"><label for="appStatusSelect">Move to</label><select id="appStatusSelect"></select></div>
+<div class="form-group" id="appReasonWrap" hidden><label for="appReasonInput">Rejection reason (required to reject)</label><input id="appReasonInput" maxlength="1000" placeholder="Why is this application rejected?" autocomplete="off"><div class="app-hint">1 / 1000 characters — the backend stores it only for rejected applications.</div></div>
+<div class="form-group"><label for="appNoteInput">Recruiter note (optional)</label><textarea id="appNoteInput" maxlength="2000" rows="3" placeholder="Visible only to your team's review trail (optional)..."></textarea><div class="app-hint"><span id="appNoteCount">0</span> / 2000 characters — leave empty to keep the existing note.</div></div>
+<p class="app-err" id="appReviewMsg" hidden></p>
+<div class="form-actions jobs-actions-row" style="justify-content:flex-start;margin-top:4px">
+<button class="btn small primary" id="appSaveStatus" type="button">Save status</button>
+<button class="btn ghost small" id="appReviewClose2" type="button">Close</button>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>

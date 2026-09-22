@@ -105,6 +105,13 @@ function jobsPage(opts) {
       setStatus(id, "closed");
       return Promise.resolve({ opportunity: { id: id, status: "closed" } });
     },
+    /* Stage 9.2: owner archive (published|closed -> archived, terminal). */
+    archiveOpportunity: (id) => {
+      calls.push(["archive", id]);
+      if (opts.archiveError) return Promise.reject(opts.archiveError);
+      setStatus(id, "archived");
+      return Promise.resolve({ opportunity: { id: id, status: "archived" } });
+    },
     deleteOpportunity: (id) => {
       calls.push(["delete", id]);
       if (opts.deleteError) return Promise.reject(opts.deleteError);
@@ -213,12 +220,14 @@ async function t_tabsAndFilters() {
   click(win, tabs.find((b) => b.getAttribute("data-status") === "published"));
   eq(cardEls(doc).length, 1, "Published tab filters to 1 published");
   eq(cardEls(doc)[0].getAttribute("data-id"), "22", "published card is the real published row");
-  eq(actionSet(cardEls(doc)[0]).join(","), "close,edit", "published actions = Edit + Close");
+  eq(actionSet(cardEls(doc)[0]).join(","), "applicants,archive,close,edit", "published actions = Applicants + Edit + Close + Archive");
   eq(doc.querySelectorAll("#jobsRows a[href*='opportunity-details.html?id=22']").length, 1, "View link carries the real id");
 
   click(win, tabs.find((b) => b.getAttribute("data-status") === "closed"));
   eq(cardEls(doc).length, 1, "Closed tab filters to 1 closed");
-  eq(actionSet(cardEls(doc)[0]).length, 0, "closed row: no action buttons (View only)");
+  eq(actionSet(cardEls(doc)[0]).length, 2, "closed row: Applicants + Archive only");
+  ok(actionSet(cardEls(doc)[0]).indexOf("archive") !== -1, "closed card offers archive");
+  ok(actionSet(cardEls(doc)[0]).indexOf("applicants") !== -1, "closed card offers applicants (applications are kept)");
   ok(/Closed/.test(cardEls(doc)[0].textContent), "closed badge shown");
   ok(!/Reopen/i.test(cardEls(doc)[0].textContent), "no fake Reopen action");
 
@@ -261,11 +270,11 @@ async function t_actionSets() {
   const byId = {};
   cardEls(doc).forEach((c) => { byId[c.getAttribute("data-id")] = c; });
   eq(actionSet(byId["11"]).join(","), "delete,edit,publish", "draft: Edit + Publish + Delete");
-  eq(actionSet(byId["22"]).join(","), "close,edit", "published: Edit + Close");
-  eq(actionSet(byId["33"]).length, 0, "closed: View only");
+  eq(actionSet(byId["22"]).join(","), "applicants,archive,close,edit", "published: Applicants + Edit + Close + Archive");
+  eq(actionSet(byId["33"]).join(","), "applicants,archive", "closed: Applicants + Archive only");
   eq(Object.keys(byId).length, 3, "all three real rows present as cards");
   ok(!/kebab|more-actions/i.test(byId["11"].innerHTML), "no kebab-menu markup");
-  ok(!/applicant|applications?/i.test(byId["11"].textContent + byId["22"].textContent), "no fabricated application counts");
+  ok(!/\d+\s*(applicant|application)/i.test(byId["11"].textContent + byId["22"].textContent), "no fabricated application counts");
   p.dom.window.close();
 }
 
@@ -294,7 +303,7 @@ async function t_publishFlow() {
   eq(firstOf(calls, "publish")[1], 11, "publish targets the real row id");
   eq(countOf(calls, "mine"), mineBefore, "no redundant reload after a successful publish");
   ok(/Published/.test(cardEls(doc).find((c) => c.getAttribute("data-id") === "11").textContent), "card badge flips to Published");
-  eq(actionSet(cardEls(doc).find((c) => c.getAttribute("data-id") === "11")).join(","), "close,edit", "actions update to Edit + Close");
+  eq(actionSet(cardEls(doc).find((c) => c.getAttribute("data-id") === "11")).join(","), "applicants,archive,close,edit", "actions update to Applicants + Edit + Close + Archive");
   ok(toasts.some((t) => /published/i.test(t)), "success toast shown");
   eq(p.consoleErrors.length, 0, "no console errors during publish");
   p.dom.window.close();
@@ -329,7 +338,7 @@ async function t_closeFlow() {
   eq(countOf(calls, "close"), 1, "close called once");
   eq(firstOf(calls, "close")[1], 22, "close targets the real row id");
   ok(/Closed/.test(cardEls(doc).find((c) => c.getAttribute("data-id") === "22").textContent), "badge flips to Closed");
-  eq(actionSet(cardEls(doc).find((c) => c.getAttribute("data-id") === "22")).length, 0, "closed card collapses to View only");
+  eq(actionSet(cardEls(doc).find((c) => c.getAttribute("data-id") === "22")).join(","), "applicants,archive", "closed card collapses to Applicants + Archive only");
   ok(toasts.some((t) => /closed/i.test(t)), "close toast shown");
   p.dom.window.close();
 }
@@ -861,11 +870,52 @@ async function t_publishPrechecks() {
   p2.dom.window.close();
 }
 
+async function t_archiveFlow() {
+  section("JOBS — archive (published -> archived, terminal)");
+  const p = jobsPage();
+  await flush();
+  const { window: win, doc, calls, toasts } = p;
+  const mineBefore = countOf(calls, "mine");
+  click(win, cardEls(doc).find((c) => c.getAttribute("data-id") === "22").querySelector("[data-act='archive']"));
+  ok(!$("jobsConfirm", doc).hidden, "confirm dialog opens before archiving");
+  eq($("jobsConfirmMsg", doc).textContent, "Archive this opportunity? It leaves public discovery and can no longer receive applications. Existing applications are kept.", "archive copy is explicit");
+  answer(win, doc, false);
+  await flush();
+  eq(countOf(calls, "archive"), 0, "cancelling archives nothing");
+
+  click(win, cardEls(doc).find((c) => c.getAttribute("data-id") === "22").querySelector("[data-act='archive']"));
+  answer(win, doc, true);
+  await flush();
+  eq(countOf(calls, "archive"), 1, "archive called once");
+  eq(firstOf(calls, "archive")[1], 22, "archive targets the real row id");
+  eq(countOf(calls, "mine"), mineBefore, "no redundant reload after a successful archive");
+  ok(/Archived/.test(cardEls(doc).find((c) => c.getAttribute("data-id") === "22").textContent), "card badge flips to Archived");
+  eq(actionSet(cardEls(doc).find((c) => c.getAttribute("data-id") === "22")).join(","), "applicants", "archived card keeps Applicants (applications are kept, lifecycle is terminal)");
+  ok(toasts.some((t) => /archived/i.test(t)), "archive toast shown");
+  p.dom.window.close();
+}
+
+async function t_archiveConflict() {
+  section("JOBS — archive invalid transition (409)");
+  const p = jobsPage({ archiveError: err(409, "Only published or closed opportunities can be archived") });
+  await flush();
+  const { window: win, doc, calls, toasts } = p;
+  const mineBefore = countOf(calls, "mine");
+  click(win, cardEls(doc).find((c) => c.getAttribute("data-id") === "22").querySelector("[data-act='archive']"));
+  answer(win, doc, true);
+  await flush();
+  ok(toasts.some((t) => /archived|state has changed/i.test(t)), "409 explained to the recruiter");
+  eq(countOf(calls, "mine"), mineBefore + 1, "list resynced after 409");
+  ok(cardEls(doc).length === 3, "row kept because the server refused");
+  p.dom.window.close();
+}
+
 async function main() {
   console.log("STAGE 2.7 — jsdom behavioural suite");
   const tests = [
     t_bootAndRender, t_emptyState, t_tabsAndFilters, t_actionSets,
-    t_publishFlow, t_publishError, t_closeFlow, t_deleteFlow, t_deleteConflict,
+    t_publishFlow, t_publishError, t_closeFlow, t_archiveFlow, t_archiveConflict,
+    t_deleteFlow, t_deleteConflict,
     t_editPrefillAndSave, t_editPublished, t_createDraft, t_skillSearchAndPublish,
     t_listErrors, t_saveErrors, t_nonRecruiter, t_detailFailureLocksComposer,
     t_errorCopyFilter, t_publishPrechecks,

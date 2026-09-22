@@ -64,6 +64,15 @@ OPPORTUNITY_TYPES = (
 )
 WORK_MODES = ("remote", "hybrid", "onsite")
 LISTABLE_STATUS = "published"
+# Opportunity lifecycle vocabulary (Stage 9.2 archival hardening).
+# draft | published | closed | archived - only "published" is publicly
+# listable. "archived" is the terminal retention state: the opportunity
+# leaves circulation (and can no longer receive applications) while its
+# application history stays intact - hard DELETE remains draft-only
+# because deleting a published/closed row would CASCADE away applications.
+OPPORTUNITY_STATUSES = ("draft", "published", "closed", "archived")
+ARCHIVED_STATUS = "archived"
+ARCHIVABLE_STATUSES = ("published", "closed")
 REQUIRED_LEVELS = ("beginner", "intermediate", "advanced", "expert")
 IMPORTANCE_LEVELS = ("critical", "high", "medium", "low")
 SKILL_TYPES = ("required", "preferred")
@@ -1889,6 +1898,48 @@ def register_opportunities(app, get_db, me_dep):
             db.rollback()
             raise HTTPException(
                 status_code=500, detail="Could not close opportunity"
+            )
+        db.refresh(opp)
+        return {"opportunity": _serialize_detail(opp)}
+
+    @app.post("/api/opportunities/{opportunity_id}/archive")
+    def archive_opportunity(
+        opportunity_id: int,
+        cu=Depends(me_dep),
+        db: Session = Depends(get_db),
+    ):
+        """Owner-scoped archival - the terminal lifecycle state (Stage 9.2).
+
+        DRAFT -> PUBLISHED -> CLOSED is the hiring flow; hard DELETE stays
+        draft-only because deleting a published/closed row would CASCADE
+        away its applications. Archiving takes a PUBLISHED or CLOSED
+        opportunity out of circulation (it can no longer receive
+        applications) while every application row stays intact and
+        readable by its owner. Archived is terminal: no un-archive, no
+        delete, no re-publish.
+        """
+        _require_recruiter(cu)
+        opp = _get_owned_opportunity(db, opportunity_id, cu)
+        if opp.status == ARCHIVED_STATUS:
+            raise HTTPException(
+                status_code=409, detail="Opportunity is already archived"
+            )
+        if opp.status not in ARCHIVABLE_STATUSES:
+            raise HTTPException(
+                status_code=409,
+                detail="Only published or closed opportunities can be archived",
+            )
+        try:
+            opp.status = ARCHIVED_STATUS
+            db.flush()
+            db.commit()
+        except HTTPException:
+            db.rollback()
+            raise
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=500, detail="Could not archive opportunity"
             )
         db.refresh(opp)
         return {"opportunity": _serialize_detail(opp)}

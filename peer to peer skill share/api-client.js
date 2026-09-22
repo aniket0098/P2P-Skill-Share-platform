@@ -797,6 +797,46 @@ window.SkillShareAPI = (() => {
             request(`/api/opportunities/${encodeURIComponent(id)}/close`, {
                 method: "POST",
             }),
+        /* POST /api/opportunities/{id}/archive — published|closed ->
+           archived (Stage 9.2). Archived opportunities leave public
+           discovery and cannot receive applications; their existing
+           applications remain intact. Archived is terminal. */
+        archiveOpportunity: (id) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}/archive`, {
+                method: "POST",
+            }),
+        /* GET /api/opportunities/{id}/applications — Stage 9.3 recruiter
+           applicant list (owner recruiter only; server-side authorization).
+           Optional status/search filters + limit/offset pagination exactly
+           as the backend accepts them (limit clamped 1..100 server-side). */
+        getOpportunityApplications: (id, params = {}) => {
+            const query = new URLSearchParams();
+            if (params.status) query.set("status", params.status);
+            if (params.search) query.set("search", params.search);
+            if (params.limit) query.set("limit", String(params.limit));
+            if (params.offset) query.set("offset", String(params.offset));
+            const qs = query.toString();
+            return request(
+                `/api/opportunities/${encodeURIComponent(id)}/applications` + (qs ? `?${qs}` : "")
+            );
+        },
+        /* PATCH /api/applications/{id}/status — Stage 9.3 recruiter status
+           transition. Payload: { status, recruiter_note?, rejection_reason? }.
+           Empty optional strings are OMITTED (an omitted recruiter_note
+           preserves the previous note server-side; rejection_reason is
+           required by the backend only when moving to "rejected"). Unknown
+           fields are never sent — the backend forbids extras (422). */
+        updateApplicationStatus: (id, payload = {}) => {
+            const body = { status: payload.status };
+            const note = payload.recruiter_note == null ? "" : String(payload.recruiter_note).trim();
+            if (note) body.recruiter_note = note;
+            const reason = payload.rejection_reason == null ? "" : String(payload.rejection_reason).trim();
+            if (reason) body.rejection_reason = reason;
+            return request(`/api/applications/${encodeURIComponent(id)}/status`, {
+                method: "PATCH",
+                body: JSON.stringify(body),
+            });
+        },
         /* DELETE /api/opportunities/{id} — owner only, DRAFT-only (backend
            answers 409 for published/closed). Additive Stage 2.7. */
         deleteOpportunity: (id) =>

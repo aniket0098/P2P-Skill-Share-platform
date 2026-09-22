@@ -42,7 +42,15 @@ var S = {
   skills: [],                 /* skills in the open composer */
   skillSearchTimer: null,
   confirmResolve: null,
-  confirmPrev: null
+  confirmPrev: null,
+  /* STAGE 9.3 — recruiter applicant review (additive). Rows keep the exact
+     _serialize_applicant shape the backend returns: { application, opportunity,
+     student }. No mock rows, no fabricated fields, no applicant counts. */
+  applicants: {
+    oppId: null, rows: [], total: 0, offset: 0, has_more: false,
+    status: "", q: "", loading: false, loaded: false, searchTimer: null
+  },
+  review: { item: null, busy: false }
 };
 window.__jobs = window.__jobs || {};
 window.__jobs.state = S;
@@ -92,6 +100,7 @@ function statusBadge(st) {
   st = clean(st).toLowerCase();
   if (st === "published") return '<span class="badge green">Published</span>';
   if (st === "closed") return '<span class="badge grey">Closed</span>';
+  if (st === "archived") return '<span class="badge grey">Archived</span>';
   return '<span class="badge amber">Draft</span>';
 }
 function fmtDate(iso) {
@@ -134,13 +143,22 @@ function cardHtml(r) {
       (names.length > 4 ? '<span class="muted">+' + (names.length - 4) + " more</span>" : "")
     : '<span class="muted">No required skills yet</span>';
   var actions = '<a class="btn small ghost" href="opportunity-details.html?id=' + id + '">View</a>';
+  /* STAGE 9.3 — every non-draft row exposes the real applicant list
+     (published/closed/archived all keep their applications). Drafts can
+     never receive applications, so no Applicants entry there. */
+  if (st !== "draft") {
+    actions += '<button class="btn small primary" data-act="applicants" data-id="' + id + '" type="button">Applicants</button>';
+  }
   if (st === "draft") {
     actions += '<button class="btn small" data-act="edit" data-id="' + id + '" type="button">Edit</button>' +
       '<button class="btn small primary" data-act="publish" data-id="' + id + '" type="button">Publish</button>' +
       '<button class="btn small danger" data-act="delete" data-id="' + id + '" type="button">Delete</button>';
   } else if (st === "published") {
     actions += '<button class="btn small" data-act="edit" data-id="' + id + '" type="button">Edit</button>' +
-      '<button class="btn small danger" data-act="close" data-id="' + id + '" type="button">Close</button>';
+      '<button class="btn small danger" data-act="close" data-id="' + id + '" type="button">Close</button>' +
+      '<button class="btn small ghost" data-act="archive" data-id="' + id + '" type="button">Archive</button>';
+  } else if (st === "closed") {
+    actions += '<button class="btn small ghost" data-act="archive" data-id="' + id + '" type="button">Archive</button>';
   }
   return '<article class="jobs-card" data-id="' + id + '">' +
     '<div class="jobs-card-head"><div class="grow"><h3>' + esc(r.title || "Untitled role") + "</h3>" +
@@ -463,6 +481,26 @@ function cardClose(id) {
     });
   });
 }
+function cardArchive(id) {
+  return askConfirm({
+    title: "Archive opportunity?",
+    message: "Archive this opportunity? It leaves public discovery and can no longer receive applications. Existing applications are kept.",
+    okLabel: "Archive"
+  }).then(function (ok) {
+    if (!ok) return;
+    return API.archiveOpportunity(id).then(function () {
+      S.rows = S.rows.map(function (r) {
+        if (Number(r.id) === id) r = Object.assign({}, r, { status: "archived" });
+        return r;
+      });
+      renderList();
+      toast("Opportunity archived.");
+    }).catch(function (e) {
+      toast(actionToast(e, "Could not archive this opportunity."));
+      loadList();  /* resync after 409 */
+    });
+  });
+}
 function cardDelete(id) {
   return askConfirm({
     title: "Delete opportunity?",
@@ -606,6 +644,368 @@ function openComposerForEdit(id) {
   });
 }
 
+/* ================================================================
+   STAGE 9.3 — RECRUITER APPLICANT REVIEW (additive)
+   Real data only: GET /api/opportunities/{id}/applications and
+   PATCH /api/applications/{id}/status. The server stays authoritative:
+   this code only mirrors the central APPLICATION_STATUS_TRANSITIONS map
+   for control enablement, never recomputes eligibility, never invents
+   applicant data, and always renders the server's response as truth
+   after a mutation.
+   ================================================================ */
+var APP_TRANSITIONS = {
+  applied: ["reviewing", "rejected"],
+  reviewing: ["shortlisted", "rejected"],
+  shortlisted: ["interview", "rejected"],
+  interview: ["selected", "rejected"],
+  selected: [],
+  rejected: [],
+  withdrawn: []
+};
+var APP_STATUS_META = {
+  applied: { label: "Applied", badge: "blue" },
+  reviewing: { label: "Reviewing", badge: "blue" },
+  shortlisted: { label: "Shortlisted", badge: "purple" },
+  interview: { label: "Interview", badge: "amber" },
+  selected: { label: "Selected", badge: "green" },
+  rejected: { label: "Rejected", badge: "red" },
+  withdrawn: { label: "Withdrawn", badge: "grey" }
+};
+var APP_PAGE_LIMIT = 20;   /* backend clamps 1..100; list paginate via has_more */
+
+function appMeta(st) {
+  st = clean(st).toLowerCase();
+  return APP_STATUS_META[st] ||
+    { label: st ? st.charAt(0).toUpperCase() + st.slice(1) : "Unknown", badge: "grey" };
+}
+function appTargets(st) {
+  return APP_TRANSITIONS[clean(st).toLowerCase()] || [];
+}
+function appBadge(st) {
+  var m = appMeta(st);
+  return '<span class="badge ' + m.badge + '">' + esc(m.label) + "</span>";
+}
+function truncate(s, n) {
+  s = String(s || "");
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+function appFind(id) {
+  for (var i = 0; i < S.applicants.rows.length; i++) {
+    var a = S.applicants.rows[i] && S.applicants.rows[i].application;
+    if (a && Number(a.id) === id) return S.applicants.rows[i];
+  }
+  return null;
+}
+
+/* ---------------- applicant list ---------------- */
+function appListState(which) {
+  show($("appListLoading"), which === "loading");
+  show($("appListEmpty"), which === "empty");
+  show($("appFilterEmpty"), which === "filter");
+  show($("appListError"), which === "error");
+  show($("appList"), which === "list");
+  show($("appLoadMoreWrap"), which === "list" && S.applicants.has_more);
+}
+function openApplicants(opp) {
+  S.applicants.oppId = Number(opp.id);
+  var t = $("appOppTitle");
+  if (t) t.textContent = opp.title || "Untitled role";
+  S.applicants.rows = [];
+  S.applicants.total = 0;
+  S.applicants.offset = 0;
+  S.applicants.has_more = false;
+  S.applicants.status = "";
+  S.applicants.q = "";
+  S.applicants.loaded = false;
+  var sel = $("appStatusFilter");
+  if (sel) sel.value = "";
+  var box = $("appSearch");
+  if (box) box.value = "";
+  show($("applicantsPanel"), true);
+  show($("appToolbar"), true);
+  try { $("applicantsPanel").scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+  loadApplicants(0);
+}
+function closeApplicants() {
+  S.applicants.oppId = null;
+  S.applicants.rows = [];
+  show($("applicantsPanel"), false);
+  var m = $("appReview");
+  if (m && !m.hidden) closeReview();
+}
+function applicantRow(it) {
+  var a = (it && it.application) || {};
+  var stu = (it && it.student) || null;
+  var prof = (stu && stu.profile) || {};
+  var name = clean(stu && stu.name) || (a.id != null ? "Applicant #" + a.id : "Applicant");
+  var bits = [];
+  var edu = [clean(prof.degree), clean(prof.branch)].filter(Boolean).join(" · ");
+  if (edu) bits.push(edu);
+  if (clean(prof.college)) bits.push(clean(prof.college));
+  if (a.applied_at) bits.push("applied " + fmtDate(a.applied_at));
+  if (clean(a.status) === "rejected" && clean(a.rejection_reason)) {
+    bits.push("reason: " + truncate(clean(a.rejection_reason), 60));
+  }
+  return '<article class="jobs-applicant" data-app-id="' + clean(a.id) + '">' +
+    '<div class="grow"><h3>' + esc(name) + "</h3>" +
+    (bits.length ? "<p>" + esc(bits.join(" · ")) + "</p>" : "") +
+    "</div>" + appBadge(a.status) +
+    '<button class="btn small ghost" data-app-review="' + clean(a.id) + '" type="button">Review</button>' +
+    "</article>";
+}
+function renderApplicants() {
+  var host = $("appList");
+  if (host) host.innerHTML = S.applicants.rows.map(applicantRow).join("");
+}
+function loadApplicants(offset) {
+  if (!S.applicants.oppId || !API || typeof API.getOpportunityApplications !== "function") {
+    return Promise.resolve();
+  }
+  if (S.applicants.loading) return Promise.resolve();
+  var fresh = !offset;
+  S.applicants.loading = true;
+  if (fresh) {
+    S.applicants.rows = [];
+    S.applicants.offset = 0;
+    appListState("loading");
+  }
+  var params = { limit: APP_PAGE_LIMIT, offset: offset || 0 };
+  if (S.applicants.status) params.status = S.applicants.status;
+  if (S.applicants.q) params.search = S.applicants.q;
+  return API.getOpportunityApplications(S.applicants.oppId, params).then(function (data) {
+    var items = (data && data.items) || [];
+    S.applicants.rows = fresh ? items : S.applicants.rows.concat(items);
+    S.applicants.total = (data && data.total) || 0;
+    S.applicants.has_more = Boolean(data && data.has_more);
+    S.applicants.offset = (offset || 0) + items.length;
+    S.applicants.loading = false;
+    S.applicants.loaded = true;
+    if (!S.applicants.rows.length) {
+      appListState(fresh ? (S.applicants.status || S.applicants.q ? "filter" : "empty") : "list");
+    } else {
+      appListState("list");
+    }
+    renderApplicants();
+  }).catch(function (e) {
+    S.applicants.loading = false;
+    if (fresh) {
+      appListState("error");
+      var em = $("appListErrorMsg");
+      if (em) em.textContent = msgFor(e) || "Something went wrong. Please try again.";
+    } else {
+      toast(actionToast(e, "Could not load more applicants."));
+    }
+  });
+}
+
+/* ---------------- applicant review modal ---------------- */
+function setFact(id, value) {
+  var el = $(id);
+  if (!el) return;
+  if (value == null || clean(value) === "") { el.hidden = true; return; }
+  var p = el.querySelector("p");
+  if (p) p.textContent = String(value);
+  el.hidden = false;
+}
+function setReviewMsg(text) {
+  var el = $("appReviewMsg");
+  if (!el) return;
+  el.textContent = text || "";
+  el.hidden = !text;
+}
+function updateNoteCount() {
+  var ta = $("appNoteInput"), c = $("appNoteCount");
+  if (ta && c) c.textContent = String((ta.value || "").length);
+}
+/* Renders ONLY fields the existing API actually provides. Absent fields
+   stay hidden — no fake values, no raw JSON dump. */
+function openReview(item) {
+  var a = (item && item.application) || {};
+  var stu = (item && item.student) || null;
+  var prof = (stu && stu.profile) || {};
+  var snap = (a.snapshot && typeof a.snapshot === "object") ? a.snapshot : null;
+  var elig = (snap && snap.eligibility) || {};
+  S.review.item = item;
+  S.review.busy = false;
+  var title = $("appReviewTitle");
+  if (title) title.textContent = "Applicant review — " + (clean(stu && stu.name) || "Applicant");
+  /* applicant + current profile (server serializer fields only) */
+  setFact("appFactName", clean(stu && stu.name) || (a.id != null ? "Applicant #" + a.id : null));
+  setFact("appFactPublicId", stu && stu.public_id);
+  setFact("appFactCollege", prof.college);
+  var edu = [clean(prof.degree), clean(prof.branch),
+    prof.graduation_year != null ? "Class of " + prof.graduation_year : ""]
+    .filter(Boolean).join(" · ");
+  setFact("appFactEdu", edu);
+  setFact("appFactCgpa", (prof.cgpa != null && prof.cgpa !== "") ? prof.cgpa + " / 10" : null);
+  setFact("appFactRole", prof.target_job_role);
+  setFact("appFactIndustry", prof.preferred_industry);
+  var skills = (prof.top_skills || []).filter(function (s) { return clean(s); });
+  var tags = $("appFactSkills") ? $("appFactSkills").querySelector(".app-skill-tags") : null;
+  if (tags) {
+    tags.innerHTML = skills.map(function (s) {
+      return '<span class="tag">' + esc(s) + "</span>";
+    }).join("");
+  }
+  if ($("appFactSkills")) $("appFactSkills").hidden = !skills.length;
+  /* application facts */
+  setFact("appFactApplied", a.applied_at ? fmtDate(a.applied_at) : null);
+  setFact("appFactUpdated", a.status_changed_at ? "Status changed " + fmtDate(a.status_changed_at) : null);
+  setFact("appFactCover", a.cover_note);
+  setFact("appFactNote", a.recruiter_note);
+  setFact("appFactReject", a.rejection_reason);
+  /* apply-time snapshot: historical evidence, never regenerated */
+  var hasSnap = Boolean(snap && (snap.captured_at || elig.eligible != null ||
+    elig.match_percentage != null || elig.missing_skills));
+  show($("appSnapEmpty"), !hasSnap);
+  show($("appSnapWrap"), hasSnap);
+  if (hasSnap) {
+    var verdict = elig.eligible === true ? "Met all published requirements"
+      : elig.eligible === false ? "Did not meet every requirement" : null;
+    var when = snap.captured_at ? fmtDate(snap.captured_at) : "";
+    setFact("appSnapApplied", verdict ? verdict + (when ? " (" + when + ")" : "") : null);
+    var pct = elig.match_percentage;
+    setFact("appSnapMatch", (pct != null && isFinite(Number(pct)))
+      ? Math.round(Number(pct)) + "% skill match at apply time" : null);
+    var missing = (elig.missing_skills || []).map(function (m) {
+      return m && (m.skill_name || m.skill_id);
+    }).filter(Boolean);
+    setFact("appSnapMissing", missing.length ? missing.join(", ") : null);
+  }
+  /* recruiter review controls (frontend mirrors the server transition map) */
+  var badge = $("appReviewStatusBadge");
+  if (badge) {
+    badge.innerHTML = appBadge(a.status) +
+      (a.status_changed_at ? ' <span class="muted" style="font-size:10px">since ' +
+        esc(fmtDate(a.status_changed_at)) + "</span>" : "");
+  }
+  var sel = $("appStatusSelect");
+  var targets = appTargets(a.status);
+  if (sel) {
+    sel.innerHTML = targets.length
+      ? targets.map(function (t) {
+        return '<option value="' + t + '">' + esc(appMeta(t).label) + "</option>";
+      }).join("")
+      : '<option value="">— final —</option>';
+    sel.disabled = !targets.length;
+  }
+  S.review.origNote = clean(a.recruiter_note);
+  var reasonIn = $("appReasonInput");
+  if (reasonIn) reasonIn.value = clean(a.rejection_reason);
+  show($("appReasonWrap"), targets.indexOf("rejected") !== -1);
+  var noteIn = $("appNoteInput");
+  if (noteIn) noteIn.value = clean(a.recruiter_note);
+  updateNoteCount();
+  setReviewMsg("");
+  var errBox = $("appReviewError");
+  if (errBox) errBox.hidden = true;
+  show($("appReviewBody"), true);
+  var save = $("appSaveStatus");
+  if (save) { save.disabled = false; save.textContent = "Save status"; }
+  show($("appReview"), true);
+}
+function closeReview() {
+  S.review.item = null;
+  S.review.busy = false;
+  show($("appReview"), false);
+}
+/* Server truth after every mutation: the PATCH response (the same
+   _serialize_applicant shape) replaces the local row; the list is
+   resynced when a status filter may exclude the moved row. */
+function saveStatus() {
+  var item = S.review.item;
+  if (!item || S.review.busy) return;
+  var a = item.application || {};
+  var sel = $("appStatusSelect");
+  var target = sel ? clean(sel.value) : "";
+  if (!target) return;
+  var payload = { status: target };
+  /* The note is sent only when the recruiter actually changed it — the
+     backend preserves the previous note when the field is omitted, and a
+     cleared field can never wipe it (server keeps it too). */
+  var note = clean($("appNoteInput") ? $("appNoteInput").value : "");
+  if (note && note !== S.review.origNote) payload.recruiter_note = note;
+  if (target === "rejected") {
+    var reason = clean($("appReasonInput") ? $("appReasonInput").value : "");
+    if (!reason) {
+      setReviewMsg("A rejection reason is required before rejecting.");
+      return;
+    }
+    payload.rejection_reason = reason;
+  }
+  S.review.busy = true;
+  var save = $("appSaveStatus");
+  if (save) { save.disabled = true; save.textContent = "Saving…"; }
+  setReviewMsg("");
+  API.updateApplicationStatus(a.id, payload).then(function (res) {
+    S.review.busy = false;
+    var updated = (res && res.application) ? res : {
+      application: Object.assign({}, a, { status: target }),
+      opportunity: item.opportunity, student: item.student
+    };
+    S.review.item = updated;
+    var id = Number(updated.application.id);
+    S.applicants.rows = S.applicants.rows.map(function (r) {
+      return r && r.application && Number(r.application.id) === id ? updated : r;
+    });
+    renderApplicants();
+    if (S.applicants.status) loadApplicants(0);
+    openReview(updated);
+    toast("Application moved to " + appMeta(updated.application.status).label + ".");
+  }).catch(function (e) {
+    S.review.busy = false;
+    if (save) save.disabled = false;
+    handleStatusError(e);
+  }).then(function () {
+    if (save) save.textContent = "Save status";
+  });
+}
+function handleStatusError(e) {
+  var st = e && e.status;
+  if (st === 401) {
+    setReviewMsg("Your session has expired. Please sign in again.");
+    toast("Your session has expired. Please sign in again.");
+    return;
+  }
+  if (st === 403) { setReviewMsg("Only the opportunity owner can update this application."); return; }
+  if (st === 404) { setReviewMsg("This application no longer exists."); return; }
+  if (st === 409) {
+    /* Stale view / concurrent move: the server is truth — refetch the
+       list and re-render from the fresh row; close if the row left the
+       current filtered view. Never fake success. */
+    setReviewMsg(readableDetail(e) || "Application status changed — reloading the latest state.");
+    reloadConflicted();
+    return;
+  }
+  if (st === 422) {
+    setReviewMsg(readableDetail(e) || "Please check the rejection reason and note, then try again.");
+    return;
+  }
+  if (st === 0 || (st && st >= 500)) {
+    setReviewMsg("Something went wrong. Please try again.");
+    return;
+  }
+  setReviewMsg(readableDetail(e) || "Could not update the application status.");
+}
+function reloadConflicted() {
+  var id = S.review.item ? Number((S.review.item.application || {}).id) : null;
+  var save = $("appSaveStatus");
+  if (save) save.disabled = true;
+  loadApplicants(0).then(function () {
+    if (save) save.disabled = false;
+    if (id == null) return;
+    var fresh = appFind(id);
+    if (fresh) {
+      S.review.item = fresh;
+      openReview(fresh);
+      setReviewMsg("Application was updated elsewhere — showing the latest status.");
+    } else {
+      closeReview();
+      toast("This application is no longer in the current view.");
+    }
+  });
+}
+
 /* ---------------- list click handler ---------------- */
 function onListClick(ev) {
   var t = ev.target;
@@ -619,6 +1019,15 @@ function onListClick(ev) {
   if (act === "edit") { openComposerForEdit(id); }
   else if (act === "publish") { closeComposer(); cardPublish(id); }
   else if (act === "close") { closeComposer(); cardClose(id); }
+  else if (act === "archive") { closeComposer(); cardArchive(id); }
+  else if (act === "applicants") {
+    /* STAGE 9.3 — opportunity -> applicants navigation. */
+    var row = null;
+    for (var i = 0; i < S.rows.length; i++) {
+      if (Number(S.rows[i].id) === id) { row = S.rows[i]; break; }
+    }
+    if (row) { closeComposer(); closeReview(); openApplicants(row); }
+  }
   else if (act === "delete") { cardDelete(id); }
 }
 
@@ -643,6 +1052,54 @@ function closeOpportunityComposer() {
 
 /* ---------------- DOM wiring ---------------- */
 function bindUI() {
+  /* ---- STAGE 9.3: applicant review wiring (additive) ---- */
+  var appClose = $("appCloseList");
+  if (appClose) appClose.addEventListener("click", closeApplicants);
+  var appRetry = $("appRetry");
+  if (appRetry) appRetry.addEventListener("click", function () { loadApplicants(0); });
+  var appMore = $("appLoadMore");
+  if (appMore) appMore.addEventListener("click", function () { loadApplicants(S.applicants.offset); });
+  var appFilter = $("appStatusFilter");
+  if (appFilter) appFilter.addEventListener("change", function () {
+    S.applicants.status = clean(this.value).toLowerCase();
+    loadApplicants(0);
+  });
+  var appSearch = $("appSearch");
+  if (appSearch) appSearch.addEventListener("input", function () {
+    if (S.applicants.searchTimer) clearTimeout(S.applicants.searchTimer);
+    S.applicants.searchTimer = setTimeout(function () {
+      S.applicants.q = clean(appSearch.value);
+      loadApplicants(0);
+    }, 300);
+  });
+  var appList = $("appList");
+  if (appList) appList.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest("[data-app-review]") : null;
+    if (!b) return;
+    var item = appFind(Number(b.getAttribute("data-app-review")));
+    if (item) openReview(item);
+  });
+  var appReviewX = $("appReviewX");
+  if (appReviewX) appReviewX.addEventListener("click", closeReview);
+  var appReviewClose2 = $("appReviewClose2");
+  if (appReviewClose2) appReviewClose2.addEventListener("click", closeReview);
+  var appReviewOv = $("appReview");
+  if (appReviewOv) appReviewOv.addEventListener("click", function (ev) {
+    if (ev.target === appReviewOv) closeReview();
+  });
+  var appSave = $("appSaveStatus");
+  if (appSave) appSave.addEventListener("click", saveStatus);
+  var appNote = $("appNoteInput");
+  if (appNote) appNote.addEventListener("input", updateNoteCount);
+  var appReviewRetry = $("appReviewRetry");
+  if (appReviewRetry) appReviewRetry.addEventListener("click", function () {
+    var id = S.review.item ? Number((S.review.item.application || {}).id) : null;
+    loadApplicants(0).then(function () {
+      var fresh = id != null ? appFind(id) : null;
+      if (fresh) { S.review.item = fresh; openReview(fresh); }
+      else closeReview();
+    });
+  });
   var tabs = document.querySelectorAll("#jobsTabs button");
   tabs.forEach(function (btn) {
     btn.addEventListener("click", function () {
