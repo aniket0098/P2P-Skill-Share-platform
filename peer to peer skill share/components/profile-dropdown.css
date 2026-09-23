@@ -206,3 +206,43 @@
         right: -4px;
     }
 }
+
+/* Stage 33: boundary pencil on the navbar avatar circle ============ */
+.profile-btn .avatar-slot {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.profile-btn .avatar-edit {
+    position: absolute;
+    right: -5px;
+    bottom: -3px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #7657ff;
+    border: 2px solid #0f1322;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    cursor: pointer;
+    z-index: 3;
+    transition: transform .15s ease, filter .15s ease;
+}
+
+.profile-btn .avatar-edit svg {
+    width: 7.5px;
+    height: 7.5px;
+    fill: #fff;
+}
+
+.profile-btn .avatar-edit:hover {
+    transform: scale(1.15);
+    filter: brightness(1.12);
+}
+
+.profile-btn .avatar-edit:focus-visible {
+    outline: 2px solid #9278ff;
+    outline-offset: 1px;
+}

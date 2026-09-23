@@ -2565,7 +2565,7 @@ body.pf-modal-open {
         display: none;
     }
 
-    .mini-profile > span:not(.mini-avatar):not(.profile-arrow) {
+    .mini-profile > span:not(.mini-avatar):not(.mini-avatar-slot):not(.profile-arrow) {
         display: none;
     }
 
@@ -2773,4 +2773,75 @@ html[data-text-scale="large"] .profile-page {
 }
 
 
+
+
+
+/* ===== Stage 33: avatar edit pencil (boundary badge) =================
+   Sits ON the edge of the short-name / photo circle. The badge lives in
+   a positioned SLOT wrapper (never inside the overflow-hidden circle),
+   so it is never clipped. Inline SVG pencil works offline. ============ */
+.mini-avatar-slot {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.mini-avatar-edit,
+.pf-avatar-edit {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    background: #7657ff;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .35);
+    cursor: pointer;
+    z-index: 3;
+    transition: transform .15s ease, filter .15s ease;
+}
+
+.mini-avatar-edit {
+    right: -6px;
+    bottom: -4px;
+    width: 17px;
+    height: 17px;
+}
+
+.pf-avatar-edit {
+    right: -9px;
+    bottom: -9px;
+    width: 30px;
+    height: 30px;
+}
+
+.mini-avatar-edit svg {
+    width: 7.5px;
+    height: 7.5px;
+    fill: #fff;
+}
+
+.pf-avatar-edit svg {
+    width: 12px;
+    height: 12px;
+    fill: #fff;
+}
+
+.mini-avatar-edit:hover,
+.pf-avatar-edit:hover {
+    transform: scale(1.12);
+    filter: brightness(1.12);
+}
+
+.mini-avatar-edit:focus-visible,
+.pf-avatar-edit:focus-visible {
+    outline: 2px solid #20c9ff;
+    outline-offset: 2px;
+}
+
+.mini-avatar-edit[hidden],
+.pf-avatar-edit[hidden] {
+    display: none;
+}
 

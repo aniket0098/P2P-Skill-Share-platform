@@ -328,6 +328,59 @@
         av.appendChild(img);
     }
 
+    /* Corner chip in the top bar — the SIGNED-IN member's short-name
+       circle (never the viewed profile). Filled from the session so it
+       works before the payload lands; "skillshare:avatar-updated"
+       refreshes it after a photo change. */
+    function sessionUser() {
+        try {
+            return (window.SkillShareAPI && window.SkillShareAPI.getUser)
+                ? window.SkillShareAPI.getUser() : null;
+        } catch (e) { return null; }
+    }
+
+    function renderTopNavIdentity() {
+        var av = $("topNavAvatar");
+        var nameEl = $("topNavName");
+        var ownPayload = (state.payload && state.payload.mode === "own")
+            ? state.payload.user : null;
+        var u = ownPayload || sessionUser();
+        var name = (u && u.name) || "Member";
+        if (nameEl) {
+            nameEl.textContent = String(name).trim().split(/\s+/)[0] || "Member";
+        }
+        if (!av) return;
+        var url = u && (nonEmpty(u.avatar_url) || nonEmpty(u.avatar));
+        av.textContent = "";
+        if (!url) { av.textContent = initials(name); return; }
+        var img = document.createElement("img");
+        img.alt = "";
+        img.src = url;
+        img.addEventListener("error", function () {
+            av.textContent = initials(name);
+        });
+        av.appendChild(img);
+    }
+
+    /* Boundary pencil: pick a photo from the gallery; the shared module
+       saves it via PATCH /api/users/me and fires
+       "skillshare:avatar-updated" (handled in boot) so the hero circle,
+       the corner circle and the stored session stay in sync. */
+    function pickAvatarPhoto(event) {
+        if (event && event.preventDefault) { event.preventDefault(); }
+        if (event && event.stopPropagation) { event.stopPropagation(); }
+        var mod = window.SkillShareAvatarUpload;
+        if (!mod || typeof mod.pick !== "function") {
+            toast("Photo uploader is not loaded yet. Please reload the page.");
+            return;
+        }
+        mod.pick().then(function () {
+            toast("Profile photo updated.");
+        }, function (err) {
+            toast(errDetail(err, "Could not update your photo."));
+        });
+    }
+
     function renderHero(p) {
         var u = p.user || {}, rp = p.role_profile || {};
         show($("pfHero"));
@@ -1567,12 +1620,14 @@
         if (isOwn) {
             show($("editProfileBtn"));
             show($("privacyBtn"));
+            show($("heroAvatarEdit"));
             if (connectBtn) { hide(connectBtn); }
             if (messageBtn) { hide(messageBtn); }
             return;
         }
         hide($("editProfileBtn"));
         hide($("privacyBtn"));
+        hide($("heroAvatarEdit"));
 
         var rel = p.relationship || {};
         var kind = rel.relationship || "none";
@@ -1768,7 +1823,28 @@
         val("efUsername", u.username);
         val("efLocation", u.location);
         val("efWebsite", u.website);
-        val("efAvatar", u.avatar_url || u.avatar);
+        /* Avatar field: a photo uploaded through the boundary pencil is
+           stored as a (very long) data URL. Showing it in this 500-char
+           URL input would invite a corrupting typo, so mark the field
+           read-only instead; saveEditProfile then OMITS avatar_url and a
+           normal profile save can never wipe the uploaded photo.
+           Removing a photo stays available in Settings. */
+        var av = u.avatar_url || u.avatar || "";
+        var efAv = $("efAvatar");
+        if (efAv) {
+            if (String(av).indexOf("data:") === 0) {
+                efAv.value = "";
+                efAv.readOnly = true;
+                efAv.setAttribute("data-avatar-data", "1");
+                efAv.placeholder =
+                    "Photo uploaded — use the ✎ on your avatar to replace it";
+            } else {
+                efAv.value = av;
+                efAv.readOnly = false;
+                efAv.removeAttribute("data-avatar-data");
+                efAv.placeholder = "https://";
+            }
+        }
         val("efPhone", u.phone);
         val("efBio", u.bio);
 
@@ -1870,15 +1946,24 @@
         }
         if (saveBtn) { saveBtn.disabled = true; }
         try {
-            await API.updateMyProfile({
+            var profileBody = {
                 name: valOf("efName"),
                 username: valOf("efUsername"),
                 bio: valOf("efBio"),
                 location: valOf("efLocation"),
                 website: valOf("efWebsite"),
-                avatar_url: valOf("efAvatar"),
                 phone: valOf("efPhone")
-            });
+            };
+            /* Read-only data-URL marker (set by fillEditProfile): leave
+               avatar_url OUT of the payload so the uploaded photo is
+               preserved. Otherwise keep the historical behaviour of
+               sending whatever the URL field holds (empty clears). */
+            var efAv = $("efAvatar");
+            if (!(efAv && efAv.readOnly &&
+                    efAv.hasAttribute("data-avatar-data"))) {
+                profileBody.avatar_url = valOf("efAvatar");
+            }
+            await API.updateMyProfile(profileBody);
             await API.updateMyRoleProfile({ profile: roleProfileBody(role) });
             closeModal("editProfileModal");
             toast("Profile updated.");
@@ -2231,6 +2316,8 @@
             editProfileClose: function () { closeModal("editProfileModal"); },
             editProfileCancel: function () { closeModal("editProfileModal"); },
             editProfileSave: saveEditProfile,
+            heroAvatarEdit: pickAvatarPhoto,
+            topNavAvatarEdit: pickAvatarPhoto,
             addEducationBtn: function () { openEducationModal(null); },
             addEducationEmptyBtn: function () { openEducationModal(null); },
             educationModalClose: function () { closeModal("educationModal"); },
@@ -2252,6 +2339,19 @@
             var el = $(id);
             if (el) { el.addEventListener("click", clickMap[id]); }
         });
+
+        /* The corner pencil is a role=button SPAN inside an <a>; give it
+           keyboard activation (Enter/Space) since only native controls
+           synthesize click events. */
+        var cornerPencil = $("topNavAvatarEdit");
+        if (cornerPencil) {
+            cornerPencil.addEventListener("keydown", function (e) {
+                if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+                    e.preventDefault();
+                    pickAvatarPhoto(e);
+                }
+            });
+        }
 
         document.addEventListener("keydown", onModalKeydown, true);
 
@@ -2428,6 +2528,18 @@
         wireStaticControls();
         wireTabs();
         wireSubnav();
+        /* Corner short-name circle: viewer identity + boundary pencil. */
+        renderTopNavIdentity();
+        show($("topNavAvatarEdit"));
+        window.addEventListener("skillshare:avatar-updated", function (e) {
+            var av = e && e.detail && e.detail.avatar_url;
+            var pu = (state.payload || {}).user;
+            if (av && pu) {
+                pu.avatar_url = av;
+                if (state.mode === "own") { setHeroAvatar(pu); }
+            }
+            renderTopNavIdentity();
+        });
         window.addEventListener("skillshare:auth-expired", function () {
             window.location.href = "login.html?next=" +
                 encodeURIComponent("profile.html");

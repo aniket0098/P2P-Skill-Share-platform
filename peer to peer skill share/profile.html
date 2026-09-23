@@ -50,7 +50,14 @@
             </a>
 
             <a href="profile.html" class="mini-profile active-profile" id="openProfile">
-                <span class="mini-avatar" id="topNavAvatar">&mdash;</span>
+                <span class="mini-avatar-slot">
+                    <span class="mini-avatar" id="topNavAvatar">&mdash;</span>
+                    <span class="mini-avatar-edit" id="topNavAvatarEdit" role="button"
+                          tabindex="0" hidden title="Change profile photo"
+                          aria-label="Change profile photo">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    </span>
+                </span>
                 <span id="topNavName">member</span>
                 <span class="profile-arrow" aria-hidden="true">&#9662;</span>
             </a>
@@ -84,6 +91,13 @@
                         <span class="pf-presence-dot" aria-hidden="true"></span>
                         <span class="pf-presence-label" id="heroPresenceLabel">Online</span>
                     </span>
+                    <!-- Own profile only (shown by profile.js): boundary
+                         pencil that opens the gallery to set the photo. -->
+                    <button type="button" class="pf-avatar-edit" id="heroAvatarEdit"
+                            hidden title="Change profile photo"
+                            aria-label="Change profile photo">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    </button>
                 </div>
 
                 <div class="pf-identity">
@@ -750,6 +764,7 @@
     <script src="config.js"></script>
     <script src="api-client.js"></script>
     <script src="auth.js"></script>
+    <script src="components/avatar-upload.js"></script>
 
     <!-- Page controller (own + other-user profile, one aggregate call each) -->
     <script src="profile.js?v=5" defer></script>
