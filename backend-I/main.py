@@ -254,6 +254,14 @@ def _run_startup_migrations():
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'in_progress'",
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS image_url VARCHAR",
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
+        # Profile rebuild (additive): per-field PUBLIC visibility for the
+        # other-user profile (email/phone default to hidden, never public
+        # unless the member opts in). The user_settings table itself may
+        # not exist yet on a legacy DB — the statement is skipped safely
+        # and _ensure_user_settings_table() applies the same column when
+        # the table is first used, so no privacy read can run before the
+        # column exists.
+        "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS profile_field_visibility TEXT",
     ]
     with engine.connect() as connection:
         for statement in statements:
@@ -416,6 +424,10 @@ class UpdateProfileSchema(BaseModel):
     location: str | None = None
     website: str | None = None
     avatar_url: str | None = None
+    # Stage 32: phone edit (the users.phone column already exists since
+    # Phase 1 signup; it was simply never editable before). Same
+    # JWT-derived ownership as every other field — no user_id accepted.
+    phone: str | None = None
 
     @field_validator("skills", "interests", mode="before")
     @classmethod
@@ -670,9 +682,21 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if not user or not auth.verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
+    # STAGE 32 — account lifecycle (additive). "deleted" accounts are
+    # anonymized and can never sign in again; "suspended" is reserved
+    # for server-side admin action. "deactivated" (user-initiated, from
+    # Settings → Danger Zone) still logs in so the user can reactivate
+    # from Settings; the extra response flag lets login.js surface that.
+    account_status = (getattr(user, "account_status", None) or "active").strip().lower()
+    if account_status in ("deleted", "suspended"):
+        raise HTTPException(
+            status_code=403,
+            detail="This account has been closed. Contact support if this is a mistake.",
+        )
+
     access_token = auth.create_access_token({"sub": str(user.id)})
 
-    return {
+    response = {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
@@ -684,6 +708,9 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
             "account_status": getattr(user, "account_status", "active"),
         },
     }
+    if account_status == "deactivated":
+        response["requires_reactivation"] = True
+    return response
 
 
 # ==========================================
@@ -734,6 +761,12 @@ def get_current_user_model(
 
     if user is None:
         raise HTTPException(status_code=401, detail="User no longer exists")
+
+    # STAGE 32: an anonymized/deleted account can never act again, even
+    # with a still-unexpired JWT (stateless sessions cannot be revoked
+    # any other way without changing the auth architecture).
+    if (getattr(user, "account_status", None) or "active").strip().lower() == "deleted":
+        raise HTTPException(status_code=401, detail="Account no longer exists")
 
     return user
 
@@ -842,6 +875,20 @@ def update_current_user(
 
     if data.website is not None:
         current_user.website = data.website.strip() or None
+
+    if data.phone is not None:
+        # Same validation as signup: empty string clears, otherwise
+        # 7-15 digits after stripping formatting characters.
+        clean_phone = data.phone.strip()
+        if not clean_phone:
+            current_user.phone = None
+        else:
+            digits = re.sub(r"\D", "", clean_phone)
+            if not (7 <= len(digits) <= 15):
+                raise HTTPException(
+                    status_code=400, detail="Please enter a valid phone number"
+                )
+            current_user.phone = clean_phone[:32]
 
     if data.avatar_url is not None:
         current_user.avatar_url = data.avatar_url.strip() or None
@@ -1367,6 +1414,783 @@ def get_profile_completion(current_user=Depends(get_current_user_model), db=Depe
         missing.append("achievements")
 
     return {"percentage": score, "completed": completed, "missing": missing}
+
+
+# ================================================================
+# PROFILE AGGREGATE — additive (Profile rebuild)
+#   GET /api/profile/me/summary           own profile   (1 round trip)
+#   GET /api/profile/view/{user_id}       other user    (privacy gated)
+#
+# The Profile page previously needed 9-11 requests to render ONE person.
+# These two routes are pure COMPOSITION of helpers that already exist
+# (user_summary, serialize_current_user, serialize_role_profile,
+# _get_role_profile_row, serialize_project, _serialize_education,
+# _gather_user_learning, _gather_user_activity, get_profile_completion,
+# get_career_timeline, _user_relationship, _profile_is_visible,
+# _field_visible, _settings_row). Business logic is never duplicated and
+# no field is returned merely because a column happens to exist.
+# ================================================================
+
+from models import (  # noqa: E402  (additive block, mirrors careerverse imports)
+    CareerEvent,
+    CareerOutcome,
+    InnovationIdea,
+    InnovationProblem,
+    SandboxEvaluation,
+    SandboxParticipant,
+    SandboxSubmission,
+)
+
+PROFILE_ACTIVITY_LIMIT = 30
+PROFILE_PROJECT_LIMIT = 8
+PROFILE_SKILL_LIMIT = 60
+PROFILE_INNOVATION_LIMIT = 6
+PROFILE_INDUSTRY_LIMIT = 12
+PROFILE_CONNECTION_SAMPLE = 12
+
+
+def _iso_or_none(dt) -> str | None:
+    return dt.isoformat() if dt else None
+
+
+def _tokens_csv(value) -> list[str]:
+    return [t.strip() for t in _split_csv(value) or [] if t.strip()]
+
+
+def _project_rank(p) -> tuple:
+    """Real ordering keys only — `projects` has no featured column.
+
+    Active work first (answers "what are they building now"), then
+    published/completed evidence, then the rest; newest updated_at
+    inside each group.
+    """
+    status = (p.status or "").lower()
+    if status == "in_progress":
+        group = 0
+    elif status in ("completed", "published"):
+        group = 1
+    else:
+        group = 2
+    ts = p.updated_at or p.created_at
+    return (group, -(ts.timestamp() if ts else 0))
+
+
+def _profile_projects(db: Session, user_id: int, limit: int) -> tuple[list, int, list]:
+    """(bounded serialized page, total count, raw rows for skill counting)."""
+    rows = db.query(Project).filter(Project.owner_id == user_id).all()
+    rows.sort(key=_project_rank)
+    total = len(rows)
+    page = [serialize_project(db, p) for p in rows[: max(1, int(limit))]]
+    return page, total, rows
+
+
+def _profile_skills(db: Session, user_id: int, raw_projects: list, records: list,
+                    limit: int = PROFILE_SKILL_LIMIT) -> list:
+    """Skills with real provenance only: level, verified flag, evidence
+    count (source types), related project count, related learning count.
+    NO proficiency percentage is ever derived — skill_evidence.score is an
+    explainable contribution, not a mastery claim."""
+    rows = (
+        db.query(UserSkill, Skill)
+        .join(Skill, Skill.id == UserSkill.skill_id)
+        .filter(UserSkill.user_id == user_id)
+        .all()
+    )
+    ev_sources = {}
+    for sid, stype in (
+        db.query(SkillEvidence.skill_id, SkillEvidence.source_type)
+        .filter(SkillEvidence.user_id == user_id)
+        .distinct()
+        .all()
+    ):
+        ev_sources.setdefault(sid, []).append(stype or "self_reported")
+    ev_counts = dict(
+        db.query(SkillEvidence.skill_id, func.count(SkillEvidence.id))
+        .filter(SkillEvidence.user_id == user_id)
+        .group_by(SkillEvidence.skill_id)
+        .all()
+    )
+    # One pass over projects/learning instead of a query per skill (no N+1).
+    project_labels = []
+    for p in raw_projects:
+        labels = {_t.lower() for _t in _tokens_csv(p.technologies) + _tokens_csv(p.skills)}
+        project_labels.append(labels)
+    learning_names = [(r.skill_name or "").lower() for r in records]
+
+    out = []
+    for mapping, skill in rows:
+        low = (skill.name or "").strip().lower()
+        out.append({
+            "id": mapping.id,
+            "skill_id": skill.id,
+            "name": skill.name,
+            "category": skill.category,
+            "level": mapping.level,
+            "years_of_experience": mapping.years_of_experience,
+            "self_rating": mapping.self_rating,
+            "is_verified": bool(mapping.is_verified),
+            "verified_by": mapping.verified_by,
+            "source_type": mapping.source_type,
+            "evidence_count": int(ev_counts.get(skill.id, 0)),
+            "evidence_sources": sorted(ev_sources.get(skill.id, [])),
+            "project_count": sum(1 for labels in project_labels if low in labels),
+            "learning_count": sum(1 for n in learning_names if n == low),
+            "created_at": _iso_or_none(mapping.created_at),
+        })
+    out.sort(key=lambda s: (-(s["project_count"] + s["evidence_count"]), s["name"].lower()))
+    return out[: max(1, int(limit))]
+
+
+def _profile_innovation(db: Session, user_id: int, viewer_id: int,
+                        limit: int = PROFILE_INNOVATION_LIMIT) -> dict:
+    """Ideas owned + ideas collaborated on, batched (no per-idea queries)."""
+    empty = {"ideas": [], "collaborations": [], "evidence_count": 0}
+    try:
+        from models import (InnovationIdeaSkill as _IS, InnovationMilestone as _MS,
+                            InnovationProjectLink as _PL, InnovationTeam as _T,
+                            InnovationTeamMember as _TM)
+        owned = (
+            db.query(InnovationIdea)
+            .filter(InnovationIdea.owner_id == user_id)
+            .order_by(InnovationIdea.updated_at.desc())
+            .limit(max(1, int(limit)))
+            .all()
+        )
+        collaborated = []
+        try:
+            tids = [r[0] for r in db.query(_T.id).join(_TM, _TM.team_id == _T.id)
+                    .filter(_TM.user_id == user_id, _TM.status == "active").distinct().all()]
+            if tids:
+                idea_ids = [r[0] for r in db.query(_T.idea_id).filter(_T.id.in_(tids)).distinct().all()]
+                if idea_ids:
+                    collaborated = (
+                        db.query(InnovationIdea)
+                        .filter(InnovationIdea.id.in_(idea_ids),
+                                InnovationIdea.owner_id != user_id)
+                        .order_by(InnovationIdea.updated_at.desc())
+                        .limit(max(1, int(limit)))
+                        .all()
+                    )
+        except Exception:
+            collaborated = []
+
+        all_ideas = list(owned) + list(collaborated)
+        if not all_ideas:
+            evidence = db.query(SkillEvidence).filter(
+                SkillEvidence.user_id == user_id,
+                SkillEvidence.source_type == "innovation").count()
+            return dict(empty, evidence_count=int(evidence))
+        ids = [i.id for i in all_ideas]
+
+        skill_map = {}
+        for iid, sname in (
+            db.query(_IS.idea_id, Skill.name)
+            .join(Skill, Skill.id == _IS.skill_id)
+            .filter(_IS.idea_id.in_(ids)).all()
+        ):
+            skill_map.setdefault(iid, []).append(sname)
+
+        ms_map = {r[0]: {"total": int(r[1] or 0), "done": int(r[2] or 0)} for r in (
+            db.query(_MS.idea_id, func.count(_MS.id),
+                     func.sum(case((_MS.status == "completed", 1), else_=0)))
+            .filter(_MS.idea_id.in_(ids)).group_by(_MS.idea_id).all()
+        )}
+
+        team_rows = db.query(_T.id, _T.idea_id).filter(_T.idea_id.in_(ids)).all()
+        team_ids = [t[0] for t in team_rows]
+        members_by_team = {}
+        if team_ids:
+            for m in (
+                db.query(_TM.team_id, _TM.user_id, User.name, User.avatar_url)
+                .join(User, User.id == _TM.user_id)
+                .filter(_TM.team_id.in_(team_ids), _TM.status == "active").all()
+            ):
+                members_by_team.setdefault(m[0], []).append(
+                    {"id": m[1], "name": m[2], "avatar": m[3]})
+        teams_by_idea = {}
+        for tid, iid in team_rows:
+            teams_by_idea.setdefault(iid, []).extend(members_by_team.get(tid, []))
+
+        links_by_idea = {}
+        for l in (
+            db.query(_PL.idea_id, _PL.project_id, Project.title)
+            .join(Project, Project.id == _PL.project_id)
+            .filter(_PL.idea_id.in_(ids)).all()
+        ):
+            links_by_idea.setdefault(l[0], []).append({"id": l[1], "title": l[2]})
+
+        problems_by_id = {}
+        problem_ids = {i.problem_id for i in all_ideas if i.problem_id}
+        if problem_ids:
+            for p in db.query(InnovationProblem.id, InnovationProblem.title).filter(
+                    InnovationProblem.id.in_(problem_ids)).all():
+                problems_by_id[p[0]] = p[1]
+
+        def _card(idea, role):
+            ms = ms_map.get(idea.id, {"total": 0, "done": 0})
+            members = teams_by_idea.get(idea.id, [])
+            member_ids = sorted({m["id"] for m in members})
+            return {
+                "id": idea.id, "role": role, "owner_id": idea.owner_id,
+                "title": idea.title, "status": idea.status,
+                "category": idea.category, "domain": idea.domain,
+                "problem_id": idea.problem_id,
+                "problem_title": (problems_by_id.get(idea.problem_id)
+                                  or (idea.problem.title if idea.problem else None)),
+                "problem_statement": idea.problem_statement,
+                "solution_summary": idea.solution_summary,
+                "expected_impact": idea.expected_impact,
+                "description": idea.description,
+                "skills": skill_map.get(idea.id) or _tokens_csv(idea.skills_text),
+                "image_url": idea.image_url, "project_id": idea.project_id,
+                "linked_projects": links_by_idea.get(idea.id, []),
+                "milestones": {"done": ms["done"], "total": ms["total"],
+                               "pct": (round(ms["done"] / ms["total"] * 100, 1)
+                                       if ms["total"] else 0.0)},
+                "collaborators": members[:8],
+                "collaborator_count": len(member_ids),
+                "is_owner": viewer_id == idea.owner_id,
+                "created_at": _iso_or_none(idea.created_at),
+                "updated_at": _iso_or_none(idea.updated_at),
+            }
+
+        evidence = int(db.query(SkillEvidence).filter(
+            SkillEvidence.user_id == user_id,
+            SkillEvidence.source_type == "innovation").count())
+        return {"ideas": [_card(i, "owner") for i in owned],
+                "collaborations": [_card(i, "collaborator") for i in collaborated],
+                "evidence_count": evidence}
+    except Exception:
+        # Innovation Lab must never break the profile — degrade honestly.
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        return empty
+
+
+def _profile_industry(db: Session, user_id: int,
+                      limit: int = PROFILE_INDUSTRY_LIMIT) -> dict:
+    """Industry problem-solving: real Problem Hub rows (innovation_problems)
+    the member posted or is working on, PLUS real Industry Challenge
+    participation (sandbox). Every status comes from the table that owns it.
+    Green dot / check / grey on the UI map to `state` below, never to a
+    fabricated indicator."""
+    problems_out = []
+    try:
+        idea_rows = (
+            db.query(InnovationIdea.id, InnovationIdea.problem_id,
+                     InnovationIdea.status, InnovationIdea.title)
+            .filter(InnovationIdea.owner_id == user_id,
+                    InnovationIdea.problem_id.isnot(None))
+            .all()
+        )
+        problem_ids = {r[1] for r in idea_rows if r[1]}
+        rows = []
+        if problem_ids:
+            rows = (db.query(InnovationProblem)
+                    .filter(InnovationProblem.id.in_(problem_ids)).all())
+        seen = {p.id for p in rows}
+        for p in db.query(InnovationProblem).filter(
+                InnovationProblem.posted_by == user_id).all():
+            if p.id not in seen:
+                rows.append(p)
+                seen.add(p.id)
+        rows.sort(key=lambda p: -(p.created_at.timestamp() if p.created_at else 0))
+        for p in rows[: max(1, int(limit))]:
+            linked = [r for r in idea_rows if r[1] == p.id]
+            states = [r[2] for r in linked]
+            active = any(s in ("idea", "validating", "building", "review", "pitch_ready")
+                         for s in states)
+            done = any(s in ("published", "completed") for s in states)
+            posted = p.posted_by == user_id
+            problems_out.append({
+                "kind": "innovation_problem",
+                "id": p.id,
+                "title": p.title,
+                "category": p.category,
+                "difficulty": p.difficulty,
+                "source": p.source,
+                "source_label": p.source_label or (p.source or "").upper(),
+                "problem_status": p.status,
+                "role": ("posted_and_working" if (posted and linked)
+                         else ("posted" if posted else "working")),
+                "state": "completed" if done else ("active" if active else "idle"),
+                "ideas": [{"id": r[0], "title": r[3], "status": r[2]} for r in linked],
+                "created_at": _iso_or_none(p.created_at),
+            })
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        problems_out = []
+
+    challenges_out = []
+    try:
+        parts = (
+            db.query(SandboxParticipant)
+            .filter(SandboxParticipant.user_id == user_id)
+            .order_by(SandboxParticipant.started_at.desc())
+            .limit(max(1, int(limit)))
+            .all()
+        )
+        challenge_ids = [p.challenge_id for p in parts]
+        subs_by_challenge = {}
+        if challenge_ids:
+            for s in (
+                db.query(SandboxSubmission)
+                .filter(SandboxSubmission.user_id == user_id,
+                        SandboxSubmission.challenge_id.in_(challenge_ids))
+                .order_by(SandboxSubmission.id.desc()).all()
+            ):
+                subs_by_challenge.setdefault(s.challenge_id, s)
+        sub_ids = [s.id for s in subs_by_challenge.values()]
+        evals_by_sub = {}
+        if sub_ids:
+            for e in (
+                db.query(SandboxEvaluation)
+                .filter(SandboxEvaluation.submission_id.in_(sub_ids))
+                .order_by(SandboxEvaluation.id.desc()).all()
+            ):
+                evals_by_sub.setdefault(e.submission_id, e)
+        for part in parts:
+            ch = part.challenge  # relationship(..., lazy="joined")
+            if ch is None:
+                continue
+            sub = subs_by_challenge.get(ch.id)
+            ev = evals_by_sub.get(sub.id) if sub else None
+            status = (part.status or "in_progress").lower()
+            challenge_status = (ch.status or "").lower()
+            if status == "completed":
+                state = "completed"
+            elif status in ("in_progress", "started"):
+                state = "active"
+            elif status in ("submitted", "evaluated"):
+                state = "submitted" if challenge_status == "open" else "reviewed"
+            else:
+                state = "closed"
+            challenges_out.append({
+                "kind": "industry_challenge",
+                "id": ch.id,
+                "title": ch.title,
+                "industry": ch.industry,
+                "domain": ch.domain,
+                "company_name": ch.company_name,
+                "difficulty": ch.difficulty,
+                "challenge_status": ch.status,
+                "is_demo": bool(ch.is_demo),
+                "participant_status": part.status,
+                "submission_status": sub.status if sub else None,
+                "attempt": sub.attempt if sub else None,
+                "state": state,
+                "score": ev.overall_score if ev else None,
+                "started_at": _iso_or_none(part.started_at),
+                "completed_at": _iso_or_none(part.completed_at),
+                "submitted_at": _iso_or_none(sub.submitted_at) if sub else None,
+                "skills": [{"skill_id": cs.skill_id,
+                            "skill_name": cs.skill.name if cs.skill else None}
+                           for cs in (ch.skills or [])][:8],
+            })
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        challenges_out = []
+
+    return {"problems": problems_out, "challenges": challenges_out}
+
+
+def _connection_peers(db: Session, of: int) -> set:
+    rows = db.query(Connection.user_one_id, Connection.user_two_id).filter(
+        Connection.status == "active",
+        or_(Connection.user_one_id == of, Connection.user_two_id == of),
+    ).all()
+    return {u2 if u1 == of else u1 for u1, u2 in rows}
+
+
+def _profile_connections(db: Session, user_id: int, viewer_id,
+                         limit: int = PROFILE_CONNECTION_SAMPLE,
+                         include_sample: bool = True) -> dict:
+    """Connection count + bounded sample. The private connection graph is
+    never returned: only the target's own connections, capped, and only when
+    `connections` field visibility allows it."""
+    base = or_(Connection.user_one_id == user_id, Connection.user_two_id == user_id)
+    count = db.query(Connection).filter(base, Connection.status == "active").count()
+    sample = []
+    if include_sample and count:
+        rows = (
+            db.query(Connection)
+            .filter(base, Connection.status == "active")
+            .order_by(Connection.created_at.desc())
+            .limit(max(1, int(limit)))
+            .all()
+        )
+        peer_ids = [r.user_two_id if r.user_one_id == user_id else r.user_one_id
+                    for r in rows]
+        users = db.query(User).filter(User.id.in_(peer_ids)).all() if peer_ids else []
+        by_id = {u.id: u for u in users}
+        for r, pid in zip(rows, peer_ids):
+            summary = user_summary(by_id.get(pid))
+            if summary:
+                summary["connected_since"] = _iso_or_none(r.created_at)
+                sample.append(summary)
+    mutual = None
+    if viewer_id is not None and viewer_id != user_id:
+        try:
+            mutual = len(_connection_peers(db, viewer_id) & _connection_peers(db, user_id))
+        except Exception:
+            mutual = None
+    return {"visible": True, "count": count, "sample": sample, "mutual_count": mutual}
+
+
+def _profile_timeline(db: Session, target: User, viewer_id, limit: int,
+                      activity_visible: bool) -> dict:
+    """Canonical activity pipeline = career_events (cross-domain, idempotent,
+    one shared log — NOT a second Profile-only event system). Only an OWN
+    profile triggers the historical backfill (same idempotent pattern the
+    existing /api/careerverse/overview uses); a public view is a pure read.
+    Falls back to the legacy activities gatherer when the log is empty so a
+    member who never opened CareerVerse still shows real events."""
+    if not activity_visible:
+        return {"visible": False, "origin": "career_events", "events": []}
+    events = []
+    try:
+        import careerverse_service as cv
+        if viewer_id == target.id:
+            try:
+                created = cv.backfill_career_events(db, target.id)
+                if created:
+                    db.commit()
+            except Exception:
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+        for e in cv.get_career_timeline(db, target.id, limit=max(1, int(limit))):
+            events.append({
+                "id": "ev-%s" % e.get("id"),
+                "event_type": e.get("event_type"),
+                "title": e.get("title"),
+                "description": e.get("description"),
+                "source_type": e.get("source_type"),
+                "created_at": e.get("created_at"),
+                "origin": "career_events",
+            })
+    except Exception:
+        events = []
+    if not events:
+        for a in _gather_user_activity(db, target)[: max(1, int(limit))]:
+            events.append({
+                "id": a.get("id"),
+                "event_type": a.get("type"),
+                "title": a.get("title"),
+                "description": a.get("description"),
+                "source_type": "activity",
+                "created_at": a.get("timestamp"),
+                "origin": "activities",
+            })
+    origin = "career_events" if events and events[0].get("origin") == "career_events" else "activities"
+    if not events:
+        origin = "activities"
+    return {"visible": True, "origin": origin, "events": events}
+
+
+def _profile_experience(db: Session, target: User) -> dict:
+    """Experience is NOT a fabricated table — it is read from the two places
+    that genuinely store it: career_outcomes (real placement / internship /
+    higher-studies record) and the recruiter/mentor role profile. There is no
+    experience history table on this platform, so `previous` stays empty and
+    `has_history` reports that honestly."""
+    current = None
+    previous = []
+    sources = []
+    try:
+        outcome = db.query(CareerOutcome).filter(
+            CareerOutcome.user_id == target.id).first()
+    except Exception:
+        outcome = None
+    if outcome is not None:
+        st = (outcome.status or "").lower()
+        if st in ("placed", "employed", "internship", "higher_studies") and (
+                outcome.company_name or outcome.role):
+            current = {
+                "title": outcome.role,
+                "company": outcome.company_name,
+                "status": st,
+                "is_current": st in ("placed", "employed"),
+                "placement_date": _iso_or_none(getattr(outcome, "placement_date", None)),
+                "package_lpa": getattr(outcome, "package_lpa", None),
+                "source": "career_outcomes",
+            }
+            sources.append("career_outcomes")
+    row = _get_role_profile_row(db, target)
+    role = (target.role or "student").lower()
+    if current is None and row is not None and role in ("recruiter", "mentor"):
+        title = getattr(row, "job_title", None)
+        company = getattr(row, "company_name", None) or getattr(row, "company", None)
+        if title or company:
+            current = {
+                "title": title,
+                "company": company,
+                "status": "current",
+                "is_current": True,
+                "placement_date": None,
+                "package_lpa": None,
+                "source": "role_profile",
+                "years_experience": getattr(row, "years_experience", None),
+            }
+            sources.append("role_profile")
+    target_role = getattr(row, "target_job_role", None) if row is not None else None
+    return {"current": current, "previous": previous, "target_role": target_role,
+            "sources": sources, "has_history": bool(previous)}
+
+
+def _profile_connection_count(db: Session, user_id: int) -> int:
+    return db.query(Connection).filter(
+        or_(Connection.user_one_id == user_id, Connection.user_two_id == user_id),
+        Connection.status == "active").count()
+
+
+def _build_profile_payload(db: Session, target: User, viewer_id, *,
+                           activity_limit: int = PROFILE_ACTIVITY_LIMIT,
+                           project_limit: int = PROFILE_PROJECT_LIMIT) -> dict:
+    """Single composed response for one profile page (own or other)."""
+    uid = target.id
+    is_self = (viewer_id is not None and viewer_id == uid)
+    role = (target.role or "student").lower()
+
+    # ---- identity ------------------------------------------------------
+    if is_self:
+        identity = dict(serialize_current_user(target))
+        identity["avatar"] = identity.get("avatar_url")
+    else:
+        identity = user_summary(target) or {}
+        # user_summary() never returns email/phone; only an explicit member
+        # opt-in (field_visibility) can add them back. location can be hidden.
+        identity.pop("email", None)
+        identity.pop("phone", None)
+        if not _field_visible(db, uid, "location"):
+            identity["location"] = None
+        if _field_visible(db, uid, "email"):
+            identity["email"] = target.email
+        if _field_visible(db, uid, "phone"):
+            identity["phone"] = getattr(target, "phone", None)
+
+    # ---- role profile --------------------------------------------------
+    row = _get_role_profile_row(db, target)
+    role_profile = dict(serialize_role_profile(target, row) or {})
+    if not is_self and role_profile.get("company_registration"):
+        # Internal registration identifier — never part of a public profile.
+        role_profile.pop("company_registration", None)
+    if not is_self:
+        # Academic fields follow the SAME visibility as the education list so
+        # hiding education can never leak college/degree/cgpa through here.
+        if not _field_visible(db, uid, "education"):
+            for k in ("college", "degree", "branch", "graduation_year",
+                      "semester", "cgpa"):
+                role_profile.pop(k, None)
+        elif not _field_visible(db, uid, "cgpa"):
+            role_profile.pop("cgpa", None)
+
+    # ---- education -----------------------------------------------------
+    education = [
+        _serialize_education(r) for r in (
+            db.query(Education).filter(Education.user_id == uid)
+            .order_by(Education.id.desc()).limit(20).all()
+        )
+    ]
+    if not is_self:
+        if not _field_visible(db, uid, "education"):
+            education = []
+        elif not _field_visible(db, uid, "cgpa"):
+            for e in education:
+                e["grade"] = None
+                e["cgpa"] = None
+                e["percentage"] = None
+
+    # ---- projects + skills --------------------------------------------
+    projects, project_total, raw_projects = _profile_projects(db, uid, project_limit)
+    records = db.query(LearningRecord).filter(LearningRecord.user_id == uid).all()
+    skills = _profile_skills(db, uid, raw_projects, records)
+
+    # ---- innovation + industry ----------------------------------------
+    innovation = _profile_innovation(db, uid, viewer_id)
+    industry = _profile_industry(db, uid)
+
+    # ---- learning ------------------------------------------------------
+    learning_visible = is_self or _field_visible(db, uid, "learning")
+    if learning_visible:
+        learning = dict(_gather_user_learning(db, target))
+        learning["visible"] = True
+    else:
+        learning = {"visible": False, "has_activity": False, "overall_progress": 0,
+                    "skills": [], "recent_learning": [],
+                    "message": "This member keeps their learning activity private."}
+
+    # ---- connections ---------------------------------------------------
+    connections_visible = is_self or _field_visible(db, uid, "connections")
+    if connections_visible:
+        connections = _profile_connections(db, uid, viewer_id, include_sample=True)
+        connections["visible"] = True
+    else:
+        connections = {"visible": False, "count": None, "sample": [],
+                       "mutual_count": None}
+
+    # ---- activity timeline --------------------------------------------
+    activity_visible = is_self or _field_visible(db, uid, "activity")
+    timeline = _profile_timeline(db, target, viewer_id or uid,
+                                 activity_limit, activity_visible)
+
+    # ---- experience ----------------------------------------------------
+    experience = _profile_experience(db, target)
+
+    # ---- relationship (viewer -> target) -------------------------------
+    relationship = {"self": is_self}
+    if not is_self and viewer_id:
+        rel = _user_relationship(db, viewer_id, uid)
+        rel["self"] = False
+        relationship = rel
+
+    settings_row = _settings_row(db, uid)
+    allow_messages = True
+    if not is_self and settings_row is not None:
+        allow_messages = bool(getattr(settings_row, "allow_messages", True))
+
+    # ---- career signals: EVERY number comes from a real table -----------
+    active_projects = sum(1 for p in raw_projects if (p.status or "") == "in_progress")
+    done_projects = sum(1 for p in raw_projects
+                        if (p.status or "") in ("completed", "published"))
+    owned_ideas = innovation.get("ideas", [])
+    collab_ideas = innovation.get("collaborations", [])
+    challenges = industry.get("challenges", [])
+    learning_completed = 0
+    if learning_visible:
+        try:
+            learning_completed = int(db.query(LearningRecord).filter(
+                LearningRecord.user_id == uid,
+                LearningRecord.status == "completed").count())
+        except Exception:
+            learning_completed = 0
+
+    signals = {
+        "projects_total": project_total,
+        "projects_active": active_projects,
+        "projects_completed": done_projects,
+        "innovations_total": len(owned_ideas) + len(collab_ideas),
+        "innovations_completed": sum(1 for i in (owned_ideas + collab_ideas)
+                                     if i.get("status") in ("published", "completed")),
+        "industry_problems": len(industry.get("problems", [])),
+        "industry_challenges_attempted": len(challenges),
+        "industry_challenges_completed": sum(
+            1 for c in challenges if c.get("state") == "completed"),
+        # learning counts are gated by the member's field visibility so a
+        # hidden learning section can never leak its record count.
+        "learning_total": (len(records) if learning_visible else None),
+        "learning_completed": (learning_completed if learning_visible else None),
+        "connections": (connections.get("count") if connections.get("visible") else None),
+        "skills_total": len(skills),
+        "verified_skills": int(db.query(UserSkill).filter(
+            UserSkill.user_id == uid, UserSkill.is_verified == True).count()),  # noqa: E712
+        "evidence_total": int(db.query(SkillEvidence).filter(
+            SkillEvidence.user_id == uid).count()),
+        "days_member": (max(0, (datetime.now() - target.created_at).days)
+                        if target.created_at else None),
+    }
+
+    payload = {
+        "mode": "own" if is_self else "other",
+        "user": identity,
+        "role": role,
+        "role_profile": role_profile,
+        "public_id": getattr(target, "public_id", None),
+        "created_at": _iso_or_none(target.created_at),
+        "education": education,
+        "skills": skills,
+        "skill_chips": {
+            "teachable": _tokens_csv(target.skills),
+            "interests": _tokens_csv(target.interests),
+            "top_skills": role_profile.get("top_skills") or [],
+            "programming_languages": role_profile.get("programming_languages") or [],
+            "technologies": role_profile.get("technologies") or [],
+        },
+        "experience": experience,
+        "projects": projects,
+        "project_total": project_total,
+        "innovation": innovation,
+        "industry": industry,
+        "learning": learning,
+        "connections": connections,
+        "timeline": timeline,
+        "career_signals": signals,
+        "relationship": relationship,
+        "allow_messages": allow_messages,
+        "settings_editable": bool(is_self),
+    }
+
+    if is_self:
+        payload["completion"] = get_profile_completion(current_user=target, db=db)
+        payload["privacy"] = _serialize_settings(settings_row)
+    else:
+        # Section-level visibility so the UI can distinguish
+        # "hidden by this member" from "no records exist".
+        payload["visibility"] = {
+            "location": _field_visible(db, uid, "location"),
+            "education": _field_visible(db, uid, "education"),
+            "cgpa": _field_visible(db, uid, "cgpa"),
+            "activity": activity_visible,
+            "learning": learning_visible,
+            "connections": connections_visible,
+            "email": _field_visible(db, uid, "email"),
+            "phone": _field_visible(db, uid, "phone"),
+        }
+    return payload
+
+
+@app.get("/api/profile/me/summary")
+def profile_me_summary(
+    activity_limit: int = PROFILE_ACTIVITY_LIMIT,
+    project_limit: int = PROFILE_PROJECT_LIMIT,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """One round-trip aggregate for the signed-in member's own profile.
+    Identity and role always come from the JWT; no user_id is accepted."""
+    return _build_profile_payload(
+        db, current_user, current_user.id,
+        activity_limit=max(1, min(int(activity_limit), 100)),
+        project_limit=max(1, min(int(project_limit), 24)),
+    )
+
+
+@app.get("/api/profile/view/{user_id}")
+def profile_view(
+    user_id: int,
+    activity_limit: int = 20,
+    project_limit: int = 8,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Public / other-member profile aggregate with the SAME privacy chain
+    as GET /api/users/{user_id}: legacy-account 404, profile_visibility 404,
+    then per-field visibility (email / phone / education / cgpa / activity /
+    learning / connections). Authenticated only — the Profile page always
+    requires a session, so nothing here is reachable anonymously."""
+    target = db.get(User, user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user_id != current_user["id"]:
+        status = (getattr(target, "account_status", None) or "active").strip().lower()
+        if status in ("deleted", "suspended", "deactivated"):
+            raise HTTPException(status_code=404, detail="User not found")
+        if not _profile_is_visible(db, user_id):
+            raise HTTPException(status_code=404, detail="User not found")
+    return _build_profile_payload(
+        db, target, current_user["id"],
+        activity_limit=max(1, min(int(activity_limit), 100)),
+        project_limit=max(1, min(int(project_limit), 24)),
+    )
 
 
 
@@ -2020,6 +2844,77 @@ def _relationships_batched(db, me, user_ids):
     return rels
 
 
+# ================================================================
+# STAGE 32 — PRIVACY VISIBILITY HELPERS
+# Read the additive user_settings row (single PK lookup). A missing
+# row or any read failure ALWAYS falls back to today's public
+# behavior, so existing users and legacy databases are unaffected.
+# ================================================================
+
+def _settings_row(db: Session, user_id: int):
+    try:
+        from models import UserSettings
+        return (
+            db.query(UserSettings)
+            .filter(UserSettings.user_id == user_id)
+            .first()
+        )
+    except Exception:
+        # Self-healing: a legacy user_settings table that predates the
+        # additive profile_field_visibility column would make the ORM
+        # SELECT fail, silently turning privacy OFF. Create the table /
+        # add the column and retry once before falling back to defaults.
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        try:
+            _ensure_user_settings_table(db)
+            from models import UserSettings as _US2
+            return (
+                db.query(_US2)
+                .filter(_US2.user_id == user_id)
+                .first()
+            )
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            return None
+
+
+def _profile_is_visible(db: Session, user_id: int) -> bool:
+    """True when this profile may be opened by ANOTHER user."""
+    row = _settings_row(db, user_id)
+    if row is None:
+        return True
+    return (row.profile_visibility or "public") != "private"
+
+
+def _field_visible(db: Session, user_id: int, field: str) -> bool:
+    """True when one specific field may be shown to ANOTHER user.
+
+    Server-side enforcement for the Profile rebuild — the frontend only
+    renders what this allows, it never decides what is visible. A missing
+    settings row, a missing column or an unknown field name all fall back
+    to DEFAULT_PROFILE_FIELD_VISIBILITY, which reproduces today's
+    behaviour exactly (fail-closed for email/phone, fail-open elsewhere).
+    """
+    default = DEFAULT_PROFILE_FIELD_VISIBILITY.get(field, True)
+    if field in ("email", "phone") and default is False:
+        # These two are NEVER returned by user_summary()/the public
+        # aggregate regardless of any stored value; the toggle is honoured
+        # only so the member can express intent, and even then the value
+        # is emitted by an explicit opt-in path, never by accident.
+        pass
+    row = _settings_row(db, user_id)
+    if row is None:
+        return default
+    values = _parse_field_visibility(getattr(row, "profile_field_visibility", None))
+    return bool(values.get(field, default))
+
+
 @app.get("/api/users/search")
 def search_users(
     q: str = "",
@@ -2042,6 +2937,28 @@ def search_users(
     me = current_user["id"]
     limit = min(max(int(limit or 25), 1), 50)
     query = db.query(User).filter(User.id != me)
+
+    # STAGE 32: only ACTIVE accounts are searchable. Deactivated,
+    # suspended or deleted (anonymized) accounts never surface here;
+    # NULL (very old rows) counts as active for backward compatibility.
+    query = query.filter(
+        or_(User.account_status == "active", User.account_status.is_(None))
+    )
+
+    # STAGE 32: honour real privacy settings server-side. Users with
+    # profile_visibility=private or discoverable=false never appear in
+    # anyone's people search. No settings row = today's behavior.
+    try:
+        from models import UserSettings as _UserSettings
+        hidden_ids = db.query(_UserSettings.user_id).filter(
+            or_(
+                _UserSettings.profile_visibility == "private",
+                _UserSettings.discoverable == False,  # noqa: E712
+            )
+        )
+        query = query.filter(~User.id.in_(hidden_ids))
+    except Exception:
+        pass
 
     if term:
         pattern = f"%{term}%"
@@ -2113,6 +3030,20 @@ def get_user_profile(
         raise HTTPException(status_code=404, detail="User not found")
 
     me = current_user["id"]
+
+    # STAGE 32: anonymized/deactivated/suspended accounts return an
+    # ordinary 404 for everyone except their own (still-valid) session,
+    # so closed accounts are not resolvable by id either.
+    if user_id != me:
+        status = (getattr(user, "account_status", None) or "active").strip().lower()
+        if status in ("deleted", "suspended", "deactivated"):
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # STAGE 32: profile_visibility=private hides the profile from every
+        # OTHER authenticated user. The response is an ordinary 404 (same
+        # shape as a truly missing user) so privacy is not leakable.
+        if not _profile_is_visible(db, user_id):
+            raise HTTPException(status_code=404, detail="User not found")
 
     skill_rows = (
         db.query(UserSkill, Skill)
@@ -2710,11 +3641,22 @@ def get_my_projects(
 @app.get("/api/users/{user_id}/projects")
 def get_user_projects(
     user_id: int,
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Return public projects created by a specific user from PostgreSQL."""
+    """Return public projects created by a specific user from PostgreSQL.
+
+    Stage 32 privacy: previously this route (and its activity/learning
+    siblings) had NO auth dependency at all, so anyone could read any
+    user's data without a token. It now requires the JWT and hides the
+    profile entirely when user_settings.profile_visibility = "private",
+    using the same 404 shape as GET /api/users/{user_id} so a private
+    profile is not leakable.
+    """
     user = db.get(User, user_id)
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user_id != current_user["id"] and not _profile_is_visible(db, user_id):
         raise HTTPException(status_code=404, detail="User not found")
     projects = (
         db.query(Project)
@@ -2901,11 +3843,18 @@ def get_my_activity(
 @app.get("/api/users/{user_id}/activity")
 def get_user_activity(
     user_id: int,
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Return real database activity for a specific user."""
+    """Return real database activity for a specific user.
+
+    Same Stage 32 privacy gate as GET /api/users/{user_id}/projects:
+    requires the JWT and 404s for a private profile.
+    """
     user = db.get(User, user_id)
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user_id != current_user["id"] and not _profile_is_visible(db, user_id):
         raise HTTPException(status_code=404, detail="User not found")
     return {"activities": _gather_user_activity(db, user)}
 
@@ -2977,11 +3926,21 @@ def get_my_learning(
 @app.get("/api/users/{user_id}/learning")
 def get_user_learning(
     user_id: int,
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Stage 32: privacy gate (see get_user_projects) + the member's own
+    # "hide learning activity" field visibility control.
+    if user_id != current_user["id"]:
+        if not _profile_is_visible(db, user_id):
+            raise HTTPException(status_code=404, detail="User not found")
+        if not _field_visible(db, user_id, "learning"):
+            return {"overall_progress": 0, "skills": [], "recent_learning": [],
+                    "has_activity": False, "public_hidden": True,
+                    "message": "This member keeps their learning activity private."}
     return _gather_user_learning(db, user)
 
 
@@ -3467,7 +4426,8 @@ def s5_analyze(skill_id: int | None = None, skill: str | None = None, role_id: i
     ins = S.insight_map(db).get(row.id)
     projs = db.query(Project).filter(Project.owner_id == current_user.id).all()
     pn = row.name.lower()
-    mp = [p for p in projs if pn and pn in f"{p.title or ''} {p.description or ''} {p.tech_stack or ''}".lower()]
+    # Project has technologies/skills CSV columns (never a tech_stack column).
+    mp = [p for p in projs if pn and pn in f"{p.title or ''} {p.description or ''} {p.technologies or ''} {p.skills or ''}".lower()]
     learns = db.query(LearningRecord).filter(LearningRecord.user_id == current_user.id).all()
     ml = [x for x in learns if pn and pn in f"{x.title or ''} {x.provider or ''} {x.skill or ''}".lower()]
     snum = _lv(mine.level) if mine else 0
@@ -3698,3 +4658,608 @@ try:
     print("[opportunities] routes registered: /api/opportunities* + /api/applications*")
 except Exception as _opp_err:  # never break boot on additive stage
     print(f"[opportunities] WARNING: opportunity routes not registered: {_opp_err}")
+
+
+# ================================================================
+# STAGE 9.4 - NOTIFICATIONS READ API (additive: GET /api/notifications,
+# POST /api/notifications/{id}/read, POST /api/notifications/read-all).
+# Serves the SINGLE shared notifications table that
+# stage8_service.notify() has written since Stage 8. JWT-scoped to the
+# caller's own rows only; no second table, no second writer.
+# ================================================================
+try:
+    from notifications_api import register_notifications
+    register_notifications(app, get_db, get_current_user_model)
+    print("[notifications] routes registered: /api/notifications*")
+except Exception as _notif_err:  # never break boot on additive stage
+    print(f"[notifications] WARNING: notification routes not registered: {_notif_err}")
+
+
+# ================================================================
+# STAGE 32 — SETTINGS + ACCOUNT CONTROL CENTER (additive).
+#   GET   /api/settings            caller's privacy + notification prefs
+#   PATCH /api/settings            partial update (JWT owner only)
+#   POST  /api/account/password    change password (current + new)
+#   GET   /api/account/export      full own-data JSON export
+#   POST  /api/account/deactivate  password re-auth -> account_status
+#   POST  /api/account/reactivate  JWT -> back to active
+#   POST  /api/account/delete      password + typed confirm ->
+#                                   anonymizing erasure (NO row deletion;
+#                                   many user FKs are not CASCADE)
+# Identity always comes from get_current_user_model (JWT "sub"); no
+# endpoint here accepts a user_id, role or ownership from the client,
+# and no response ever contains password_hash, JWTs or other secrets.
+# ================================================================
+
+DEFAULT_NOTIFICATION_PREFS = {
+    "in_app": True,
+    "application_status": True,
+    "innovation": True,
+    "innovation_invite": True,
+    "innovation_feedback": True,
+    "general": True,
+}
+PRIVACY_VISIBILITIES = ("public", "private")
+
+# Per-field PUBLIC visibility for the other-user profile (Profile rebuild).
+# Every value defaults to what the platform exposes today, EXCEPT email and
+# phone which are already private and stay private unless the member
+# explicitly opts in. Unknown/missing keys always fall back to these
+# defaults, so an older settings row behaves exactly like today.
+DEFAULT_PROFILE_FIELD_VISIBILITY = {
+    "email": False,          # never public by default (spec: no auto-exposure)
+    "phone": False,          # never public by default
+    "location": True,        # user_summary already exposes location
+    "education": True,       # GET /api/users/{id} already exposes education
+    "cgpa": True,            # education.grade / cgpa / percentage
+    "activity": True,        # public activity timeline
+    "learning": True,        # learning aggregate
+    "connections": True,     # connection count / list
+}
+
+
+def _parse_field_visibility(raw) -> dict:
+    """NULL/invalid/unknown keys -> platform defaults (safe, additive)."""
+    import json as _json
+    out = dict(DEFAULT_PROFILE_FIELD_VISIBILITY)
+    data = None
+    if raw:
+        try:
+            data = _json.loads(raw) if isinstance(raw, str) else raw
+        except Exception:
+            data = None
+    if isinstance(data, dict):
+        for key in out:
+            if key in data:
+                # "email"/"phone" only become public on an explicit true.
+                out[key] = bool(data[key])
+    return out
+
+
+def _ensure_user_settings_table(db: Session) -> None:
+    """Idempotent portable DDL for the additive user_settings table.
+
+    Same pattern as notifications_api._ensure_notifications_table:
+    PostgreSQL form first, SQLite fallback. Fresh databases also get
+    the table from Base.metadata.create_all(); this covers legacy
+    databases where create_all runs later. Failures are swallowed —
+    a missing table surfaces as a normal database error from the
+    query itself, never a broken boot."""
+    from sqlalchemy import text as _text
+    pg_ddl = (
+        "CREATE TABLE IF NOT EXISTS user_settings ("
+        "user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, "
+        "profile_visibility VARCHAR NOT NULL DEFAULT 'public', "
+        "discoverable BOOLEAN NOT NULL DEFAULT TRUE, "
+        "allow_messages BOOLEAN NOT NULL DEFAULT TRUE, "
+        "notification_prefs TEXT, "
+        "profile_field_visibility TEXT, "
+        "created_at TIMESTAMPTZ DEFAULT NOW(), "
+        "updated_at TIMESTAMPTZ DEFAULT NOW())"
+    )
+    lite_ddl = (
+        "CREATE TABLE IF NOT EXISTS user_settings ("
+        "user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, "
+        "profile_visibility VARCHAR NOT NULL DEFAULT 'public', "
+        "discoverable BOOLEAN NOT NULL DEFAULT TRUE, "
+        "allow_messages BOOLEAN NOT NULL DEFAULT TRUE, "
+        "notification_prefs TEXT, "
+        "profile_field_visibility TEXT, "
+        "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
+        "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    )
+    try:
+        db.execute(_text(pg_ddl))
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+            db.execute(_text(lite_ddl))
+            db.commit()
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+    # Legacy user_settings tables (created before the field-visibility
+    # control existed) get the column here too — CREATE TABLE IF NOT
+    # EXISTS is a no-op for an existing table, so the ALTER is what makes
+    # the column guaranteed to exist before _settings_row() selects it.
+    for _alter in (
+        "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS profile_field_visibility TEXT",
+    ):
+        try:
+            db.execute(_text(_alter))
+            db.commit()
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+
+
+def _parse_notification_prefs(raw) -> dict:
+    """NULL/invalid/unknown input -> full defaults (everything on)."""
+    import json as _json
+    prefs = dict(DEFAULT_NOTIFICATION_PREFS)
+    if raw:
+        try:
+            data = _json.loads(raw) if isinstance(raw, str) else raw
+            if isinstance(data, dict):
+                for key in DEFAULT_NOTIFICATION_PREFS:
+                    if key in data:
+                        prefs[key] = bool(data[key])
+        except Exception:
+            pass
+    return prefs
+
+
+def _serialize_settings(row) -> dict:
+    """Public shape of one settings row (defaults when row is missing)."""
+    if row is None:
+        return {
+            "profile_visibility": "public",
+            "discoverable": True,
+            "allow_messages": True,
+            "notifications": dict(DEFAULT_NOTIFICATION_PREFS),
+            "field_visibility": dict(DEFAULT_PROFILE_FIELD_VISIBILITY),
+        }
+    return {
+        "profile_visibility": row.profile_visibility or "public",
+        "discoverable": bool(row.discoverable),
+        "allow_messages": bool(row.allow_messages),
+        "notifications": _parse_notification_prefs(row.notification_prefs),
+        "field_visibility": _parse_field_visibility(
+            getattr(row, "profile_field_visibility", None)
+        ),
+    }
+
+
+class SettingsPatchSchema(BaseModel):
+    """Partial settings update. Only known keys are read; every value
+    is re-validated server-side regardless of what the client sends."""
+
+    profile_visibility: str | None = None
+    discoverable: bool | None = None
+    allow_messages: bool | None = None
+    notifications: dict | None = None
+    # Additive: per-field public visibility for the other-user profile.
+    # Merged into the existing map (same semantics as `notifications`).
+    field_visibility: dict | None = None
+
+
+class ChangePasswordSchema(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class PasswordConfirmSchema(BaseModel):
+    password: str
+
+
+class DeleteAccountSchema(BaseModel):
+    password: str
+    confirm: str
+
+
+@app.get("/api/settings")
+def get_settings(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """The caller's own settings (JWT owner only). Missing row means
+    the account has never customized anything -> platform defaults."""
+    from models import UserSettings
+    _ensure_user_settings_table(db)
+    row = (
+        db.query(UserSettings)
+        .filter(UserSettings.user_id == current_user.id)
+        .first()
+    )
+    return {"settings": _serialize_settings(row), "defaults_applied": row is None}
+
+
+@app.patch("/api/settings")
+def update_settings(
+    data: SettingsPatchSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Upsert the caller's own settings. Partial-update semantics:
+    only fields present in the body change; notification keys merge
+    into the existing preference map (never replaced wholesale by an
+    arbitrary client object)."""
+    import json as _json
+    from models import UserSettings
+    _ensure_user_settings_table(db)
+    row = (
+        db.query(UserSettings)
+        .filter(UserSettings.user_id == current_user.id)
+        .first()
+    )
+    if row is None:
+        row = UserSettings(user_id=current_user.id)
+        db.add(row)
+
+    if data.profile_visibility is not None:
+        vis = data.profile_visibility.strip().lower()
+        if vis not in PRIVACY_VISIBILITIES:
+            raise HTTPException(
+                status_code=400,
+                detail="profile_visibility must be 'public' or 'private'",
+            )
+        row.profile_visibility = vis
+    if data.discoverable is not None:
+        row.discoverable = bool(data.discoverable)
+    if data.allow_messages is not None:
+        row.allow_messages = bool(data.allow_messages)
+    if data.notifications is not None:
+        if not isinstance(data.notifications, dict):
+            raise HTTPException(
+                status_code=400, detail="notifications must be an object"
+            )
+        prefs = _parse_notification_prefs(row.notification_prefs)
+        for key, value in data.notifications.items():
+            if key in DEFAULT_NOTIFICATION_PREFS:
+                prefs[key] = bool(value)
+        row.notification_prefs = _json.dumps(prefs)
+
+    if data.field_visibility is not None:
+        if not isinstance(data.field_visibility, dict):
+            raise HTTPException(
+                status_code=400, detail="field_visibility must be an object"
+            )
+        fields = _parse_field_visibility(
+            getattr(row, "profile_field_visibility", None)
+        )
+        for key, value in data.field_visibility.items():
+            if key in fields:
+                fields[key] = bool(value)
+        row.profile_field_visibility = _json.dumps(fields)
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not save settings")
+    db.refresh(row)
+    return {"success": True, "settings": _serialize_settings(row)}
+
+
+@app.post("/api/account/password")
+def change_password(
+    data: ChangePasswordSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Change the caller's password after verifying the current one
+    against the stored bcrypt hash. The JWT architecture is untouched
+    (stateless tokens stay valid until their normal expiry)."""
+    if not auth.verify_password(
+        data.current_password or "", current_user.password_hash
+    ):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    new_password = data.new_password or ""
+    if len(new_password) < 8:
+        raise HTTPException(
+            status_code=400, detail="New password must be at least 8 characters"
+        )
+    if new_password == data.current_password:
+        raise HTTPException(
+            status_code=400,
+            detail="New password must be different from the current one",
+        )
+
+    current_user.password_hash = auth.hash_password(new_password)
+    db.add(
+        Activity(
+            user_id=current_user.id,
+            activity_type="password_changed",
+            title="Password changed",
+            description="Your account password was updated.",
+            icon="\U0001f512",
+        )
+    )
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not update password")
+    # Never echo the hash, the password or a new token back.
+    return {"success": True, "message": "Password updated"}
+
+
+@app.get("/api/account/export")
+def export_account_data(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Download the caller's OWN data as JSON. Safe fields only:
+    never password_hash, JWTs, API keys, or any other user's data
+    (message threads involving counterparts are intentionally
+    excluded to avoid exporting other people's content)."""
+    from models import (
+        UserSettings,
+        Notification as _Notification,
+        Education as _Education,
+        UserSkill as _UserSkill,
+        Skill as _Skill,
+        Project as _Project,
+        Activity as _Activity,
+    )
+    _ensure_user_settings_table(db)
+    settings_row = (
+        db.query(UserSettings)
+        .filter(UserSettings.user_id == current_user.id)
+        .first()
+    )
+    role_row = _get_role_profile_row(db, current_user)
+
+    education_rows = (
+        db.query(_Education)
+        .filter(_Education.user_id == current_user.id)
+        .order_by(_Education.id.desc())
+        .limit(200)
+        .all()
+    )
+    skill_rows = (
+        db.query(_UserSkill, _Skill)
+        .join(_Skill, _Skill.id == _UserSkill.skill_id)
+        .filter(_UserSkill.user_id == current_user.id)
+        .all()
+    )
+    project_rows = (
+        db.query(_Project)
+        .filter(_Project.owner_id == current_user.id)
+        .order_by(_Project.created_at.desc())
+        .limit(200)
+        .all()
+    )
+    activity_rows = (
+        db.query(_Activity)
+        .filter(_Activity.user_id == current_user.id)
+        .order_by(_Activity.id.desc())
+        .limit(200)
+        .all()
+    )
+    notif_rows = (
+        db.query(_Notification.type, func.count(_Notification.id))
+        .filter(_Notification.user_id == current_user.id)
+        .group_by(_Notification.type)
+        .all()
+    )
+
+    def _iso(value):
+        if hasattr(value, "isoformat"):
+            return value.isoformat()
+        return str(value) if value is not None else None
+
+    return {
+        "export": {
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "account": serialize_current_user(current_user),
+            "role": current_user.role or "student",
+            "role_profile": (
+                serialize_role_profile(current_user, role_row)
+                if role_row
+                else {}
+            ),
+            "settings": _serialize_settings(settings_row),
+            "education": [
+                {
+                    "id": e.id,
+                    "institution": getattr(e, "institution", None),
+                    "degree": getattr(e, "degree", None),
+                    "field_of_study": getattr(e, "field_of_study", None),
+                    "start_date": getattr(e, "start_date", None),
+                    "end_date": getattr(e, "end_date", None),
+                    "grade": getattr(e, "grade", None),
+                }
+                for e in education_rows
+            ],
+            "skills": [
+                {
+                    "skill": s.name,
+                    "level": m.level,
+                    "years_of_experience": m.years_of_experience,
+                    "self_rating": m.self_rating,
+                }
+                for m, s in skill_rows
+            ],
+            "projects": [
+                {
+                    "id": p.id,
+                    "title": p.title,
+                    "description": p.description,
+                    "technologies": p.technologies,
+                    "status": p.status,
+                    "github_url": p.github_url,
+                    "demo_url": p.demo_url,
+                    "created_at": _iso(p.created_at),
+                }
+                for p in project_rows
+            ],
+            "activity": [
+                {
+                    "type": a.activity_type,
+                    "title": a.title,
+                    "description": a.description,
+                    "created_at": _iso(a.created_at),
+                }
+                for a in activity_rows
+            ],
+            "notification_counts_by_type": {
+                str(t or "general"): int(c) for t, c in notif_rows
+            },
+            "totals": {
+                "education": len(education_rows),
+                "skills": len(skill_rows),
+                "projects": len(project_rows),
+                "activity": len(activity_rows),
+                "notifications": int(sum(int(c) for _, c in notif_rows)),
+            },
+        }
+    }
+
+
+@app.post("/api/account/deactivate")
+def deactivate_account(
+    data: PasswordConfirmSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Temporarily leave the platform (password re-auth required).
+
+    Deactivated accounts disappear from discovery (the existing
+    account_status=='active' filters keep applying), and /login keeps
+    accepting the credentials while returning requires_reactivation so
+    the user can undo this from Settings. Fully reversible."""
+    if (current_user.account_status or "") == "deleted":
+        raise HTTPException(status_code=403, detail="This account has been deleted")
+    if not auth.verify_password(data.password or "", current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+
+    current_user.account_status = "deactivated"
+    db.add(
+        Activity(
+            user_id=current_user.id,
+            activity_type="account_deactivated",
+            title="Account deactivated",
+            description="The account was temporarily deactivated.",
+            icon="⏸",
+        )
+    )
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not deactivate account")
+    return {"success": True, "account_status": "deactivated"}
+
+
+@app.post("/api/account/reactivate")
+def reactivate_account(
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """Undo deactivation. JWT owner only; a no-op when already active."""
+    status = (current_user.account_status or "active").strip().lower()
+    if status == "deleted":
+        raise HTTPException(status_code=403, detail="This account has been deleted")
+    if status != "active":
+        current_user.account_status = "active"
+        db.add(
+            Activity(
+                user_id=current_user.id,
+                activity_type="account_reactivated",
+                title="Account reactivated",
+                description="The account was reactivated.",
+                icon="✓",
+            )
+        )
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=500, detail="Could not reactivate account"
+            )
+    return {"success": True, "account_status": "active"}
+
+
+@app.post("/api/account/delete")
+def delete_account(
+    data: DeleteAccountSchema,
+    current_user: User = Depends(get_current_user_model),
+    db: Session = Depends(get_db),
+):
+    """ANONYMIZING soft delete — the safe additive deletion architecture.
+
+    Many user-owned rows reference users.id WITHOUT ON DELETE CASCADE
+    (projects.owner_id, connection_requests, messages, conversation
+    participants, ...), so a hard DELETE would fail or orphan product
+    history. Instead, in ONE transaction:
+      * personal fields are cleared / anonymized
+      * email + password are destroyed (login becomes impossible)
+      * the 1:1 role-profile rows (cascade-owned children) are removed
+      * the caller's own notification + settings rows are removed
+        (leaf rows that are safe to delete)
+      * account_status='deleted' -> /login returns 403 and any still
+        unexpired JWT is rejected by get_current_user_model
+    Existing product history (projects, applications, messages) keeps
+    referential integrity; its owner now displays as "Deleted user".
+    Requires BOTH the account password AND the typed confirm phrase."""
+    if (data.confirm or "").strip().upper() != "DELETE":
+        raise HTTPException(
+            status_code=400, detail="Type DELETE to confirm account deletion"
+        )
+    if not auth.verify_password(data.password or "", current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+
+    from models import UserSettings, Notification as _Notification
+
+    uid = current_user.id
+    try:
+        current_user.name = "Deleted user"
+        current_user.username = None
+        current_user.email = f"deleted+{uid}@careerbridge.invalid"
+        current_user.public_id = None
+        current_user.bio = None
+        current_user.skills = None
+        current_user.interests = None
+        current_user.avatar_url = None
+        current_user.location = None
+        current_user.website = None
+        current_user.phone = None
+        # Destroy the credential: a fresh random hash nobody knows.
+        current_user.password_hash = auth.hash_password(secrets.token_urlsafe(48))
+        current_user.account_status = "deleted"
+
+        for rel_name in ("student_profile", "recruiter_profile", "mentor_profile"):
+            rel = getattr(current_user, rel_name, None)
+            if rel is not None:
+                db.delete(rel)
+
+        db.query(_Notification).filter(
+            _Notification.user_id == uid
+        ).delete(synchronize_session=False)
+        db.query(UserSettings).filter(
+            UserSettings.user_id == uid
+        ).delete(synchronize_session=False)
+        db.add(
+            Activity(
+                user_id=uid,
+                activity_type="account_deleted",
+                title="Account deleted",
+                description="Account data was erased and anonymized.",
+                icon="✓",
+            )
+        )
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail="Could not delete the account")
+    return {"success": True, "message": "Account deleted"}

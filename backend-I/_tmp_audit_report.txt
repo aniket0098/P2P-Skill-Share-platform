@@ -1,0 +1,337 @@
+=== 1. API methods CALLED BY profile.js (aliases: ['API', 'SkillShareAPI']) ===
+  acceptRequest              x1   lines [1615]
+  addEducation               x1   lines [1972]
+  addMySkill                 x1   lines [2062]
+  commEnsureDirect           x1   lines [1633]
+  deleteEducation            x1   lines [1991]
+  deleteMySkill              x1   lines [2080]
+  getProfileSummary          x1   lines [2386]
+  getPublicProfileSummary    x1   lines [2384]
+  getToken                   x2   lines [2362, 2419]   <== NOT IN api-client.js
+  getUser                    x1   lines [2425]   <== NOT IN api-client.js
+  searchSkillCatalog         x1   lines [2022]
+  sendRequest                x1   lines [1618]
+  updateEducation            x1   lines [1969]
+  updateMyProfile            x1   lines [1873]
+  updateMyRoleProfile        x1   lines [1882]
+
+MISSING FROM api-client.js: ['getToken', 'getUser']
+
+=== 2. raw fetch()/XHR in profile.js ===
+
+=== 3. backend routes in main.py (count=65) ===
+  /admin/requests
+  /admin/requests/{request_id}/approve
+  /admin/requests/{request_id}/reject
+  /api/account/deactivate
+  /api/account/delete
+  /api/account/export
+  /api/account/password
+  /api/account/reactivate
+  /api/admin/requests
+  /api/admin/requests/{request_id}/approve
+  /api/admin/requests/{request_id}/reject
+  /api/connections/{user_id}
+  /api/conversations
+  /api/conversations/{conversation_id}
+  /api/conversations/{conversation_id}/messages
+  /api/dashboard
+  /api/industry/domains
+  /api/industry/insights
+  /api/industry/roles
+  /api/industry/roles/{role_id}
+  /api/industry/skills
+  /api/learning-resources
+  /api/learning-resources/providers
+  /api/learning-resources/skills
+  /api/learning-resources/{resource_id}
+  /api/profile/completion
+  /api/profile/education
+  /api/profile/education/{education_id}
+  /api/profile/me
+  /api/profile/me/summary
+  /api/profile/skills
+  /api/profile/skills/{user_skill_id}
+  /api/profile/view/{user_id}
+  /api/projects
+  /api/requests
+  /api/requests/connections
+  /api/requests/{request_id}
+  /api/requests/{request_id}/accept
+  /api/requests/{request_id}/reject
+  /api/settings
+  /api/skill-gap/me
+  /api/skill-mapping/me
+  /api/skill-mapping/target-role
+  /api/skill-recommendations/me
+  /api/skills
+  /api/skills/analyze/me
+  /api/skills/catalog
+  /api/skills/{skill_id}
+  /api/stats
+  /api/users
+  /api/users/me
+  /api/users/me/activity
+  /api/users/me/learning
+  /api/users/me/projects
+  /api/users/me/skills
+  /api/users/search
+  /api/users/{user_id}
+  /api/users/{user_id}/activity
+  /api/users/{user_id}/learning
+  /api/users/{user_id}/projects
+  /login
+  /me
+  /profile/me
+  /signup
+  /users/me
+
+=== 4. /api paths referenced by api-client.js (count=141) ===
+  /api/account/deactivate
+  /api/account/delete
+  /api/account/export
+  /api/account/password
+  /api/account/reactivate
+  /api/applications/me
+  /api/career-coach/chat
+  /api/career-coach/context
+  /api/career-coach/conversations
+  /api/career-coach/conversations/${id}
+  /api/career-coach/next-mission
+  /api/career-coach/recommendations
+  /api/career-coach/roadmap
+  /api/career-coach/status
+  /api/career-coach/weekly-plan
+  /api/careerverse/goals
+  /api/careerverse/next-mission
+  /api/careerverse/overview
+  /api/careerverse/roadmap
+  /api/careerverse/simulate
+  /api/communication/calls/${callId}
+  /api/communication/conversations
+  /api/communication/conversations/${conversationId}/attachments
+  /api/communication/conversations/${conversationId}/calls
+  /api/communication/conversations/${conversationId}/media
+  /api/communication/conversations/${conversationId}/messages
+  /api/communication/conversations/${conversationId}/preferences
+  /api/communication/conversations/${conversationId}/read
+  /api/communication/conversations/${id}
+  /api/communication/direct/${userId}
+  /api/communication/groups
+  /api/communication/groups/${conversationId}
+  /api/communication/groups/${conversationId}/admins/${userId}
+  /api/communication/groups/${conversationId}/members
+  /api/communication/groups/${conversationId}/members/${userId}
+  /api/communication/messages/${messageId}
+  /api/communication/messages/${messageId}/forward
+  /api/communication/messages/${messageId}/pin
+  /api/communication/messages/${messageId}/reactions
+  /api/communication/users/${userId}
+  /api/connections/${userId}
+  /api/conversations
+  /api/conversations/${conversationId}/messages
+  /api/conversations/${id}
+  /api/credits
+  /api/credits/packages
+  /api/credits/purchase
+  /api/dashboard
+  /api/discussions
+  /api/discussions${suffix}
+  /api/discussions/${roomId}
+  /api/discussions/${roomId}/cancel
+  /api/discussions/${roomId}/end
+  /api/discussions/${roomId}/join
+  /api/discussions/${roomId}/leave
+  /api/discussions/${roomId}/messages
+  /api/discussions/${roomId}/participants
+  /api/discussions/${roomId}/participants/${userId}
+  /api/discussions/${roomId}/request
+  /api/discussions/${roomId}/requests/${requestId}/accept
+  /api/discussions/${roomId}/requests/${requestId}/reject
+  /api/discussions/${roomId}/resources
+  /api/discussions/${roomId}/start
+  /api/industry/domains
+  /api/industry/insights
+  /api/industry/roles
+  /api/industry/roles/${id}
+  /api/industry/skills
+  /api/learning-resources
+  /api/learning-resources/${id}
+  /api/learning-resources/providers
+  /api/learning-resources/skills
+  /api/learning/${recordId}/init
+  /api/learning/${recordId}/progress
+  /api/learning/${recordId}/time
+  /api/learning/${recordId}/watch
+  /api/learning/active
+  /api/learning/bookmarks
+  /api/learning/bookmarks/${resourceId}
+  /api/learning/catalog
+  /api/learning/completed
+  /api/learning/history
+  /api/learning/me
+  /api/learning/overview
+  /api/learning/resources/${id}
+  /api/learning/roadmap
+  /api/learning/start/${resourceId}
+  /api/learning/stats
+  /api/livekit/token
+  /api/notifications
+  /api/notifications/read-all
+  /api/opportunities
+  /api/opportunities/me/recommended
+  /api/opportunities/mine
+  /api/profile/completion
+  /api/profile/education
+  /api/profile/education/${id}
+  /api/profile/me/summary
+  /api/profile/skills
+  /api/profile/skills/${id}
+  /api/projects
+  /api/projects/${id}
+  /api/requests
+  /api/requests/${id}
+  /api/requests/${id}/accept
+  /api/requests/${id}/reject
+  /api/requests/connections
+  /api/sandbox/challenges
+  /api/sandbox/challenges/${id}
+  /api/sandbox/challenges/${id}/start
+  /api/sandbox/dashboard
+  /api/sandbox/my-challenges
+  /api/sandbox/my-challenges/${id}
+  /api/sandbox/recommendations
+  /api/sandbox/submissions/${id}
+  /api/sandbox/submissions/${id}/evaluate
+  /api/sandbox/workspace/${id}
+  /api/sandbox/workspace/${id}/draft
+  /api/sandbox/workspace/${id}/submit
+  /api/settings
+  /api/skill-gap/me
+  /api/skill-mapping/me
+  /api/skill-mapping/target-role
+  /api/skill-recommendations/me
+  /api/skills
+  /api/skills/${id}
+  /api/skills/analyze/me
+  /api/skills/catalog
+  /api/skills/evidence
+  /api/skills/evidence/${skillId}
+  /api/skills/growth
+  /api/stats
+  /api/users
+  /api/users/${id}
+  /api/users/${userId}/activity
+  /api/users/${userId}/learning
+  /api/users/${userId}/projects
+  /api/users/me
+  /api/users/me/activity
+  /api/users/me/learning
+  /api/users/me/projects
+
+=== 5. api-client paths with NO literal main.py route ===
+  /api/applications/me                                    maybe-> []
+  /api/career-coach/chat                                  maybe-> []
+  /api/career-coach/context                               maybe-> []
+  /api/career-coach/conversations                         maybe-> []
+  /api/career-coach/conversations/${id}                   maybe-> []
+  /api/career-coach/next-mission                          maybe-> []
+  /api/career-coach/recommendations                       maybe-> []
+  /api/career-coach/roadmap                               maybe-> []
+  /api/career-coach/status                                maybe-> []
+  /api/career-coach/weekly-plan                           maybe-> []
+  /api/careerverse/goals                                  maybe-> []
+  /api/careerverse/next-mission                           maybe-> []
+  /api/careerverse/overview                               maybe-> []
+  /api/careerverse/roadmap                                maybe-> []
+  /api/careerverse/simulate                               maybe-> []
+  /api/communication/calls/${callId}                      maybe-> []
+  /api/communication/conversations                        maybe-> []
+  /api/communication/conversations/${conversationId}/attachments maybe-> []
+  /api/communication/conversations/${conversationId}/calls maybe-> []
+  /api/communication/conversations/${conversationId}/media maybe-> []
+  /api/communication/conversations/${conversationId}/messages maybe-> []
+  /api/communication/conversations/${conversationId}/preferences maybe-> []
+  /api/communication/conversations/${conversationId}/read maybe-> []
+  /api/communication/conversations/${id}                  maybe-> []
+  /api/communication/direct/${userId}                     maybe-> []
+  /api/communication/groups                               maybe-> []
+  /api/communication/groups/${conversationId}             maybe-> []
+  /api/communication/groups/${conversationId}/admins/${userId} maybe-> []
+  /api/communication/groups/${conversationId}/members     maybe-> []
+  /api/communication/groups/${conversationId}/members/${userId} maybe-> []
+  /api/communication/messages/${messageId}                maybe-> []
+  /api/communication/messages/${messageId}/forward        maybe-> []
+  /api/communication/messages/${messageId}/pin            maybe-> []
+  /api/communication/messages/${messageId}/reactions      maybe-> []
+  /api/communication/users/${userId}                      maybe-> []
+  /api/credits                                            maybe-> ['/api/users/me', '/api/profile/me', '/api/profile/education', '/api/profile/education/{X}']
+  /api/credits/packages                                   maybe-> []
+  /api/credits/purchase                                   maybe-> []
+  /api/discussions                                        maybe-> ['/api/users/me', '/api/profile/me', '/api/profile/education', '/api/profile/education/{X}']
+  /api/discussions${suffix}                               maybe-> ['/api/users/me', '/api/profile/me', '/api/profile/education', '/api/profile/education/{X}']
+  /api/discussions/${roomId}                              maybe-> []
+  /api/discussions/${roomId}/cancel                       maybe-> []
+  /api/discussions/${roomId}/end                          maybe-> []
+  /api/discussions/${roomId}/join                         maybe-> []
+  /api/discussions/${roomId}/leave                        maybe-> []
+  /api/discussions/${roomId}/messages                     maybe-> []
+  /api/discussions/${roomId}/participants                 maybe-> []
+  /api/discussions/${roomId}/participants/${userId}       maybe-> []
+  /api/discussions/${roomId}/request                      maybe-> []
+  /api/discussions/${roomId}/requests/${requestId}/accept maybe-> []
+  /api/discussions/${roomId}/requests/${requestId}/reject maybe-> []
+  /api/discussions/${roomId}/resources                    maybe-> []
+  /api/discussions/${roomId}/start                        maybe-> []
+  /api/learning/${recordId}/init                          maybe-> []
+  /api/learning/${recordId}/progress                      maybe-> []
+  /api/learning/${recordId}/time                          maybe-> []
+  /api/learning/${recordId}/watch                         maybe-> []
+  /api/learning/active                                    maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/bookmarks                                 maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/bookmarks/${resourceId}                   maybe-> []
+  /api/learning/catalog                                   maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/completed                                 maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/history                                   maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/me                                        maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/overview                                  maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/resources/${id}                           maybe-> []
+  /api/learning/roadmap                                   maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/learning/start/${resourceId}                       maybe-> []
+  /api/learning/stats                                     maybe-> ['/api/learning-resources', '/api/learning-resources/skills', '/api/learning-resources/providers', '/api/learning-resources/{X}']
+  /api/livekit/token                                      maybe-> []
+  /api/notifications                                      maybe-> ['/api/users/me', '/api/profile/me', '/api/profile/education', '/api/profile/education/{X}']
+  /api/notifications/read-all                             maybe-> []
+  /api/opportunities                                      maybe-> ['/api/users/me', '/api/profile/me', '/api/profile/education', '/api/profile/education/{X}']
+  /api/opportunities/me/recommended                       maybe-> []
+  /api/opportunities/mine                                 maybe-> []
+  /api/projects/${id}                                     maybe-> ['/api/projects']
+  /api/sandbox/challenges                                 maybe-> []
+  /api/sandbox/challenges/${id}                           maybe-> []
+  /api/sandbox/challenges/${id}/start                     maybe-> []
+  /api/sandbox/dashboard                                  maybe-> []
+  /api/sandbox/my-challenges                              maybe-> []
+  /api/sandbox/my-challenges/${id}                        maybe-> []
+  /api/sandbox/recommendations                            maybe-> []
+  /api/sandbox/submissions/${id}                          maybe-> []
+  /api/sandbox/submissions/${id}/evaluate                 maybe-> []
+  /api/sandbox/workspace/${id}                            maybe-> []
+  /api/sandbox/workspace/${id}/draft                      maybe-> []
+  /api/sandbox/workspace/${id}/submit                     maybe-> []
+  /api/skills/evidence                                    maybe-> ['/api/skills/catalog', '/api/skills', '/api/skills/{X}', '/api/skills/analyze/me']
+  /api/skills/evidence/${skillId}                         maybe-> []
+  /api/skills/growth                                      maybe-> ['/api/skills/catalog', '/api/skills', '/api/skills/{X}', '/api/skills/analyze/me']
+
+=== 6. DOM ids looked up by profile.js but absent in profile.html ===
+  js ids: 102 ; html ids: 194
+  missing: none
+
+=== 7. sections ===
+  html: ['activity', 'connections', 'education', 'experience', 'industry', 'innovation', 'learning', 'projects', 'skills', 'summary']
+  js  : ['activity', 'connections', 'education', 'experience', 'industry', 'innovation', 'learning', 'projects', 'skills', 'summary']
+  js-not-html: []
+  html-not-js: []
+
+=== 8. pf-* classes emitted by profile.js but not styled in profile.css ===
+  js classes: 78
+  missing: none

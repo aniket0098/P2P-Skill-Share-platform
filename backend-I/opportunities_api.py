@@ -126,6 +126,39 @@ REJECTION_REASON_MAX = 1000
 COVER_NOTE_MAX = 2000
 
 
+# ================================================================
+# STAGE 9.4 - APPLICATION STATUS NOTIFICATION COPY (central, once).
+# ================================================================
+# Concise professional student-facing copy for the server-side
+# application-status notifications created after a successful recruiter
+# status change. The type stays "application_status" and the link always
+# points at the student's own applications page - never a recruiter-only
+# route, never private recruiter data.
+APPLICATION_STATUS_NOTIFICATIONS = {
+    "reviewing": (
+        "Application update",
+        "Your application for {title} is now under review.",
+    ),
+    "shortlisted": (
+        "Application update",
+        "Your application for {title} has been shortlisted.",
+    ),
+    "interview": (
+        "Application update",
+        "Your application for {title} has moved to interview.",
+    ),
+    "selected": (
+        "Application update",
+        "Your application for {title} was selected.",
+    ),
+    "rejected": (
+        "Application update",
+        "Your application for {title} was not selected.",
+    ),
+}
+APPLICATION_STATUS_LINK = "applications.html"
+
+
 def _clean_optional_str(value):
     if value is None:
         return None
@@ -1237,6 +1270,48 @@ def _allowed_targets(current_status) -> tuple:
     return APPLICATION_STATUS_TRANSITIONS.get(current_status or "", ())
 
 
+def _notify_application_status(db: Session, app_row: Application, opp) -> None:
+    """Create the student notification for a committed status change.
+
+    Called ONLY after the guarded status UPDATE committed successfully, so
+    a failed (401/403/404/409/422/500) transition can never produce a
+    false notification. The recipient is the application owner resolved
+    server-side (``app_row.student_user_id``) - never the recruiter, never
+    a client-supplied id. A retried request hits the 409 same-status guard
+    before reaching here, so no duplicate notification is created.
+
+    The write reuses the existing stage8_service.notify() writer on the
+    single shared ``notifications`` table. A notification failure is
+    isolated (its own rollback) and can never fail - or rewrite - the
+    already-committed status change.
+    """
+    copy = APPLICATION_STATUS_NOTIFICATIONS.get(app_row.status)
+    if copy is None:
+        return
+    title_tpl, message_tpl = copy
+    opp_title = (
+        (getattr(opp, "title", None) or "").strip()
+        or "an opportunity"
+    )
+    try:
+        from stage8_service import notify as _notify
+
+        _notify(
+            db,
+            int(app_row.student_user_id),
+            "application_status",
+            title_tpl,
+            message_tpl.format(title=opp_title),
+            APPLICATION_STATUS_LINK,
+        )
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+
 def _serialize_applicant(app_row: Application, student, profile) -> dict:
     """Explicit recruiter-side view of one application + applicant.
 
@@ -2296,6 +2371,14 @@ def register_opportunities(app, get_db, me_dep):
                 status_code=500, detail="Could not update application status"
             )
         db.refresh(app_row)
+        # STAGE 9.4 - server-side student notification. Created ONLY after
+        # the guarded status UPDATE committed above, so failed (401/403/
+        # 404/409/422/500) transitions can never produce a false claim.
+        try:
+            _notify_application_status(db, app_row, opp)
+        except Exception:
+            pass
+        db.refresh(app_row)
         student = db.get(User, app_row.student_user_id)
         profile = (
             db.query(StudentProfile)
@@ -2303,3 +2386,47 @@ def register_opportunities(app, get_db, me_dep):
             .first()
         )
         return _serialize_applicant(app_row, student, profile)
+
+    # ==============================================================
+    # STAGE 9.4 - RECRUITER PIPELINE AGGREGATES (additive).
+    # ==============================================================
+    @app.get("/api/opportunities/{opportunity_id}/pipeline")
+    def opportunity_pipeline(
+        opportunity_id: int,
+        cu=Depends(me_dep),
+        db: Session = Depends(get_db),
+    ):
+        """Owner-only per-status application totals for one opportunity.
+
+        Authorization mirrors the applicant list: (1) recruiter role,
+        (2) opportunity existence, (3) ``owner_user_id == current_user.id``.
+        A 403 never reveals whether another recruiter's opportunity has
+        applicants. Archived/closed opportunities stay owner-readable so
+        recruiter history is preserved (Stage 9.2). Counts come from ONE
+        ``GROUP BY status`` aggregate - the endpoint never loads applicant
+        rows and creates no N+1 query.
+        """
+        _require_recruiter(cu)
+        opp = db.get(Opportunity, opportunity_id)
+        if opp is None:
+            raise HTTPException(status_code=404, detail="Opportunity not found")
+        if opp.owner_user_id != cu.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Only the owner can manage this opportunity",
+            )
+        rows = (
+            db.query(Application.status, func.count(Application.id))
+            .filter(Application.opportunity_id == opp.id)
+            .group_by(Application.status)
+            .all()
+        )
+        counts = {str(status or ""): int(n or 0) for status, n in rows}
+        total = sum(counts.values())
+        payload = {"opportunity_id": opp.id, "total": total}
+        for key in APPLICATION_STATUSES:
+            payload[key] = int(counts.get(key, 0))
+        # Any unexpected stored label is folded into "other" so total
+        # always equals the sum of the reported buckets.
+        payload["other"] = total - sum(payload[k] for k in APPLICATION_STATUSES)
+        return payload

@@ -1,4 +1,5 @@
 """Stage 8 service (additive, DB-agnostic)."""
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 import stage6_service as s6
 
@@ -45,9 +46,65 @@ def _tokens(csv_text):
     return out
 
 
+def _notification_category(ntype: str) -> str:
+    """Map a notification type to its preference category.
+
+    Known types keep their own category so Settings can control them
+    individually; anything else falls into the catch-all "general"
+    bucket (same vocabulary as main.DEFAULT_NOTIFICATION_PREFS)."""
+    known = (
+        "application_status",
+        "innovation",
+        "innovation_invite",
+        "innovation_feedback",
+    )
+    t = (ntype or "").strip().lower()
+    return t if t in known else "general"
+
+
+def _notification_allowed(db: Session, user_id: int, ntype: str) -> bool:
+    """True when this user wants this notification category in-app.
+
+    Reads user_settings.notification_prefs (TEXT holding a JSON object;
+    NULL = every category enabled). FAIL-OPEN by design: a missing
+    table/row/JSON or any unexpected error always allows the write, so
+    notification delivery can never be broken by the preference
+    system — worst case the user receives an extra notification."""
+    try:
+        from sqlalchemy import text as _text
+        row = db.execute(
+            _text(
+                "SELECT notification_prefs FROM user_settings WHERE user_id = :u"
+            ),
+            {"u": user_id},
+        ).first()
+        if not row or not row[0]:
+            return True
+        import json as _json
+        prefs = row[0] if isinstance(row[0], dict) else _json.loads(row[0])
+        if not isinstance(prefs, dict):
+            return True
+        if prefs.get("in_app", True) is False:
+            return False
+        return bool(prefs.get(_notification_category(ntype), True))
+    except Exception:
+        return True
+
+
 def notify(db: Session, user_id: int, ntype: str, title: str, message="", link=""):
     # Same pattern as main.create_notification: raw notifications table.
     # Portable DDL: try Postgres form first, fall back to SQLite form.
+    #
+    # STAGE 32: honour the account's notification preferences BEFORE
+    # writing. This function is the platform's single notification
+    # writer, so one check here covers every producer (innovation,
+    # innovation_invite, innovation_feedback, application_status, ...).
+    # Missing user_settings row / missing table / any error => allowed
+    # (fail-open), so existing users and legacy databases keep working
+    # exactly as before and a broken preference read can never swallow
+    # a real notification silently... it lets it through instead.
+    if not _notification_allowed(db, user_id, ntype):
+        return
     try:
         from sqlalchemy import text as _text
         try:
@@ -280,9 +337,23 @@ def find_collaborators(db, idea_id, limit=8):
     for tid in tids:
         for uid in db.query(_M.user_id).filter(_M.team_id == tid).all():
             excluded.add(uid[0])
+    # STAGE 32: users who opted out of discovery (discoverable=false)
+    # or set profile_visibility=private are never suggested. One batched
+    # read; any failure falls back to today's behavior (no filtering).
+    try:
+        from models import UserSettings as _PS
+        hidden = {
+            r[0]
+            for r in db.query(_PS.user_id).filter(
+                or_(_PS.discoverable == False,  # noqa: E712
+                    _PS.profile_visibility == "private")
+            ).all()
+        }
+    except Exception:
+        hidden = set()
     scored = []
     for u in db.query(_U).filter(_U.account_status == "active").limit(200).all():
-        if u.id in excluded:
+        if u.id in excluded or u.id in hidden:
             continue
         bag = set(t.lower() for t in _tokens(u.skills))
         for us in db.query(_US).filter(_US.user_id == u.id).all():

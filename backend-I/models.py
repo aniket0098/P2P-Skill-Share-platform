@@ -1560,3 +1560,90 @@ try:
     CallParticipant = _COMM_MODELS["CallParticipant"]
 except Exception as _comm_models_err:  # never break import
     print(f"[comm] WARNING: communication models not registered: {_comm_models_err}")
+
+
+# === STAGE 9.4 — NOTIFICATIONS (additive) ===
+# Registers the notifications table on the shared Base so create_all()
+# also covers fresh databases. The table already existed as portable raw
+# DDL inside stage8_service.notify(); this model mirrors those columns
+# exactly (id / user_id / type / title / message / link / is_read /
+# created_at) so the same table stays the ONLY notification store. Rows
+# belong to exactly one user (user_id) and are read by that user only.
+class Notification(Base):
+    """One server-side notification row for one user.
+
+    The notifications table is the platform's single notification store:
+    stage8_service.notify() has been writing to it with portable raw DDL
+    since Stage 8, and Stage 9.4 adds the read/mark-read API plus the
+    application-status writer. Columns intentionally mirror that raw DDL
+    so an existing database and a fresh create_all() database agree.
+    """
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Notification family (innovation, innovation_invite, application_status, ...)
+    # capped at 50 chars to match the existing raw-DDL writer.
+    type = Column(String(50), nullable=True, default="general")
+    title = Column(String(200), nullable=True)
+    message = Column(Text, nullable=True)
+    link = Column(String(500), nullable=True, default="")
+    is_read = Column(Boolean, nullable=False, default=False, index=True)
+    created_at = Column(DateTime, default=func.now(), nullable=True)
+
+    def __repr__(self):
+        return (
+            f"<Notification id={self.id} user={self.user_id} "
+            f"type={self.type!r} read={self.is_read}>"
+        )
+
+
+# === STAGE 32 — SETTINGS (additive) ===
+# Per-account privacy + notification preferences: exactly ONE row per
+# user. Every column maps to a real server-side enforced behavior:
+#   profile_visibility -> GET /api/users/{id} + /api/users/search
+#   discoverable       -> people search + collaborator discovery
+#   allow_messages     -> new direct-conversation creation (comm_api)
+#   notification_prefs -> stage8_service.notify() category filter
+# A MISSING row means platform defaults (public / discoverable /
+# messages allowed / every notification category enabled), so existing
+# users keep today's behavior with zero migration. notification_prefs
+# is TEXT holding a JSON object so the portable raw DDL used on legacy
+# databases matches PostgreSQL and SQLite exactly (same pattern as the
+# notifications table). No existing table, column or row is touched.
+class UserSettings(Base):
+    """One server-side settings row for one user."""
+
+    __tablename__ = "user_settings"
+
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    # "public" (default) | "private" — private profiles 404 for other
+    # users and vanish from search/discovery.
+    profile_visibility = Column(String, nullable=False, default="public")
+    discoverable = Column(Boolean, nullable=False, default=True)
+    allow_messages = Column(Boolean, nullable=False, default=True)
+
+    # JSON string, NULL = all categories enabled (see
+    # main.DEFAULT_NOTIFICATION_PREFS for the key vocabulary).
+    notification_prefs = Column(Text, nullable=True)
+
+    # Additive (Profile rebuild): per-field PUBLIC visibility map stored as
+    # JSON TEXT — same portable pattern as notification_prefs, so the raw
+    # DDL used on legacy databases matches PostgreSQL and SQLite exactly.
+    # NULL = main.DEFAULT_PROFILE_FIELD_VISIBILITY (email/phone stay hidden).
+    profile_field_visibility = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    def __repr__(self):
+        return (
+            f"<UserSettings user={self.user_id} "
+            f"visibility={self.profile_visibility!r} "
+            f"discoverable={self.discoverable}>"
+        )

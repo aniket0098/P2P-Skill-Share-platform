@@ -384,6 +384,26 @@ class CallStatusIn(BaseModel):
     duration_seconds: int | None = None
 
 
+def _peer_accepts_messages(db, user_id: int) -> bool:
+    """Stage 32: does this user accept NEW direct messages?
+
+    Reads user_settings.allow_messages (single PK lookup). FAIL-OPEN:
+    a missing settings row, missing table or any read error returns
+    True, so messaging keeps working exactly as today when settings
+    have never been customized."""
+    try:
+        from sqlalchemy import text as _text
+        row = db.execute(
+            _text("SELECT allow_messages FROM user_settings WHERE user_id = :u"),
+            {"u": user_id},
+        ).first()
+        if row is None:
+            return True
+        return bool(row[0])
+    except Exception:
+        return True
+
+
 def register_communication(app, get_db, me_dep):
     SessionLocal = None
     try:
@@ -437,6 +457,16 @@ def register_communication(app, get_db, me_dep):
         peer = db.get(User, user_id)
         if peer is None:
             raise HTTPException(status_code=404, detail="User not found")
+        # STAGE 32: the recipient's allow_messages privacy setting is
+        # enforced here — the single place NEW direct conversations are
+        # created. Existing threads keep working either way, so a user
+        # can always reach their own history. Missing settings row or
+        # missing table => allowed (today's behavior).
+        if not _peer_accepts_messages(db, user_id):
+            raise HTTPException(
+                status_code=403,
+                detail="This user is not accepting new messages right now.",
+            )
         pairs = (
             db.query(ConversationParticipant.conversation_id)
             .filter(ConversationParticipant.user_id.in_([cu.id, user_id]))
@@ -1031,6 +1061,20 @@ def register_communication(app, get_db, me_dep):
         user = db.get(User, user_id)
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+        # STAGE 32: this is a second public-profile surface — it must obey
+        # the same privacy rules as GET /api/users/{user_id}. A private
+        # profile 404s here too, otherwise the setting would be trivially
+        # bypassable from the Messages hub.
+        if user_id != cu.id:
+            try:
+                from models import UserSettings as _US
+                srow = db.query(_US).filter(_US.user_id == user_id).first()
+                if srow is not None and (srow.profile_visibility or "public") == "private":
+                    raise HTTPException(status_code=404, detail="User not found")
+            except HTTPException:
+                raise
+            except Exception:
+                pass
         lo, hi = sorted((cu.id, user_id))
         connected = (
             db.query(Connection)

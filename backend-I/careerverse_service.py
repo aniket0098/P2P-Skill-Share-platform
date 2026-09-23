@@ -25,6 +25,7 @@ from models import (
     LearningRecord,
     Project,
     SandboxChallenge,
+    SandboxEvaluation,
     SandboxParticipant,
     SandboxSubmission,
     SkillEvidence,
@@ -181,7 +182,11 @@ def backfill_career_events(db: Session, user_id: int) -> int:
             title=f"Sandbox started: {ch_title}",
             description=None,
             source_type="sandbox", source_id=part.challenge_id,
-            created_at=part.joined_at,
+            # SandboxParticipant has no joined_at column (see models.py:
+            # status/started_at/completed_at). Using a non-existent column
+            # here raised AttributeError and 500'd /api/careerverse/* for
+            # every user who had ever joined a challenge.
+            created_at=part.started_at,
         ):
             created += 1
 
@@ -201,12 +206,26 @@ def backfill_career_events(db: Session, user_id: int) -> int:
         ):
             created += 1
         if sub.status == "evaluated":
+            # SandboxSubmission has no score/evaluated_at columns — those
+            # live on SandboxEvaluation.overall_score. Read them from the
+            # real evaluation row instead of trusting non-existent attrs.
+            eval_row = None
+            try:
+                eval_row = (
+                    db.query(SandboxEvaluation)
+                    .filter(SandboxEvaluation.submission_id == sub.id)
+                    .order_by(SandboxEvaluation.id.desc())
+                    .first()
+                )
+            except Exception:
+                eval_row = None
+            score = eval_row.overall_score if eval_row else None
             if record_career_event(
                 db, user_id=user_id, event_type="sandbox_evaluated",
                 title=f"Sandbox evaluated: {ch_title}",
-                description=f"Score {sub.score}/100" if sub.score is not None else None,
+                description=(f"Score {score}/100" if score is not None else None),
                 source_type="sandbox", source_id=sub.id,
-                created_at=sub.evaluated_at or sub.submitted_at,
+                created_at=(eval_row.created_at if eval_row else None) or sub.submitted_at,
             ):
                 created += 1
 
