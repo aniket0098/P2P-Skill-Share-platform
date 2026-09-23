@@ -1,0 +1,30 @@
+warning: in the working copy of 'peer to peer skill share/jobs.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/notifications.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/notifications.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/setting.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/setting.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'peer to peer skill share/setting.js', LF will be replaced by CRLF the next time Git touches it
+ backend-I/comm_api.py                            |   30 [32m+[m
+ backend-I/main.py                                |  641 [32m++[m[31m-[m
+ backend-I/models.py                              |   81 [32m+[m
+ backend-I/opportunities_api.py                   |  127 [32m+[m
+ backend-I/stage8_service.py                      |   73 [32m+[m[31m-[m
+ peer to peer skill share/api-client.js           |   76 [32m+[m
+ peer to peer skill share/auth-guard.js           |    2 [32m+[m[31m-[m
+ peer to peer skill share/design-system.css       |   22 [32m+[m
+ peer to peer skill share/industry-skills.css     | 2062 [32m+[m[31m-------[m
+ peer to peer skill share/industry-skills.html    | 1245 [32m+[m[31m----[m
+ peer to peer skill share/industry-skills.js      | 2386 [32m++++[m[31m-----[m
+ peer to peer skill share/jobs.html               |   27 [32m+[m[31m-[m
+ peer to peer skill share/jobs.js                 |   87 [32m+[m[31m-[m
+ peer to peer skill share/login.js                |    8 [32m+[m
+ peer to peer skill share/notifications.css       |   15 [32m+[m
+ peer to peer skill share/notifications.html      |   21 [32m+[m[31m-[m
+ peer to peer skill share/notifications.js        | 1523 [32m+[m[31m-----[m
+ peer to peer skill share/portal-shell.js         |   55 [32m+[m[31m-[m
+ peer to peer skill share/portal-unify.js         |   59 [32m+[m
+ peer to peer skill share/recruiter-settings.html |   36 [32m+[m[31m-[m
+ peer to peer skill share/setting.css             | 4942 [32m++++[m[31m--------------[m
+ peer to peer skill share/setting.html            | 3359 [32m+++[m[31m----------[m
+ peer to peer skill share/setting.js              | 5769 [32m+++++[m[31m-----------------[m
+ 23 files changed, 5671 insertions(+), 16975 deletions(-)

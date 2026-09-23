@@ -1,0 +1,2144 @@
+========================================================================
+STAGE 9.4 PRE-AUDIT REPORT
+SkillShare / CareerBridge -- Frontend vs Real Backend Architecture Audit
+========================================================================
+
+Scope
+-----
+Frontend : c:\project p2p\peer to peer skill share   (77 HTML files, 78 JS files)
+Backend  : c:\project p2p\backend-I                  (FastAPI + SQLAlchemy/PostgreSQL)
+
+Method
+------
+- Complete file inventory of both trees
+- Script/link graph extraction per HTML page (query-string aware)
+- `node --check` on EVERY frontend JavaScript file
+- Python AST parse of every relevant backend module
+- Full backend route extraction (@app.get/post/put/patch/delete)
+- Per-call tracing: PAGE -> JS -> api-client.js -> FastAPI route -> auth/role
+  check -> service -> SQLAlchemy model -> PostgreSQL -> serializer -> JS state -> UI
+- git diff review of all uncommitted work
+
+Changes made during this audit: NONE.
+No files modified, created, renamed or deleted. No routes, schemas, migrations,
+seeds or UI changed. No commits, no pushes.
+
+========================================================================
+# 1. EXECUTIVE SUMMARY
+========================================================================
+
+The backend is in GOOD SHAPE and is genuinely authoritative. The opportunity /
+application system, credits, LiveKit, communication hub, learning subsystem and
+the Stage 9.4 notification READ API are all real, JWT-scoped, owner-checked and
+terminate in PostgreSQL.
+
+The frontend is BIMODAL, and that is the entire problem.
+
+  ~30 pages are GENUINELY REAL and correctly consume the current API:
+    opportunities, opportunity-details, applications (student view), jobs,
+    my-learning, messages, requests, credits, profile, dashboard,
+    explore-skills, skill-mapping, careerverse, ai-career-coach, sandbox-*,
+    learning-player, course-details, discussion-room, live-discussions.
+
+  ~35 pages are PRE-ARCHITECTURE PLACEHOLDERS or PURE DUMMY DATA and still sit
+  in production navigation:
+    recruiter-dashboard, find-talent, talent-pool, talent-profile, students,
+    hiring-analytics, company-profile, interviews, internships, aptitude, dsa,
+    interview-prep, community, calendar, create-session, session-room,
+    bookmarks, projects, match-waiting, discussion-waiting, tutor-profile, ...
+
+THREE FINDINGS DOMINATE EVERYTHING ELSE:
+
+1. notifications.js IS NOT "WIRED WRONG" -- IT IS A DEAD FILE.
+   `node --check` fails at line 1:
+       SyntaxError: Unexpected token '==='
+   The opening `/*` of the header comment was lost.
+   Current file: 241 lines / 6,994 bytes.
+   Committed at HEAD: 919 lines / 25,033 bytes.
+   The file was TRUNCATED MID-EDIT.
+   It also calls SIX functions that no longer exist anywhere in the file:
+       updateUnreadCount, addTools, updateEmptyState, addNotificationActions,
+       restoreReadState, prepareNotification
+   and references THREE undefined variables:
+       markReadButton, toast, deletedNotification
+   => The browser never executes a single line of it.
+
+2. THERE IS NO notification.js AND NO notification.html.
+   Only notifications.js / notifications.html exist.
+   Any task written against "notification.js" targets a file that does not exist.
+
+3. THREE MORE JS FILES FAIL TO PARSE; two are ACTIVELY LOADED by real pages:
+       stage6-projects.js       -> loaded by projects.html       (BROKEN)
+       stage6-career-report.js  -> loaded by career-report.html  (BROKEN)
+       profile_fixed.js         -> orphaned, never loaded        (BROKEN)
+
+Additionally: THE RECRUITER APPLICATION-REVIEW PAGE THAT THE SIDEBAR LINKS TO
+(applications.html?role=recruiter) IS 100% HARDCODED DUMMY DATA -- even though a
+real, complete recruiter review workflow now exists in jobs.html.
+applications.js line 149 explicitly returns early for the recruiter view.
+
+VERDICT
+-------
+  Notification page/system .......... BLOCKED -- REBUILD REQUIRED (small, contained)
+  Application pipeline ............. READY WITH MINOR FIXES (Stage 9.4 work is sound)
+
+========================================================================
+# 2. COMPLETE PAGE INVENTORY
+========================================================================
+
+Frontend root: c:\project p2p\peer to peer skill share\
+77 HTML files, 78 JS files. Five HTML files are 0 bytes.
+
+Column key:
+  Class = A REAL / B BACKEND-ONLY-BROKEN / C FRONTEND-NO-BACKEND / D DUMMY
+          E DUPLICATE-OBSOLETE / F STATIC-PLACEHOLDER /
+          G BROKEN-ROUTE-CONTRACT / H MIXED
+
+------------------------------------------------------------------------
+2a. PRODUCTION PAGES
+------------------------------------------------------------------------
+
+login.html ................ login.js ....... public ... A
+  Endpoint : POST /login, GET /api/stats
+  DB       : users
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+signup.html ............... signup.js ...... public ... A
+  Endpoint : POST /signup, POST /api/admin/requests
+  DB       : users, student/recruiter/mentor_profiles
+  Pipeline : COMPLETE
+  Problem  : PUBLIC_ROLES=[student,recruiter,mentor]; faculty is admin-request
+             only (correct by design)
+  Rebuild  : No                Priority: -
+
+dashboard.html ............ dashboard.js + stage5-dashboard-bridge.js
+                            + stage8-bridges.js + dashboard-career-coach-widget.js
+  Role     : student ... A
+  Endpoint : GET /me, GET /api/dashboard, GET /api/learning/me,
+             PATCH /api/users/me/skills
+  DB       : users, user_skills, connections, conversations
+  Pipeline : COMPLETE
+  Problem  : legacy topbar fallback renders credits.currentBalance = 0 and a
+             dead #notificationCount span
+  Rebuild  : No                Priority: P3
+
+opportunities.html ........ opportunities.js  student ... A
+  Endpoint : GET /api/opportunities,
+             GET /api/opportunities/me/recommended
+  DB       : opportunities, opportunity_skills, applications
+  Pipeline : COMPLETE
+  Problem  : recruiter sees no controls (by design)
+  Rebuild  : No                Priority: -
+
+opportunity-details.html .. opportunity-details.js  student ... A
+  Route    : opportunity-details.html?id=
+  Endpoint : GET /api/opportunities/{id},
+             POST /api/opportunities/{id}/apply,
+             GET /api/applications/me
+  DB       : opportunities, opportunity_skills, applications
+  Pipeline : COMPLETE
+  Problem  : already-applied walk is N pages of 50 (bounded)
+  Rebuild  : No                Priority: -
+
+applications.html (STUDENT)  applications.js  student ... A
+  Endpoint : GET /api/applications/me,
+             POST /api/applications/{id}/withdraw
+  DB       : applications, opportunities
+  Pipeline : COMPLETE
+  Problem  : 5 extra requests for the pipeline strip (1 per status)
+  Rebuild  : No                Priority: -
+
+applications.html (RECRUITER VIEW)  applications.js  recruiter ... D
+  Route    : applications.html?role=recruiter
+  Endpoint : NONE
+  DB       : NONE
+  Real data: NO
+  Pipeline : BROKEN -- applications.js:149 `if (state.view !== "student") return;`
+  Problem  : HARDCODED A. Sharma / R. Iyer / S. Khan, fake match %, fake stages,
+             data-toast="Moved to Assessment (frontend only)."
+  Rebuild  : YES               Priority: P0
+
+jobs.html ................. jobs.js  recruiter ... A
+  Endpoint : getMyOpportunities, createOpportunity, updateOpportunity,
+             replaceOpportunitySkills, publishOpportunity, closeOpportunity,
+             archiveOpportunity, deleteOpportunity, getOpportunityApplications,
+             updateApplicationStatus, getOpportunityPipeline
+  DB       : opportunities, opportunity_skills, applications, recruiter_profiles
+  Pipeline : COMPLETE (UNCOMMITTED WORK IN PROGRESS)
+  Problem  : needs review/commit; no notification indicator after status change
+  Rebuild  : No                Priority: -
+
+my-learning.html .......... my-learning.js  student ... A
+  Endpoint : GET /api/learning/me | active | completed | recommendations |
+             roadmap, PATCH /api/learning/{id}/progress | time,
+             POST /api/learning/start/{id}
+  DB       : learning_records, learning_resources
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+explore-skills.html ....... explore-skills.js, thumbnails.js  student ... A
+  Endpoint : GET /api/learning/catalog | recommendations,
+             POST /api/learning/start/{id}, bookmark add/remove
+  DB       : learning_resources, learning_records
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+learning-player.html ...... learning-player.js  student ... A
+  Route    : learning-player.html?id=
+  Endpoint : GET /api/learning/resources/{id},
+             POST /api/learning/{id}/watch, POST /api/learning/{id}/init
+  DB       : learning_resources, learning_records
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+course-details.html ....... course-details.js  student ... A
+  Endpoint : GET /api/learning/courses/{key}, POST /api/learning/start/{id}
+  DB       : learning_resources
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+messages.html ............. messages.js  both ... A
+  Endpoint : /api/communication/* (32 routes) + WS /ws/communication
+  DB       : conversations, messages, participants, attachments, calls
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+requests.html ............. requests.js  both ... A
+  Endpoint : GET /api/requests, GET /api/requests/connections,
+             PATCH /api/requests/{id}/accept, PATCH /api/requests/{id}/reject,
+             DELETE /api/requests/{id}, POST /api/requests,
+             GET /api/users/search
+  DB       : connection_requests, connections, users
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+profile.html .............. profile.js, stage5-shared-bridge.js  both ... A
+  Endpoint : GET /profile/me, PUT /api/profile/me,
+             GET|POST|PATCH|DELETE /api/profile/education,
+             GET|POST|PATCH|DELETE /api/profile/skills,
+             GET /api/profile/completion,
+             GET /api/users/me/projects | activity | learning
+  DB       : users, student_profiles, recruiter_profiles, mentor_profiles,
+             education, user_skills, projects, learning_records
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+credits.html .............. credits.js  both ... A
+  Endpoint : GET /api/credits, GET /api/credits/history,
+             GET /api/credits/packages, POST /api/credits/purchase
+  DB       : credit_wallets, credit_transactions, credit_purchases
+  Pipeline : COMPLETE
+  Problem  : daily vs purchased split never rendered; reviewsReceived /
+             averageRating are hardcoded 0 server-side
+  Rebuild  : No                Priority: P2
+
+skill-mapping.html ........ skill-mapping.js  student ... A
+  Endpoint : GET /api/industry/roles, GET /api/skill-mapping/me,
+             PUT /api/skill-mapping/target-role
+  DB       : job_roles, role_skills, user_skills, skill_history
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+ai-career-coach.html ...... ai-career-coach.js, portal.js, auth-guard.js
+                            student ... A
+  Endpoint : GET /api/career-coach/context | recommendations | next-mission |
+             roadmap | conversations, POST /api/career-coach/chat
+  DB       : skill_history, skill_evidence, activity, coach_conversations
+  Pipeline : COMPLETE
+  Problem  : the ONLY page that loads auth-guard.js
+  Rebuild  : No                Priority: -
+
+careerverse.html .......... careerverse.js  student ... A
+  Endpoint : GET /api/careerverse/overview | timeline | roadmap |
+             next-mission | goals, POST /api/careerverse/goals | simulate
+  DB       : career_events, user_skills, projects, learning_records
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+industry-sandbox.html ..... industry-sandbox.js  student ... A
+  Endpoint : GET /api/sandbox/challenges | my-challenges | dashboard |
+             recommendations
+  DB       : sandbox_challenges, sandbox_participants
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+sandbox-challenge.html .... sandbox-challenge.js  student ... A
+  Endpoint : GET /api/sandbox/challenges/{id}, .../start,
+             /api/sandbox/my-challenges/{id}
+  DB       : sandbox_challenges, sandbox_participants
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+sandbox-workspace.html .... sandbox-workspace.js  student ... A
+  Endpoint : GET /api/sandbox/workspace/{id},
+             PUT /api/sandbox/workspace/{id}/draft,
+             POST /api/sandbox/workspace/{id}/submit
+  DB       : sandbox_submissions
+  Pipeline : COMPLETE          Problem: none
+  Rebuild  : No                Priority: -
+
+live-discussions.html ..... live-discussions.js  both ... A (partial)
+  Endpoint : GET/POST /api/discussions,
+             POST /api/discussions/{id}/join | leave | start | end | request
+  DB       : discussion_rooms, discussion_participants, credit_transactions
+  Pipeline : PARTIAL
+  Problem  : page never surfaces join-requests or participant moderation,
+             although the API exists
+  Rebuild  : No                Priority: P2
+
+discussion-room.html ...... discussion-room.js + livekit-room.js + parts 2-4
+  Route    : discussion-room.html?id=  ... both ... A
+  Endpoint : full /api/discussions/* + POST /api/livekit/token
+  DB       : discussion_rooms, discussion_participants, discussion_messages,
+             discussion_resources
+  Pipeline : COMPLETE
+  Problem  : none (LiveKit authorization is fully server-side)
+  Rebuild  : No                Priority: -
+
+skill-passport.html ....... stage6-skill-passport.js + stage5-shared-bridge.js
+                            + stage8-bridges.js  student ... A
+  Endpoint : GET /api/skills/evidence | growth, GET /api/learning/overview,
+             GET /api/innovation/evidence
+  DB       : skill_evidence, skill_history, projects
+  Pipeline : COMPLETE
+  Problem  : static body + JS-injected panels
+  Rebuild  : No                Priority: -
+
+industry-skills.html ...... industry-skills.js, stage5-industry-bridge.js
+                            student ... A (seeded reference data)
+  Endpoint : GET /api/industry/insights | skills | domains
+  DB       : industry_skill_insights  (SEEDED platform dataset, not live market)
+  Pipeline : COMPLETE
+  Problem  : none -- disclaimers correctly state "sample data"
+  Rebuild  : No                Priority: -
+
+setting.html .............. setting.js  both ... H
+  Endpoint : GET /me, PATCH /api/users/me, PUT /api/profile/me
+  DB       : users, role profiles
+  Pipeline : PARTIAL
+  Problem  : appearance / privacy / notifications tabs are localStorage-only;
+             clicking the bell fires "You have 3 new notifications." (hardcoded)
+  Rebuild  : No                Priority: P2
+
+------------------------------------------------------------------------
+2b. PLACEHOLDER PAGES
+    (shell renders, body is static, marked "TODO: Replace with backend API data")
+------------------------------------------------------------------------
+
+FILE                     ROLE      CLS   ENDPOINT  REAL?  MAIN PROBLEM                  REBUILD  PRIO
+recruiter-dashboard.html recruiter C/F   none      NO     2.8 KB static; THIS IS THE     YES      P0
+                                                          LOGIN REDIRECT TARGET FOR
+                                                          EVERY RECRUITER
+find-talent.html         recruiter C/F   none      NO     no talent search behind it     YES      P1
+                                                          (only /api/users/search exists)
+talent-pool.html         recruiter C/F   none      NO     data-toast="Pool created       YES      P2
+                                                          (frontend only)."
+talent-profile.html      recruiter C/F/G none      NO     <body data-page=              YES      P2
+                                                          "find-talent.html"> WRONG
+                                                          data-page; data-toast fake
+students.html            faculty   C/F   none      NO     no cohort endpoint             YES      P3
+skill-gap.html           faculty   C/F   none      NO     data-toast x2                  YES      P3
+faculty-dashboard.html   faculty   C/F   none      NO     faculty role has ZERO          YES      P3
+                                                          backend endpoints
+faculty-challenges.html  faculty   C/F   none      NO     same                           YES      P3
+industry-partners.html   faculty   C/F   none      NO     same                           YES      P3
+internships-tracking     faculty   C/F   none      NO     same                           YES      P3
+placement-analytics      faculty   C/F   none      NO     same                           YES      P3
+hiring-analytics.html    recruiter C/F   none      NO     no analytics endpoint          YES      P2
+industry-challenges.html recruiter C/F   none      NO     data-toast x4                  YES      P3
+company-profile.html     recruiter C/F   none      NO     data-toast fake; recruiter     YES      P2
+                                                          profile is really profile.html
+recruiter-settings.html  recruiter C/F   none      NO     body literally says            YES      P2
+                                                          "Frontend only."
+internships.html         recruiter C/F   none      NO     real internships are           YES      P2
+                                                          GET /api/opportunities
+                                                          ?opportunity_type=internship
+interviews.html          shared    C/F   none      NO     hardcoded A. Sharma /          YES      P1
+                                                          R. Iyer; data-toast x5
+aptitude.html            student   C/F   none      NO     hardcoded quiz sets;           YES      P3
+                                                          data-toast x6
+dsa.html                 student   C/F   none      NO     data-toast x4                  YES      P3
+interview-prep.html      student   C/F   none      NO     data-toast x5; real KB exists  YES      P3
+                                                          in career-coach
+career-report.html       student   B/G   /api/skills/evidence|growth,      **        JS SyntaxError line 116      Partial  P1
+                                         /api/learning/overview,       **  kills the WHOLE report file
+                                         /api/projects
+session-room.html        both      F/G   none      NO     confirm("Leave this demo       YES      P3
+                                                          session?"); links to missing
+                                                          app-pages.js / app-pages.css
+bookmarks.html           both      F/G   GET|POST|DELETE /api/learning/    NO     JS only sets aria-labels;    WIRE     P2
+                                         bookmarks  **EXISTS AND IS UNUSED**       endpoints fully unused
+create-session.html      both      C     POST /api/discussions  **EXISTS**    NO    full wizard + success modal, WIRE     P2
+                                                                                   ZERO API calls;                ONLY
+                                                                                   localStorage draft only
+calendar.html            both      D/C   none      NO     no API references at all       YES      P3
+
+------------------------------------------------------------------------
+2c. DUMMY / MOCK PAGES
+------------------------------------------------------------------------
+
+notifications.html       both    C/B
+  JS       : notifications.js  ** DEAD FILE **
+  Endpoint : BACKEND READY -- GET /api/notifications,
+             POST /api/notifications/{id}/read,
+             POST /api/notifications/read-all
+  Real data: NO
+  Problem  : broken JS + legacy standalone markup + no shared shell
+  Rebuild  : YES (small)        Priority: P0  <== TOP PRIORITY
+
+projects.html            both    D
+  JS       : projects.js (localStorage gallery) + stage6-projects.js (BROKEN)
+  Endpoint : GET /api/projects, GET /api/users/{id}/projects,
+             GET /api/projects/{id}  **ALL EXIST AND ARE UNUSED**
+  Real data: NO
+  Problem  : localStorage["skillconnectProjects"], ["skillconnectUserData"],
+             ["skillconnectGithub"]; own `let projects = []`;
+             likes / comments / saves / shares are all client-side
+  Rebuild  : YES                Priority: P1
+
+community.html           both    D
+  JS       : community.js (27 KB), profile-quick.js
+  Endpoint : NONE
+  Real data: NO
+  Problem  : 27 KB JS contains ZERO API references -- only DOM tilt, ripple,
+             reveal animations; discussions hardcoded in 24 KB HTML
+  Rebuild  : YES                Priority: P2
+
+match-waiting.html       student D
+  JS       : match-waiting.js
+  Endpoint : NONE
+  Real data: NO
+  Problem  : sessionStorage match data + explicit comment
+             "Demo fallback so the page always works"
+  Rebuild  : YES                Priority: P2
+
+discussion-waiting.html  student D
+  JS       : discussion-waiting.js
+  Endpoint : NONE
+  Real data: NO
+  Problem  : DEMO_DISCUSSION_MATCH constant +
+             localStorage["skillconnect_current_room"]
+  Rebuild  : YES                Priority: P2
+
+live-learning.html       student H
+  JS       : live-learning.js
+  Endpoint : NONE (comment says "Future: replace with POST /api/matches")
+  Real data: NO (match flow only)
+  Problem  : match flow is sessionStorage-only;
+             /api/matches DOES NOT EXIST IN THE BACKEND
+  Rebuild  : Partial            Priority: P2
+
+tutor-profile.html       both    C/F
+  JS       : profile.js  <== WRONG FILE (60 KB, expects profile.html's DOM)
+  Endpoint : NONE
+  Real data: NO
+  Problem  : body is a single .empty-state saying
+             "will appear here once connected to the backend"
+  Rebuild  : YES                Priority: P2
+
+------------------------------------------------------------------------
+2d. DUPLICATE / LEGACY
+------------------------------------------------------------------------
+
+innovation-lab1.html  + innovation-lab1.js (5.7 KB)   ... E
+innovation-lab2.html  + innovation-lab2.js (17.9 KB)  ... E
+innovation-lab3.html  + innovation-lab3.js (59.5 KB)  ... E
+  Problem : standalone prototypes with NO api-client.js, NO shell, NO auth
+  Action  : delete / defer                            Priority: P3
+
+innovation-lab.html   + innovation-lab.js + parts 2-8 + stage8-bridges.js ... A/E
+  Problem : REAL, but uses its own fetch() wrapper instead of api-client.js
+  Action  : patch (route through api-client.js)       Priority: P2
+
+profile_fixed.js  (44 KB) ... E/G
+  Problem : orphan copy of profile.js, never loaded by any HTML,
+            AND fails node --check (SyntaxError line 703)
+  Action  : delete / defer                            Priority: P3
+
+app-pages.js / app-pages.css ... G  ** DO NOT EXIST **
+  Referenced by 8 pages:
+      bookmarks.html, contact.html, error.html, help.html, privacy.html,
+      safety.html, session-room.html, terms.html
+  Action  : create them, or de-link                Priority: P2
+
+------------------------------------------------------------------------
+2e. DEAD / EMPTY FILES (0 bytes) -- several are STILL LINKED IN NAVIGATION
+------------------------------------------------------------------------
+
+reviews.html         0 bytes   ** LINKED FROM THE STUDENT SIDEBAR
+                                 (portal-shell.js line 14) **
+leaderboard.html     0 bytes   ** LINKED FROM THE STUDENT SIDEBAR
+                                 (portal-shell.js line 14) **
+live-room.html       0 bytes   in auth-guard.js allowlist
+innovation-lab4.html 0 bytes   in auth-guard.js allowlist (student)
+contanct.html        0 bytes   in auth.js public list + auth-guard.js
+
+Also 0 bytes: reviews.js, leaderboard.js, live-room.js, live-room.css,
+innovation-lab4.js, innovation-lab4.css, script.js
+
+------------------------------------------------------------------------
+2f. PUBLIC / MARKETING (no data pipeline needed -- correct as-is)
+------------------------------------------------------------------------
+
+index.html (47 KB) ............................. F  landing page, no JS
+about.html + about.js .......................... F  marketing
+explore.html ................................... F  intentional <meta refresh>
+                                                   redirect stub to
+                                                   explore-skills.html  (OK)
+error.html, privacy.html, safety.html,
+help.html, terms.html, contact.html ............ G  all reference the MISSING
+                                                   app-pages.css / app-pages.js
+
+========================================================================
+# 3. REAL VS DUMMY PAGE MAP
+========================================================================
+
+REAL (A) -- 26 pages
+  login.html, signup.html, dashboard.html, opportunities.html,
+  opportunity-details.html, applications.html (STUDENT VIEW ONLY), jobs.html,
+  my-learning.html, explore-skills.html, learning-player.html,
+  course-details.html, messages.html, requests.html, profile.html,
+  credits.html, skill-mapping.html, ai-career-coach.html, careerverse.html,
+  industry-sandbox.html, sandbox-challenge.html, sandbox-workspace.html,
+  discussion-room.html, skill-passport.html,
+  industry-skills.html (seeded reference data),
+  live-discussions.html (partial), index.html / about.html / explore.html
+  (static by design).
+
+PARTIAL (B / H) -- 4 pages
+  applications.html      (mixed roles: student REAL / recruiter DUMMY)
+  setting.html           (profile real / preferences localStorage)
+  live-learning.html     (rest of page real, match flow fake)
+  career-report.html     (broken JS)
+
+DUMMY (D) -- 7 pages
+  applications.html?role=recruiter  (** hardcoded dummy INSIDE a real page **)
+  projects.html, community.html, calendar.html, match-waiting.html,
+  discussion-waiting.html, live-learning.js match flow
+
+BROKEN (G) -- 14 items
+  notifications.js        (SyntaxError, dead)
+  stage6-projects.js      (SyntaxError)
+  stage6-career-report.js (SyntaxError)
+  profile_fixed.js        (SyntaxError, orphan)
+  app-pages.js            (MISSING, referenced by 8 pages)
+  app-pages.css           (MISSING, referenced by 8 pages)
+  reviews.html, leaderboard.html, live-room.html, innovation-lab4.html,
+  contanct.html           (all 0 bytes)
+
+DUPLICATE (E) -- 4 items
+  innovation-lab1/2/3.html + JS   (legacy prototypes)
+  profile_fixed.js                (orphan profile.js copy)
+  stage8-bridges.js               (duplicate raw-fetch pipeline)
+  notifications                   (CONCEPT duplication -- see section 7)
+
+PLACEHOLDER (C / F) -- 20 pages
+  every recruiter-*, faculty-*, talent-*, find-talent, students, skill-gap,
+  industry-*, hiring-analytics, placement-analytics, internships*,
+  interviews, aptitude, dsa, interview-prep, create-session, session-room,
+  bookmarks, tutor-profile
+
+========================================================================
+# 4. API / ROUTE MATRIX
+========================================================================
+
+Format:
+  PAGE | JS FUNCTION | API CALL | METHOD | BACKEND ROUTE | AUTH | ROLE |
+  RESPONSE SHAPE | DB MODEL | WORKING? | PROBLEM
+
+------------------------------------------------------------------------
+NOTIFICATIONS
+------------------------------------------------------------------------
+
+notifications.html | loadNotificationsFromServer | getNotifications({limit:100})
+  | GET | /api/notifications | JWT | any
+  | {items[],total,limit,offset,has_more,unread_count}
+  | Notification (notifications) | ** NO **
+  | ** JS NEVER PARSES -- the file has a SyntaxError **
+
+(nothing) | markNotificationRead | -  | POST | /api/notifications/{id}/read
+  | JWT | owner | {notification:{...}} | notifications | ** NO **
+  | ** NO CALLER EXISTS **
+
+(nothing) | markAllNotificationsRead | - | POST | /api/notifications/read-all
+  | JWT | owner | {marked:int} | notifications | ** NO **
+  | ** NO CALLER EXISTS **
+
+(nothing) | - | - | GET | (none) | - | - | - | - | ** NO **
+  | ** NO unread-count-only endpoint -> a navbar badge is impossible without
+     fetching a whole page of notifications **
+
+(nothing) | - | - | DELETE | (none) | - | - | - | - | ** NO **
+  | ** NO delete / dismiss endpoint **
+
+portal-shell.js (ALL shell pages) | inline handler | - | - | notifications.html
+  | none | none | - | none | YES (nav only)
+  | ** plain link; no badge, no count, no dropdown, no fetch **
+
+dashboard.js | updateNotificationCount | getDashboard() | GET | /api/dashboard
+  | JWT | any
+  | {notifications:{pending_requests[],unread_conversations[]}}
+  | connection_requests, conversations | YES
+  | ** DIFFERENT NOTIFICATION CONCEPT -- not the `notifications` table **
+
+setting.html | loadNotifications | - | - | (none) | - | - | - | localStorage
+  | ** NO **
+  | ** preferences are client-only; "You have 3 new notifications." hardcoded **
+
+------------------------------------------------------------------------
+APPLICATIONS
+------------------------------------------------------------------------
+
+applications.html (student) | load | getMyApplications({limit,offset,status})
+  | GET | /api/applications/me | JWT | student
+  | {applications[],total,limit,offset,has_more} | Application | YES
+  | 5 extra calls for the pipeline strip
+
+applications.html (student) | doWithdraw | withdrawApplication(id)
+  | POST | /api/applications/{id}/withdraw | JWT | owner
+  | {application} | Application | YES | -
+
+applications.html (recruiter) | (early return at line 149) | - | - | - | - | -
+  | - | - | ** NO ** | ** DUMMY TABLE -- no API call is ever made **
+
+jobs.html | loadList | getMyOpportunities({limit:100})
+  | GET | /api/opportunities/mine | JWT | recruiter
+  | {opportunities[]} | Opportunity | YES | -
+
+jobs.html | loadApplicants | getOpportunityApplications(id,{status,search,limit,offset})
+  | GET | /api/opportunities/{id}/applications | JWT | owner-recruiter
+  | {items[],total,has_more} | Application + User + StudentProfile | YES | -
+
+jobs.html | saveStatus | updateApplicationStatus(id,payload)
+  | PATCH | /api/applications/{id}/status | JWT | owner-recruiter
+  | {application} | Application | YES
+  | ** triggers _notify_application_status -> notifications table (OK) **
+
+jobs.html | loadPipeline | getOpportunityPipeline(oppId)
+  | GET | /api/opportunities/{id}/pipeline | JWT | owner-recruiter
+  | {opportunity_id,total,applied,reviewing,shortlisted,interview,selected,
+     rejected,withdrawn,other}
+  | Application GROUP BY | YES
+  | ** Stage 9.4 backend DONE; uncommitted in jobs.html **
+
+opportunities.html | loadList | listPublishedOpportunities(params)
+  | GET | /api/opportunities | JWT | any
+  | {opportunities[],total,has_more} | Opportunity | YES | -
+
+opportunities.html | loadReco | getRecommendedOpportunities(params)
+  | GET | /api/opportunities/me/recommended | JWT | student
+  | {opportunities[],total,has_more,disclaimer}
+  | Opportunity + matching engine | YES | -
+
+opportunity-details.html | render | getOpportunity(id)
+  | GET | /api/opportunities/{id} | JWT | any
+  | {opportunity:{...my_eligible,my_match,my_*_skills}}
+  | Opportunity, OpportunitySkill | YES | -
+
+opportunity-details.html | doApply | applyToOpportunity(id,{cover_note})
+  | POST | /api/opportunities/{id}/apply | JWT | student
+  | {application} or 409 | Application | YES
+  | duplicate guard + 409 mapped correctly
+
+------------------------------------------------------------------------
+CREDITS / LIVEKIT / COMMUNICATION / LEARNING / DUMMY PIPELINES
+------------------------------------------------------------------------
+
+credits.html | loadCreditsData | getCredits(), getCreditsHistory()
+  | GET | /api/credits, /api/credits/history | JWT | any
+  | {balance,daily_credits,purchased_credits,...}, {total,activity[]}
+  | CreditWallet, CreditTransaction | YES
+  | daily/purchased split is mapped but never rendered
+
+credits.html | requestPurchase | purchaseCredits(key,uuid)
+  | POST | /api/credits/purchase | JWT | any
+  | 202 {purchase_id,status,payment:{status:"not_configured"}}
+  | CreditPurchase | YES
+  | payment deliberately not configured
+
+components/credits-chip.js (ALL pages) | fetchBalance | getCredits()
+  | GET | /api/credits | JWT | any | {balance} | CreditWallet | YES
+  | single-flight promise cache; max 1 request per page load
+
+discussion-room.html | livekit-room-part3.js | getLivekitToken(roomId)
+  | POST | /api/livekit/token | JWT | host/member
+  | {server_url,participant_token}
+  | DiscussionRoom, DiscussionParticipant | YES
+  | membership + private-room + paid-window + capacity ALL server-enforced
+
+live-discussions.js | createRoom | createDiscussion(payload)
+  | POST | /api/discussions | JWT + idempotency key | any
+  | {room} or 402 | DiscussionRoom + credit_transactions | YES
+  | 402 -> "Buy credits" UI wired correctly
+
+messages.html | (many) | commListConversations / commGetMessages / ...
+  | GET/POST/PATCH/DELETE | /api/communication/* | JWT | participant
+  | various | conversations, messages, participants | YES | -
+
+requests.html | (many) | listRequests / acceptRequest / rejectRequest /
+  cancelRequest / sendRequest / searchUsers
+  | GET/POST/PATCH/DELETE | /api/requests*, /api/users/search | JWT | any
+  | various | connection_requests, connections | YES | -
+
+my-learning.html | loadAll | getLearningMe() + recommendations + roadmap
+  | GET | /api/learning/me | JWT | any | {items[],active[],completed[],
+  overview,recent_activity[],skills[]} | LearningRecord | YES | -
+
+projects.html | saveProjects | ** NONE ** | - | - | - | - | - | localStorage
+  | ** NO ** | ** backend GET/POST /api/projects unused **
+
+create-session.html | publish | ** NONE ** | - | - | - | - | - | localStorage
+  | ** NO ** | ** /api/discussions unused **
+
+bookmarks.html | bookmarksSetup | ** NONE ** | - | - | - | - | - | -
+  | ** NO ** | ** /api/learning/bookmarks unused **
+
+community.html | (none) | ** NONE ** | - | - | - | - | - | - | ** NO **
+  | ** zero API references in a 27 KB file **
+
+------------------------------------------------------------------------
+AUTH / GUARD COVERAGE
+------------------------------------------------------------------------
+
+auth-guard.js (the central role allowlist) is loaded by EXACTLY ONE PAGE:
+    ai-career-coach.html
+Everywhere else, role enforcement is per-page or ABSENT.
+
+Its allowlist also names two files that DO NOT EXIST:
+    my-teaching.html
+    portal.html
+
+========================================================================
+# 5. BROKEN PIPELINES
+========================================================================
+
+ #   PIPELINE                                              BREAK POINT
+---  ----------------------------------------------------  ----------------------------------------
+ 1   notifications.html -> notifications.js ->               notifications.js:1
+     api-client.getNotifications -> GET /api/notifications     SyntaxError: Unexpected token '==='
+     -> Notification -> PostgreSQL -> render                  (+ truncated; 6 undefined functions)
+                                                              Backend works perfectly.
+                                                              NOTHING EVER CALLS IT.
+
+ 2   portal-shell navbar bell -> notification count           portal-shell.js:130-132
+                                                              binds click -> location.href =
+                                                              "notifications.html"
+                                                              NO fetch, NO badge, NO count.
+                                                              No /api/notifications call exists
+                                                              anywhere outside the dead file.
+
+ 3   dashboard.js notification badge -> GET /api/dashboard    WORKS, but reads
+                                                              notifications.pending_requests +
+                                                              notifications.unread_conversations
+                                                              = a DIFFERENT concept from the
+                                                              `notifications` table.
+                                                              Legacy topbar also hardcodes
+                                                              `const unreadCount = 0;` (line 561)
+                                                              and #notificationCount starts
+                                                              display:none.
+
+ 4   setting.html notification preferences                    setting.js:1931 loadNotifications()
+                                                              reads settings.notifications.*
+                                                              from LOCALSTORAGE.
+                                                              Backend has NO preference endpoint.
+                                                              Clicking the bell fires
+                                                              "You have 3 new notifications."
+                                                              (line 3781) -- hardcoded.
+
+ 5   recruiter -> applications.html?role=recruiter            applications.js:149
+                                                              `if (state.view !== "student") return;`
+                                                              -> the hardcoded table renders.
+                                                              A COMPLETE real recruiter review
+                                                              UI exists in jobs.html and is
+                                                              linked NOWHERE in the recruiter nav.
+
+ 6   projects.html -> My Projects                            stage6-projects.js:30
+                                                              `function projectCard` is spliced
+                                                              into the middle of
+                                                              `statusBadgeLabel`; the closing brace
+                                                              is orphaned at lines 132-137.
+                                                              Whole file dead -> the section is
+                                                              never injected.
+
+ 7   career-report.html -> report body                        stage6-career-report.js:116
+                                                              SyntaxError: Unexpected token ')'
+
+ 8   bookmarks.html -> saved skills                           bookmarks.js (330 B) only sets
+                                                              aria-labels.
+                                                              GET/POST/DELETE
+                                                              /api/learning/bookmarks exist
+                                                              and are UNUSED.
+
+ 9   create-session.html -> publish                           create-session.js makes ZERO API
+                                                              calls; the success modal is
+                                                              cosmetic. /api/discussions exists.
+
+10   community.html -> discussions                            community.js (27 KB) has ZERO API
+                                                              references.
+
+11   community.html / session-room.html / bookmarks.html      reference app-pages.js and
+     / contact.html / help.html / privacy.html / safety.html  app-pages.css
+     / terms.html / error.html -> page CSS + JS               WHICH DO NOT EXIST
+                                                              -> 404s on 8 pages.
+
+12   live-learning.html -> Find my match -> match-waiting     sessionStorage handoff only.
+                                                              live-learning.js:1331 comment:
+                                                              "Future: replace with
+                                                               POST /api/matches"
+                                                              /api/matches DOES NOT EXIST.
+                                                              match-waiting.js:111 has an
+                                                              explicit "Demo fallback".
+
+13   discussion-waiting.html -> match data                    DEMO_DISCUSSION_MATCH constant +
+                                                              localStorage
+                                                              ["skillconnect_current_room"]
+
+14   tutor-profile.html -> tutor profile                      loads the 60 KB profile.js (which
+                                                              expects profile.html's DOM) onto a
+                                                              page whose body is a single
+                                                              .empty-state placeholder.
+
+15   recruiter / faculty nav -> ~20 pages                     all render shell + static markers
+                                                              + data-toast="...(frontend only)"
+                                                              buttons.
+
+16   auth-guard.js global role enforcement                    loaded by 1 of 77 pages.
+                                                              Allowlists my-teaching.html and
+                                                              portal.html -- BOTH MISSING.
+
+17   Sidebar -> reviews.html, leaderboard.html                ** 0-BYTE FILES ** still linked in
+                                                              the STUDENT SIDEBAR
+                                                              (portal-shell.js:14)
+
+18   innovation-lab.js / stage8-bridges.js ->                 WORKS, but BYPASSES api-client.js
+     /api/innovation/*                                        with a hand-rolled req() + raw
+                                                              fetch() -- duplicate API pipeline,
+                                                              duplicate 401 handling.
+
+========================================================================
+# 6. DUMMY DATA FINDINGS
+========================================================================
+
+FILE                                 LINE(S)        WHAT IT DOES
+------------------------------------------------------------------------------
+PRODUCTION-BLOCKING
+------------------------------------------------------------------------------
+
+notifications.js ................... 1              Header comment missing the
+                                                    opening /* -> THE FILE NEVER
+                                                    PARSES AT ALL
+
+notifications.js ................... 96, 97, 217,  Calls updateUnreadCount,
+                                     127-129, 188,  addTools, updateEmptyState,
+                                     211            restoreReadState,
+                                                    addNotificationActions,
+                                                    prepareNotification
+                                                    -- ALL UNDEFINED
+                                                    (verified defs=0 for each)
+
+notifications.js ................... 20, 22, 38    markReadButton, toast,
+                                                    deletedNotification
+                                                    referenced but never defined
+
+notifications.html ................. 34            "You are all caught up. New
+                                                    notifications will appear here
+                                                    once connected to the backend."
+                                                    (dummy-era copy on a live page)
+
+applications.html .................. 62-67         Hardcoded funnel:
+                                                    A. Sharma 92%, R. Iyer 88%,
+                                                    S. Khan 81%; every row button
+                                                    has data-toast="...(frontend
+                                                    only)."
+
+applications.html .................. 18            <!-- TODO: Replace with backend
+                                                    API data. -->
+
+dashboard.js ....................... 561           const unreadCount = 0;
+
+dashboard.js ....................... 46-51, 612    getDB() hardcodes
+                                                    credits.currentBalance: 0,
+                                                    then line 612 renders it
+
+dashboard.js ....................... 632-637       #notificationCount span
+                                                    hardcoded display:none
+
+setting.js ......................... 3781          "You have 3 new notifications."
+
+setting.js ......................... 39-47,        settings.notifications.* stored
+                                     1931-1954      in localStorage only
+
+projects.js ........................ 12, 95-110,   let projects = [] +
+                                     1311           localStorage[
+                                                    "skillconnectProjects"],
+                                                    ["skillconnectUserData"];
+                                                    likes / comments / saves /
+                                                    shares all client-side
+
+stage6-projects.js ................. 30-137        Corrupted function splice ->
+                                                    SyntaxError line 130
+
+stage6-career-report.js ............ 116           SyntaxError: Unexpected token ')'
+
+discussion-waiting.js .............. 102, 116,     DEMO_DISCUSSION_MATCH constant +
+                                     134-136        localStorage[
+                                                    "skillconnect_current_room"]
+
+match-waiting.js ................... 93, 111       sessionStorage match +
+                                                    "Demo fallback so the page
+                                                    always works"
+
+live-learning.js ................... 817-829,      match handoff via sessionStorage;
+                                     1331-1348      comment references the
+                                                    nonexistent POST /api/matches
+
+16 HTML files ...................... various       ** 57 total ** data-toast
+                                                    buttons labelled
+                                                    "(frontend only)"
+
+------------------------------------------------------------------------------
+DEAD / ORPHANED
+------------------------------------------------------------------------------
+
+profile_fixed.js ................... 703           SyntaxError; 44 KB orphan copy
+                                                    of profile.js, loaded by NOTHING
+
+session-room.js .................... 1             confirm("Leave this demo
+                                                    session?")
+
+create-session.js .................. 407           localStorage draft; no API at all
+
+------------------------------------------------------------------------------
+LATENT (currently harmless)
+------------------------------------------------------------------------------
+
+portal.js ......................... 2-4, 84, 102
+    Header comment: "Frontend-only UI helpers: tabs, filtering, MOCK CHAT,
+    toasts. No API calls. TODO: wire to backend API later."
+    Line 84: "Mock AI coach chat (frontend simulation only)", line 102 emits
+    "Noted. Live AI guidance is not connected yet ... (TODO: connect
+    career-coach API.)"
+    -> VERDICT: SAFE. The #coachForm / #coachChat elements it binds to do not
+       exist on any live page, so the mock chat never activates.
+
+portal-unify.js ................... 16
+    "No backend calls. No auth changes. Idempotent.
+     TODO: Replace placeholder content with backend API data."
+    -> VERDICT: SAFE. Marker only.
+
+------------------------------------------------------------------------------
+SAFE / HONEST (correctly labelled -- do NOT treat as defects)
+------------------------------------------------------------------------------
+
+backend-I/credits_service.py ...... 82
+    "reviewsReceived": 0, "averageRating": 0
+    -> an honest server-side stub, not client-side fake data
+
+backend-I/credits_service.py ...... 83
+    "monthlyGoal": 500
+    -> a server-side constant
+
+backend-I/build_stage9_part5.py ... 79
+    "Platform industry dataset (sample data, not live market statistics)."
+    -> CORRECTLY LABELLED
+
+stage5_service.py / industry insights
+    -> a seeded platform reference dataset, disclaimed on every surface
+
+------------------------------------------------------------------------------
+data-toast DENSITY (fake-action buttons per page)
+------------------------------------------------------------------------------
+
+  aptitude.html ............ 6      faculty-challenges.html .. 2
+  interviews.html .......... 5      internships.html ......... 2
+  interview-prep.html ...... 5      skill-gap.html ........... 2
+  dsa.html ................. 4      recruiter-settings.html .. 2
+  industry-challenges.html . 4      career-report / company-profile /
+  applications.html ........ 3        industry-partners / skill-passport /
+  talent-pool / talent-profile ... 1  faculty-challenges ...... 1 each
+
+  TOTAL: 57 fake-action buttons across 16 HTML files
+
+========================================================================
+# 7. NOTIFICATION ARCHITECTURE AUDIT
+========================================================================
+
+ANSWERING THE 22 QUESTIONS DIRECTLY
+
+ 1. Real Notification DB model exists?
+    YES -- models.py:1570 `class Notification`, __tablename__="notifications"
+    (id / user_id / type / title / message / link / is_read / created_at),
+    registered on Base so create_all() covers a fresh database.
+
+ 2. Real notification API exists?
+    YES -- backend-I/notifications_api.py, registered from main.py:3711.
+
+ 3. What endpoints exist?
+    GET  /api/notifications
+    POST /api/notifications/{id}/read
+    POST /api/notifications/read-all
+
+ 4. Exact response shape?
+    List      : {items:[{id,type,title,message,link,is_read,created_at}],
+                 total, limit, offset, has_more, unread_count}
+    Read one  : {notification:{...}}
+    Read all  : {marked:int}
+
+ 5. Ownership tied to a real user ID?
+    YES -- every query filters Notification.user_id == cu.id taken from the
+    JWT. Another user's notification id returns 404 (not 403), so the
+    endpoint never reveals whether the row exists.
+
+ 6. Does notification data come from PostgreSQL?
+    YES -- db.query(Notification), with a portable
+    CREATE TABLE IF NOT EXISTS fallback covering both Postgres and SQLite DDL.
+
+ 7. Does the frontend fetch notifications?
+    NO -- the only consumer (notifications.js) is syntactically dead.
+
+ 8. Is it using dummy arrays?
+    Not inside notifications.js. BUT dashboard.js renders a hardcoded 0
+    (line 561) and setting.js hardcodes "You have 3 new notifications."
+
+ 9. Is it using localStorage?
+    YES for notification PREFERENCES (setting.js, key skillshareSettings) and
+    for projects.js gallery state. NO localStorage exists anywhere in the
+    notification LIST pipeline.
+
+10. Is it polling?
+    NO -- no polling, no WebSocket, no SSE for notifications.
+
+11. Is there read/unread state?
+    YES, server-side (is_read) and authoritative -- but currently unreachable.
+
+12. Is there mark-read?
+    YES: POST /api/notifications/{id}/read. ** NO CALLER EXISTS. **
+
+13. Is there mark-all-read?
+    YES: POST /api/notifications/read-all. ** NO CALLER EXISTS. **
+    The #markRead button in notifications.html has no listener, because the
+    JS file that would bind it never parses.
+
+14. Is there delete/dismiss?
+    NO endpoint. The OLD notifications.js had deleteNotification /
+    restoreDeleted / showUndoToast -- a UI affordance with no backend.
+
+15. Is there pagination?
+    YES -- limit (clamped 1..100 server-side) + offset + has_more.
+
+16. Is there a notification count endpoint?
+    NO -- unread_count only ships inside the list payload.
+
+17. Does the navbar notification UI use the same backend?
+    NO -- the portal-shell bell is a plain link, with no badge, no count and
+    no fetch. portal-unify.js:316 registers the SAME handler again.
+
+18. Does the notification page use the same backend?
+    It is WRITTEN to, but can never run.
+
+19. Are there multiple notification systems?
+    YES -- EXACTLY TWO:
+      (a) the `notifications` table, served by /api/notifications
+      (b) GET /api/dashboard's `notifications` object (pending connection
+          requests + unread conversations) -- a completely different concept
+
+20. Is any old dummy notification pipeline still active?
+    YES:
+      - setting.js:3781 -> "You have 3 new notifications." toast
+      - dashboard.js:561 -> const unreadCount = 0
+      - dashboard.js:632-637 -> #notificationCount starts display:none
+
+21. Can application-status changes create notifications today?
+    ** YES (uncommitted) ** -- opportunities_api.py:1293
+    _notify_application_status() is called from
+    PATCH /api/applications/{id}/status (around line 2374) AFTER the guarded
+    UPDATE has committed, reusing stage8_service.notify().
+      - Central copy map APPLICATION_STATUS_NOTIFICATIONS covers:
+            reviewing, shortlisted, interview, selected, rejected
+      - link is always "applications.html" (the student's own page)
+      - recipient is resolved server-side (app_row.student_user_id)
+      - a retried request hits the 409 same-status guard first, so no
+        duplicate notification is created
+      - a notification failure is isolated in its own rollback and can never
+        fail -- or rewrite -- the already-committed status change
+
+22. If not, identify the exact missing backend step.
+    ** THERE IS NO MISSING BACKEND STEP. **
+    The writer exists, the reader API exists, the model exists, main.py
+    registers it. The ONLY missing link is the FRONTEND.
+
+------------------------------------------------------------------------
+WRITERS OF THE `notifications` TABLE (verified)
+------------------------------------------------------------------------
+
+  stage8_service.notify(db, user_id, type, title, message, link)
+      -> raw portable DDL INSERT, stage8_service.py:48-75
+  Called 7x from stage8_api.py for:
+      "innovation", "innovation_invite", "innovation_feedback"
+  Called 1x from opportunities_api.py::_notify_application_status for:
+      "application_status"        <== STAGE 9.4, UNCOMMITTED
+
+  NOTE: stage8_service.notify() has a comment referencing
+  "main.create_notification" -- no such function is defined today.
+  It is comment-only staleness, not a second writer.
+
+  NOTE: notifications_api.py has NO write path at all. It is strictly
+  read + mark-read, which is correct.
+
+------------------------------------------------------------------------
+FRONTEND TRUTH TABLE
+------------------------------------------------------------------------
+
+notifications.html   (standalone page)
+  - own <header class="app-head"> nav (Dashboard / Explore / Learning)
+  - own notifications.css with its OWN :root palette AND a global
+    `* { margin:0; padding:0 }` reset
+  - does NOT load portal-shell.js
+  - does NOT load design-system.css
+  - <body> has NO data-page and NO data-role
+  - body content: a single static .empty-state div
+  - scripts: notifications.js, config.js, api-client.js, auth.js,
+             components/profile-dropdown.js, portal-unify.js
+        |
+        v
+notifications.js     <== ** BROKEN **
+  SyntaxError: Unexpected token '==='  (line 1: the opening /* is missing)
+  Truncated: 241 lines / 6,994 bytes  vs  919 lines / 25,033 bytes at HEAD
+  Calls 6 functions that no longer exist:
+        updateUnreadCount, addTools, updateEmptyState,
+        addNotificationActions, restoreReadState, prepareNotification
+  References 3 undefined variables:
+        markReadButton, toast, deletedNotification
+        |
+        +-- X  window.SkillShareAPI.getNotifications()    NEVER REACHED
+        +-- X  markNotificationRead / markAllNotificationsRead
+               NEVER CALLED BY ANY FILE IN THE PROJECT
+
+portal-shell.js:244
+  <button class="notification-btn" data-notifs="1">🔔</button>
+        |
+portal-shell.js:130-132
+  addEventListener("click", () => location.href = "notifications.html")
+  X  NO badge  ·  NO count  ·  NO dropdown  ·  NO fetch
+  (portal-unify.js:316 registers the SAME handler again -> duplicate listener)
+
+dashboard.js:1146 updateNotificationCount()
+  -> GET /api/dashboard
+  -> { notifications: { pending_requests[], unread_conversations[] } }
+  OK  WORKS -- but this is NOT the `notifications` table.
+      SECOND, COMPETING CONCEPT.
+  The legacy topbar path instead shows the hardcoded
+      const unreadCount = 0        (line 561)
+
+setting.js:1931 loadNotifications()
+  -> localStorage["skillshareSettings"].notifications.*
+setting.js:3781
+  -> toast("You have 3 new notifications.")
+  X  client-only; the backend has no notification-preference store
+
+------------------------------------------------------------------------
+BACKEND ENDPOINTS THAT NO FRONTEND FILE CALLS
+------------------------------------------------------------------------
+  POST /api/notifications/{id}/read
+  POST /api/notifications/read-all
+  GET  /api/opportunities/{id}/pipeline
+       (wired in api-client.js, used by the uncommitted jobs.js)
+
+------------------------------------------------------------------------
+NOTIFICATION TABLE SCHEMA (verified from three independent sources)
+------------------------------------------------------------------------
+  id         INTEGER / SERIAL   primary key
+  user_id    INTEGER            FK users.id, ON DELETE CASCADE, indexed
+  type       VARCHAR(50)        default 'general'
+  title      VARCHAR(200)
+  message    TEXT
+  link       VARCHAR(500)       default ''
+  is_read    BOOLEAN            default false, indexed
+  created_at DATETIME/TIMESTAMPTZ default now()
+
+  The model (models.py), the raw DDL (stage8_service.notify) and the
+  raw DDL (notifications_api._ensure_notifications_table) all agree.
+
+========================================================================
+# 8. APPLICATION ARCHITECTURE AUDIT
+========================================================================
+
+STUDENT PIPELINE -- FULLY COHERENT
+
+opportunities.html
+ |
+ +-- opportunities.js loadList
+ |     -> API.listPublishedOpportunities(params)
+ |     -> GET /api/opportunities
+ |     -> server-side eligibility + match (frontend never scores)     OK
+ |
+ +-- opportunities.js loadReco
+ |     -> API.getRecommendedOpportunities(params)
+ |     -> GET /api/opportunities/me/recommended
+ |     -> "Ranked by the server: eligible first, then skill match,
+ |         then deadline."                                              OK
+ v
+opportunity-details.html?id=
+ |
+ +-- getOpportunity(id) -> GET /api/opportunities/{id}                OK
+ |     returns my_eligible / my_match / my_*_skills
+ |
+ +-- getMyApplications walk -> already-applied detection from the
+ |     REAL application list (JWT identity)                           OK
+ |
+ +-- applyToOpportunity(id,{cover_note})
+ |     -> POST /api/opportunities/{id}/apply                          OK
+ |     duplicate-click guard                                       OK
+ |     409 "already applied" -> reflects real state, never re-POSTs OK
+ |     409 not-eligible -> adopts the SERVER's verdict              OK
+ v
+applications.html
+ |
+ +-- getMyApplications({status,limit,offset})
+ |     -> GET /api/applications/me                                    OK
+ |
+ +-- withdrawApplication(id)
+ |     -> POST /api/applications/{id}/withdraw                        OK
+ |     401/403/404/409 each mapped explicitly                         OK
+ |
+ +-- refreshCounts() = 5x GET /api/applications/me?status=X&limit=1
+       (server totals, never client-counted)                          OK
+
+RECRUITER PIPELINE -- COHERENT in jobs.html (UNCOMMITTED)
+
+jobs.html
+ |
+ +-- loadProfile  -> getMyRoleProfile()       -> GET /profile/me      OK
+ +-- loadList     -> getMyOpportunities()     -> GET /api/opportunities/mine  OK
+ +-- saveDraft    -> createOpportunity / updateOpportunity            OK
+ +-- replaceOpportunitySkills -> PUT /api/opportunities/{id}/skills   OK
+ +-- publish / close / archive / delete                               OK
+ +-- openApplicants -> getOpportunityApplications(id,
+ |                     {search,status,limit,offset})
+ |                   -> GET /api/opportunities/{id}/applications
+ |                     (owner-only via _require_recruiter + owner_user_id)  OK
+ +-- openReview    -> evidence comes from the server payload only     OK
+ |                   (safe student data; no email exposure)          OK
+ +-- saveStatus    -> updateApplicationStatus(id,
+ |                     {status, recruiter_note?, rejection_reason?})
+ |                   -> PATCH /api/applications/{id}/status           OK
+ |                      -> _notify_application_status()
+ |                         -> stage8_service.notify()
+ |                            -> INSERT INTO notifications
+ |                               (recipient = app_row.student_user_id)  OK
+ +-- loadPipeline  -> getOpportunityPipeline(id)
+                     -> GET /api/opportunities/{id}/pipeline
+                        (ONE server-side GROUP BY)                     OK
+
+BROKEN LINKS IN THE PIPELINE -- EXACTLY TWO
+
+  [1] X  applications.html?role=recruiter
+         BREAK POINT: applications.js:149
+             `if (state.view !== "student") return;`
+             + the hardcoded table at applications.html:62-67
+         The recruiter sidebar's "Applications" entry (portal-shell.js:19)
+         lands on a hardcoded dummy funnel. THIS IS THE MOST MISLEADING PAGE
+         IN THE PRODUCT: it looks like a working hiring pipeline.
+
+  [2] X  Notification row -> the student sees it
+         BREAK POINT: peer to peer skill share/notifications.js:1
+             (SyntaxError -- file never parses)
+             AND the absence of any /api/notifications call in
+             portal-shell.js
+         The recruiter's status change silently succeeds from the student's
+         point of view.
+
+NEITHER BREAK IS IN THE BACKEND.
+
+AUTHORIZATION VERDICT
+  Ownership is enforced SERVER-SIDE everywhere:
+    - opportunities   : opp.owner_user_id == cu.id
+    - applications    : student_user_id derived from the JWT
+    - recruiter routes: _require_recruiter(cu)
+  Frontend IDs are NEVER used as proof of ownership.
+  No page assumes company_name determines ownership.
+  No page assumes student and recruiter share one profile schema
+  (profile.js branches on user.role and calls getMyRoleProfile()).
+  No public applicant data leaks email.
+
+APPLICATION STATUS LIFECYCLE (verified server-side)
+  APPLICATION_STATUSES = applied, reviewing, shortlisted, interview,
+                         selected, rejected, withdrawn
+  Opportunity lifecycle = draft -> published -> closed -> archived
+  Transition guard       = APPLICATION_STATUS_TRANSITIONS via
+                           _allowed_targets(current_status)
+  Same-status patch      = 409 (this is what prevents duplicate
+                           notifications on retry)
+
+========================================================================
+# 9. STUDENT ARCHITECTURE PROBLEMS
+========================================================================
+
+notifications.html  .......... Reads nothing. Backend fully ready.
+                               Standalone legacy markup bypasses the
+                               shared shell.
+
+projects.html ................ Entire gallery is localStorage.
+                               GET /api/projects, GET /api/users/{id}/projects,
+                               GET /api/projects/{id} all exist and are UNUSED.
+                               stage6-projects.js real-data bridge is DEAD.
+
+applications.html ............ Pipeline strip renders 8 stages but only 5 exist
+                               server-side. Assessment / Offer / Joined are
+                               permanently 0 and are hardcoded MARKETING LABELS,
+                               not statuses.
+
+bookmarks.html ............... Static. /api/learning/bookmarks
+                               (GET/POST/DELETE) exists and is unused.
+
+calendar.html ................ Zero API references.
+
+create-session.html .......... Full wizard, no backend.
+                               /api/discussions exists.
+
+session-room.html ............ "Leave this demo session?";
+                               references missing app-pages.js / app-pages.css.
+
+live-learning.html ........... Match flow is sessionStorage.
+                               /api/matches DOES NOT EXIST.
+
+match-waiting.html ........... Demo fallback + sessionStorage.
+discussion-waiting.html ...... DEMO_DISCUSSION_MATCH + localStorage room object.
+
+community.html ............... 27 KB JS, 0 API calls, hardcoded discussions.
+
+aptitude.html ................ 6 fake-action buttons; zero backend.
+dsa.html ..................... 4 fake-action buttons; zero backend.
+interview-prep.html .......... 5 fake-action buttons; zero backend.
+
+career-report.html ........... Loads stage6-career-report.js, which does NOT
+                               parse -> the whole report file is dead.
+
+tutor-profile.html ........... Placeholder loading the WRONG 60 KB JS file.
+
+live-learning.html ........... Loads credits-chip.js but NOT auth.js --
+                               an inconsistent guard compared with the rest
+                               of the shell.
+
+SHELL INCONSISTENCY
+  These pages bypass portal-shell.js (they use portal-unify.js instead), so
+  they have a DIFFERENT nav, DIFFERENT active-state logic and NO
+  role-filtered sidebar:
+      notifications.html, messages.html, requests.html, credits.html,
+      setting.html, community.html, calendar.html, projects.html,
+      profile.html, live-learning.html, tutor-profile.html,
+      bookmarks.html, session-room.html, create-session.html, about.html
+
+========================================================================
+# 10. RECRUITER ARCHITECTURE PROBLEMS
+========================================================================
+
+1. DUAL / TRIPLE RECRUITER PIPELINE
+     jobs.html                     -> REAL and complete
+     applications.html?role=...    -> DUMMY
+     interviews.html               -> DUMMY
+   The sidebar links to the DUMMY ones.
+
+2. recruiter-dashboard.html
+     2.8 KB placeholder -- and it is the POST-LOGIN REDIRECT TARGET for
+     every recruiter (login.js:339, auth-guard.js, portal-shell.js:17).
+
+3. jobs.html IS NOT IN FIRST PLACE
+     The one real recruiter page is buried under "Hiring -> Jobs", while
+     "Applications" and "Interviews" point at fakes.
+
+4. find-talent.html / talent-pool.html / talent-profile.html
+     All placeholders. Only /api/users/search exists to power them.
+     There is NO talent-pool backend at all.
+
+5. talent-profile.html
+     <body data-page="find-talent.html">  -- WRONG PAGE IDENTITY
+
+6. company-profile.html / recruiter-settings.html
+     Placeholders. Recruiter company data really lives in recruiter_profiles
+     behind profile.html / PUT /api/profile/me.
+
+7. hiring-analytics.html / industry-challenges.html
+     No backend endpoints exist.
+
+8. internships.html
+     Real internships are GET /api/opportunities?opportunity_type=internship
+     -- not used.
+
+9. NOTIFICATIONS
+     The recruiter has NO notification inbox for new applications; the
+     student has a written-but-unreadable one.
+
+========================================================================
+# 11. DUPLICATE / LEGACY ARCHITECTURE
+========================================================================
+
+COMPETING PAIR                DETAIL                                     WINNER
+---------------------------------------------------------------------------------------------
+Notification systems ........ (a) notifications table + /api/notifications  (a) -- but (b)
+                              (b) /api/dashboard.notifications              is the only one
+                                  (requests + unread messages)              that renders
+                              -> two separate, competing concepts
+Two notification buttons .... portal-shell.js:130 AND portal-unify.js:316  --
+                              BOTH bind [data-notifs] -> duplicate
+                              listeners on any page loading both
+Two shell adapters .......... portal-shell.js (owns sidebar + topbar) vs   portal-shell
+                              portal-unify.js (paints active state on
+                              existing markup). 11 pages use ONLY the
+                              latter, so they have no shared sidebar
+Recruiter applicant review .. jobs.html (real, 4-stage workflow)           jobs.html
+                              vs applications.html?role=recruiter (dummy)
+Applicant counts ............ jobs.js getOpportunityPipeline (GROUP BY)    pipeline
+                              vs applications.js refreshCounts()            endpoint
+                                 (5x ?status=X&limit=1)
+                              vs applications.html hardcoded 0s
+Profiles .................... profile.js (real, 60 KB)                     profile.js
+                              vs profile_fixed.js (44 KB, orphan, BROKEN)
+Projects .................... projects.js (localStorage gallery)           backend
+                              vs stage6-projects.js (real bridge, BROKEN)
+                              vs backend /api/projects,
+                                 /api/users/me/projects
+Innovation Lab .............. innovation-lab.html (real, 9 JS files)       innovation-lab
+                              vs innovation-lab1/2/3.html (standalone       .html
+                                 prototypes, no auth, no api-client)
+                              vs innovation-lab4.html (0 bytes)
+API client .................. api-client.js request()
+                              vs hand-rolled req() + raw fetch() inside
+                                 innovation-lab.js AND stage8-bridges.js
+                                 (which also RUNTIME-PATCHES
+                                  window.SkillShareAPI)
+Auth ........................ auth.js (JWT -> GET /me)
+                              vs auth-guard.js (role allowlist, 1 page only)
+                              vs per-page getToken() checks
+                              vs localStorage["skillshareLoggedIn"] in
+                                 login.js
+Discussions ................. live-discussions.html + discussion-room.html  discussion-*
+                                 (REAL)
+                              vs community.html (DUMMY)
+                              vs discussion-waiting / match-waiting (DEMO)
+                              vs live-learning.html (sessionStorage match)
+                              vs create-session.html (no backend)
+Role model .................. PUBLIC_SIGNUP_ROLES =                        3 public roles
+                              student | recruiter | mentor (backend)
+                              vs a `faculty` role present in
+                                 portal-shell.js nav and auth-guard.js
+                                 -- FACULTY HAS NO BACKEND ENDPOINTS AT ALL
+
+========================================================================
+# 12. PAGES THAT MUST BE REBUILT
+========================================================================
+
+Only pages whose ARCHITECTURE is incompatible with the real-data system.
+
+========================================================================
+R1 -- NOTIFICATION SYSTEM (notification page + navbar indicator)
+========================================================================
+PAGE:              notifications.html + notifications.js + navbar bell
+CURRENT PURPOSE:   "Advanced notification management" -- filters, search,
+                   mark-read, delete-with-undo, badge
+CURRENT PROBLEM:   notifications.js is a DEAD FILE (SyntaxError line 1;
+                   truncated 241/919 lines; 6 undefined functions and 3
+                   undefined variables). notifications.html is standalone
+                   legacy markup with its own app-head nav, its own
+                   notifications.css :root palette and a global
+                   `* { margin:0; padding:0 }` reset. It does NOT load
+                   portal-shell.js or design-system.css and its <body> has
+                   no data-page / data-role. The navbar bell has no count,
+                   no badge, no dropdown and never calls the API.
+WHY PATCHING IS BAD:
+                   There is no coherent JS to patch -- the file must be
+                   rewritten from line 1 regardless. Patching would preserve
+                   the un-shelled layout, the duplicated palette, the double
+                   [data-notifs] listener, and the divide between "navbar
+                   notifications" and "page notifications". The old file's
+                   delete/undo/filter/search model also has NO BACKEND (there
+                   is no delete endpoint), so re-implementing it recreates the
+                   same fake-state bug.
+CURRENT DATA SRC:  nothing (dead JS + a static empty-state div)
+REQUIRED REAL DATA: notification rows owned by the JWT user
+REQUIRED API:      GET  /api/notifications?limit&offset&unread_only
+                   POST /api/notifications/{id}/read
+                   POST /api/notifications/read-all
+REQUIRED ROLE:     student AND recruiter (and mentor)
+REQUIRED RELATIONSHIPS:
+                   Notification.user_id -> users.id
+                   producer = stage8_service.notify()
+                              (innovation + application_status)
+CURRENT ROUTE:     notifications.html
+TARGET ROUTE:      notifications.html  (UNCHANGED -- do not break
+                   portal-shell.js:13/131, portal-unify.js:317,
+                   auth-guard.js allowlists)
+DEPENDENCIES:      portal-shell.js, portal.js, config.js, api-client.js,
+                   auth.js, design-system.css,
+                   dashboard.css / portal.css / portal-shell.css
+WHAT MUST BE PRESERVED:
+                   - the route notifications.html
+                   - the existing api-client.js method names
+                     (getNotifications, markNotificationRead,
+                      markAllNotificationsRead) and their signatures
+                   - the response shape already documented in
+                     api-client.js:726-744
+                   - backend notifications_api.py UNCHANGED
+                   - the type->icon mapping already in notificationIcon()
+REBUILD PRIORITY:  P0
+
+========================================================================
+R2 -- applications.html?role=recruiter  (recruiter view)
+========================================================================
+PAGE:              applications.html recruiter branch
+CURRENT PURPOSE:   "Candidate funnel" for a recruiter
+CURRENT PROBLEM:   100% hardcoded (A. Sharma / R. Iyer / S. Khan, fake match %,
+                   fake stages, data-toast="...(frontend only)").
+                   applications.js:149 returns early for recruiter.
+                   The pipeline strip labels Assessment / Offer / Joined
+                   DO NOT EXIST as backend statuses.
+WHY PATCHING IS BAD:
+                   The page's whole recruiter information model (match %,
+                   per-candidate stage buttons, an 8-stage funnel) has no
+                   backend counterpart. It must be replaced by the real model
+                   (opportunity -> applicants -> evidence -> transition),
+                   which ALREADY EXISTS in jobs.html.
+CURRENT DATA SRC:  a hardcoded HTML table
+REQUIRED REAL DATA: opportunities owned by the recruiter; applications +
+                   safe student data; per-status counts
+REQUIRED API:      GET   /api/opportunities/mine
+                   GET   /api/opportunities/{id}/applications
+                   PATCH /api/applications/{id}/status
+                   GET   /api/opportunities/{id}/pipeline
+REQUIRED ROLE:     recruiter (owner only)
+REQUIRED RELATIONSHIPS:
+                   Opportunity.owner_user_id  -> users.id
+                   Application.opportunity_id -> opportunities.id
+                   Application.student_user_id -> users.id
+                                               -> student_profiles
+CURRENT ROUTE:     applications.html?role=recruiter
+TARGET ROUTE:      either REDIRECT to jobs.html (preferred: one pipeline,
+                   zero duplication) OR rebuild as an opportunity picker
+                   that reuses jobs.js
+DEPENDENCIES:      jobs.js / jobs.html components
+WHAT MUST BE PRESERVED:
+                   - the STUDENT view of applications.html exactly as-is
+                     (it is REAL and correct)
+                   - the data-view-student / data-view-recruiter toggle
+                     contract in portal.js:81-82
+                   - the ?role= query parameter
+REBUILD PRIORITY:  P0
+
+========================================================================
+R3 -- recruiter-dashboard.html
+========================================================================
+CURRENT PURPOSE:   recruiter landing page
+CURRENT PROBLEM:   2.8 KB shell + "TODO: Replace with backend API data".
+                   IT IS THE REDIRECT DESTINATION FOR EVERY RECRUITER LOGIN
+                   (login.js:339), so every recruiter lands on an empty page.
+WHY PATCHING IS BAD:
+                   There is no content to wire. The page must be designed
+                   around the real recruiter object model (my opportunities,
+                   pipeline totals, recent applicants).
+CURRENT DATA SRC:  none
+REQUIRED REAL DATA: recruiter profile + company, owned opportunities by
+                   status, per-opportunity pipeline totals, recent
+                   applications
+REQUIRED API:      GET /profile/me
+                   GET /api/opportunities/mine
+                   GET /api/opportunities/{id}/pipeline
+                   GET /api/opportunities/{id}/applications
+REQUIRED ROLE:     recruiter
+REQUIRED RELATIONSHIPS:
+                   RecruiterProfile.user_id -> users.id
+                   Opportunity.owner_user_id -> users.id
+                   Application.opportunity_id -> opportunities.id
+CURRENT ROUTE:     recruiter-dashboard.html  (hard-wired in login.js,
+                   auth-guard.js, portal-shell.js:17)
+DEPENDENCIES:      portal-shell.js, jobs.js patterns
+WHAT MUST BE PRESERVED: the route name; the role-based redirect in login.js
+REBUILD PRIORITY:  P0
+
+========================================================================
+R4 -- projects.html
+========================================================================
+CURRENT PURPOSE:   community project gallery + "My Projects"
+CURRENT PROBLEM:   The DOM and behaviour are driven by projects.js, a
+                   LOCALSTORAGE DATABASE (skillconnectProjects,
+                   skillconnectUserData, skillconnectGithub) with fake
+                   likes / comments / saves / shares / views. The intended
+                   real bridge stage6-projects.js DOES NOT PARSE (corrupted
+                   function splice at line 30, orphaned braces at 132-137),
+                   so the real section never appears.
+WHY PATCHING IS BAD:
+                   Both files are wrong in incompatible ways -- one is an
+                   authoritative client-side store, the other is syntactically
+                   dead. There is no single pipeline to repair.
+CURRENT DATA SRC:  localStorage
+REQUIRED REAL DATA: the authenticated user's own projects + skills
+                   demonstrated + evidence counts; optionally others'
+                   published projects
+REQUIRED API:      GET    /api/users/me/projects
+                   GET    /api/users/{id}/projects
+                   GET    /api/projects
+                   POST   /api/projects
+                   PUT    /api/projects/{id}
+                   DELETE /api/projects/{id}
+                   GET    /api/skills/evidence
+REQUIRED ROLE:     any authenticated user (own projects); student-heavy
+REQUIRED RELATIONSHIPS:
+                   Project.owner_id -> users.id
+                   project -> skills -> skill_evidence
+CURRENT ROUTE:     projects.html
+TARGET ROUTE:      projects.html
+DEPENDENCIES:      api-client.js project methods, thumbnails.js (optional)
+WHAT MUST BE PRESERVED:
+                   - the route
+                   - the existing .project-card / .mine-grid CSS in projects.css
+                   - the ?mine=<id> and ?create=1 query params already emitted
+                     by stage6-projects.js:57 / 65 / 106
+REBUILD PRIORITY:  P1
+
+========================================================================
+R5 -- community.html
+========================================================================
+CURRENT PURPOSE:   community hub with discussions / posts
+CURRENT PROBLEM:   community.js (27 KB) contains ZERO API references -- only
+                   IntersectionObserver reveals, 3-D tilt, ripple and glow
+                   effects. All discussions are hardcoded in the 24 KB HTML.
+                   It DUPLICATES functionality that now lives in
+                   live-discussions.html + discussion-room.html.
+WHY PATCHING IS BAD:
+                   There is no data layer to patch, and the page duplicates
+                   the real discussions product.
+REQUIRED REAL DATA: discussion rooms, participants, community skills, people
+REQUIRED API:      GET /api/discussions
+                   GET /api/users
+                   GET /api/requests/connections
+REQUIRED ROLE:     any authenticated user
+CURRENT ROUTE:     community.html (linked from portal-shell.js:12 and page
+                   headers)
+TARGET ROUTE:      community.html, or fold into live-discussions.html
+REBUILD PRIORITY:  P2  (or fold into live-discussions.html)
+
+========================================================================
+R6 -- live-learning.html match flow + match-waiting.html
+      + discussion-waiting.html
+========================================================================
+CURRENT PURPOSE:   peer matching ("Find my match") and discussion matching
+CURRENT PROBLEM:   All three hand off via sessionStorage / localStorage.
+                   live-learning.js:1331 references a NONEXISTENT
+                   POST /api/matches. match-waiting.js:111 has an explicit
+                   "Demo fallback". discussion-waiting.js:102 defines
+                   DEMO_DISCUSSION_MATCH.
+WHY PATCHING IS BAD:
+                   There is NO MATCHING BACKEND AT ALL. This is a missing
+                   backend, not a wiring gap. Patching would only move fake
+                   data around.
+REQUIRED REAL DATA: a real match / queue model
+REQUIRED API:      DOES NOT EXIST -- would need a new backend feature
+REBUILD PRIORITY:  P2  (needs a backend design decision first; recommend
+                   deferring past Stage 9.4)
+
+========================================================================
+R7 -- ~20 RECRUITER / FACULTY / STUDENT PLACEHOLDER PAGES
+========================================================================
+find-talent, talent-pool, talent-profile, interviews, internships,
+hiring-analytics, company-profile, recruiter-settings, students, skill-gap,
+faculty-dashboard, faculty-challenges, industry-partners, internships-tracking,
+placement-analytics, industry-challenges, aptitude, dsa, interview-prep,
+calendar, session-room, tutor-profile, create-session
+
+REBUILD PRIORITY:
+    P1 : interviews.html
+    P2 : all recruiter-facing placeholders
+    P3 : faculty + study pages
+  NOTE: FACULTY HAS NO BACKEND ENDPOINTS AT ALL -- that is a product
+        decision, not a frontend bug.
+
+========================================================================
+# 13. PAGES THAT ONLY NEED API WIRING
+========================================================================
+
+(Kept separate from rebuild candidates -- these have a correct architecture
+ and an existing backend; only the call/render is missing.)
+
+PAGE / AREA                    MISSING WIRING                     ENDPOINT EXISTS?
+--------------------------------------------------------------------------------------
+bookmarks.html ............... bookmarks.js (330 B) -> fetch +    YES
+                               render real bookmarks              GET/POST/DELETE
+                                                                  /api/learning/bookmarks
+create-session.html .......... wizard publish -> create a         YES
+                               discussion; restore the draft      POST /api/discussions
+                               server-side instead of             (+ idempotency key
+                               localStorage                       pattern already in
+                                                                  live-discussions.js)
+credits.html ................. render daily_credits /             YES
+                               purchased_credits / daily_max /    GET /api/credits
+                               next_renewal_at /                  (fields already in
+                               credits_per_minute /               the response)
+                               default_room_minutes (all already
+                               returned by snapshot());
+                               map reviewsReceived / averageRating
+                               honestly
+applications.html (student) .. replace the 5 separate             PATTERN EXISTS;
+                               ?status=X&limit=1 calls with one   a student-scope
+                               pipeline aggregate; drop or        aggregate does NOT
+                               clearly label the Assessment /     (the recruiter one
+                               Offer / Joined strip stages         does)
+                               (no backend status)
+live-discussions.html ........ surface                            YES
+                               GET /api/discussions/{id}/requests,
+                               accept/reject, participant
+                               moderation, start/end
+setting.html ................. notification preferences ->        NO
+                               server-side; remove the hardcoded  ** no preference
+                               "3 new notifications"              endpoint exists **
+career-report.html ........... repair/replace                     YES
+                               stage6-career-report.js            GET /api/skills/
+                               (currently a SyntaxError)          evidence|growth,
+                                                                  /api/learning/overview,
+                                                                  /api/users/me/projects
+projects.html "My Projects" .. repair stage6-projects.js          YES
+                               (SyntaxError) if only the bridge   GET /api/users/me/
+                               is wanted                          projects
+live-learning.html ........... also load auth.js for a            n/a
+                               consistent guard (currently
+                               credits-chip.js only)
+15 non-shell pages ........... load portal-shell.js instead of    n/a
+                               portal-unify.js for ONE nav and
+                               role visibility
+portal-shell.js + ........... dedupe the two [data-notifs]        n/a
+portal-unify.js                 handlers
+16 HTML files ................ remove the 57 data-toast=          n/a
+                               "...(frontend only)" buttons
+                               (dead affordances)
+
+========================================================================
+# 14. PAGES THAT ARE ALREADY GOOD
+========================================================================
+
+DO NOT TOUCH THESE -- they are correct, current, and consume the real API
+properly:
+
+  login.html
+  signup.html
+  dashboard.html (data pipeline)
+  opportunities.html
+  opportunity-details.html
+  applications.html  ** STUDENT VIEW ONLY **
+  jobs.html
+  my-learning.html
+  explore-skills.html
+  learning-player.html
+  course-details.html
+  messages.html
+  requests.html
+  profile.html
+  credits.html (data layer)
+  skill-mapping.html
+  ai-career-coach.html
+  careerverse.html
+  industry-sandbox.html
+  sandbox-challenge.html
+  sandbox-workspace.html
+  live-discussions.html (partial but correct)
+  discussion-room.html + livekit-room*.js
+  skill-passport.html
+  industry-skills.html
+  index.html
+  about.html
+  explore.html (redirect stub)
+  components/credits-chip.js
+  components/profile-dropdown.js
+  auth.js
+  config.js
+  thumbnails.js
+
+WHY THEY ARE GOOD -- every one of them:
+  - resolves identity from the JWT
+  - never sends a user id from the frontend
+  - never computes eligibility / match / credits client-side
+  - handles 401 / 403 / 404 / 409 / 422 explicitly
+  - shows loading / empty / error states
+  - never silently substitutes placeholder data on failure
+    (applications.js, opportunities.js, jobs.js and opportunity-details.js
+     all explicitly comment this rule)
+
+BACKEND MODULES THAT ARE PRODUCTION-SOLID
+  opportunities_api.py, credits_api.py + credits_service.py,
+  livekit_api.py, comm_api.py, discussions_api.py, learning_api.py,
+  stage7_api.py, stage9_api.py, careerverse_api.py, notifications_api.py,
+  auth.py
+
+========================================================================
+# 15. STAGE 9.4 READINESS
+========================================================================
+
+  APPLICATION PIPELINE ...... READY WITH MINOR FIXES
+  NOTIFICATION SURFACE ...... BLOCKED -- REBUILD REQUIRED
+
+WHY THE APPLICATION PIPELINE IS READY
+  Every link is verified working against PostgreSQL:
+    student   discovery -> details -> apply (duplicate + eligibility handled)
+              -> application list -> withdraw
+    recruiter opportunity CRUD -> publish/close/archive -> applicant list
+              -> evidence review -> status transition -> pipeline aggregate
+  Authorization is server-side throughout.
+
+WHY THE NOTIFICATION SURFACE BLOCKS STAGE 9.4's DELIVERABLE
+  Stage 9.4's stated goal is:
+     1. student notifications when a recruiter changes application status
+     2. recruiter pipeline aggregates
+
+  The SECOND HALF IS ALREADY DONE:
+    GET /api/opportunities/{id}/pipeline exists, is owner-scoped, is a single
+    GROUP BY, is wired in api-client.js (getOpportunityPipeline) and is
+    consumed by the uncommitted jobs.js + jobs.html pipeline strip.
+
+  The FIRST HALF IS COMPLETE ON THE SERVER AND 100% INVISIBLE TO THE USER:
+    - the notification row is written correctly on every recruiter status
+      change
+    - but notifications.js cannot execute (SyntaxError at line 1)
+    - the navbar has no badge or count and calls no API
+    - notifications.html shows a hardcoded
+      "once connected to the backend" empty state
+    - there is no count-only endpoint, so a navbar badge cannot be added
+      without fetching the list
+
+  CONCLUSION: Stage 9.4's backend is done; its user-visible outcome is ZERO.
+  Continuing to build more Stage 9.4 features on top of a notification surface
+  that renders nothing would produce exactly the technical debt this audit is
+  trying to avoid.
+
+  MINIMUM TO UNBLOCK: rebuild the notification page + navbar indicator (R1).
+  Nothing else is on the critical path.
+
+========================================================================
+# 16. RECOMMENDED REBUILD ORDER
+========================================================================
+
+ #   WORK                                                    PRIO   WHY THIS ORDER
+---  -------------------------------------------------------  ----  -------------------------
+ 1   REBUILD THE NOTIFICATION SYSTEM:                        P0    Unblocks the entire
+       - page rebuilt on portal-shell.js + design-system.css        Stage 9.4 deliverable.
+       - JS on GET /api/notifications, POST /{id}/read,             The backend is already
+         POST /read-all                                             finished -- this is
+       - navbar unread badge (fetch once, or add a count             the only missing link
+         endpoint)
+       - delete the "once connected to the backend" copy
+       - remove the duplicate [data-notifs] handler
+
+ 2   RESOLVE applications.html?role=recruiter:               P0    The recruiter sidebar's
+       - redirect it to jobs.html, OR                               "Applications" entry
+       - rebuild as an opportunity picker reusing jobs.js           currently LIES.
+       - remove the hardcoded A. Sharma / R. Iyer / S. Khan         jobs.html already has
+                                                                    the real workflow
+
+ 3   REBUILD recruiter-dashboard.html:                       P0    Every recruiter LOGIN
+       - real recruiter landing: my opportunities +                 redirects here
+         pipeline totals + recent applicants
+
+ 4   COMMIT & REVIEW THE UNCOMMITTED STAGE 9.4 WORK:         P0    This is the working
+       - backend-I/notifications_api.py                             backend for steps 1-3;
+       - backend-I/models.py (Notification)                         it must not be lost
+       - backend-I/opportunities_api.py
+         (_notify_application_status + pipeline route)
+       - backend-I/main.py (registration)
+       - api-client.js (getNotifications, markNotificationRead,
+         markAllNotificationsRead, getOpportunityPipeline)
+       - jobs.js / jobs.html (pipeline strip, applicant review)
+       - notifications.js  <== CURRENTLY BROKEN, DO NOT COMMIT AS-IS
+
+ 5   REPAIR stage6-career-report.js (SyntaxError line 116)   P1    Small, contained; a real
+                                                                    page silently does
+                                                                    nothing
+
+ 6   REBUILD projects.html on GET/POST /api/users/me/        P1    Largest remaining dummy
+       projects; delete the localStorage gallery and                module; real endpoints
+       repair/replace stage6-projects.js                            exist
+
+ 7   RESOLVE interviews.html (hardcoded, data-toast x5)      P1    Directly adjacent to the
+       against PATCH /api/applications/{id}/status =                Stage 9.4 pipeline
+       "interview"
+
+ 8   CREATE the missing app-pages.js / app-pages.css,        P1    8 pages 404 today;
+       or de-link them from the 8 pages that reference              2 dead links sit in
+       them; remove the 5 zero-byte pages (reviews,                 the PRIMARY student
+       leaderboard, live-room, innovation-lab4, contanct)           sidebar
+       and their sidebar links
+
+ #   WORK                                                    PRIO   WHY THIS ORDER
+---  -------------------------------------------------------  ----  -------------------------
+
+ 9   WIRE bookmarks.html and create-session.html to         P2    Cheap real-data wins
+       existing endpoints (no rebuild needed)
+
+10   FIX the dashboard legacy topbar:                       P2    Removes two fake
+       remove `const unreadCount = 0` and the                       counters
+       credits.currentBalance = 0 fallback, or delete the
+       legacy path now that portal-shell.js owns the topbar
+
+11   setting.html: remove the hardcoded "3 new              P2    Removes fake state
+       notifications"; move notification preferences
+       server-side (needs a new backend endpoint)
+
+12   community.html: rebuild on /api/discussions, or        P2    Duplicate module
+       fold into live-discussions.html
+
+13   UNIFY on portal-shell.js: migrate the 15               P2    Removes the "two shells"
+       portal-unify.js pages so role visibility and nav             split
+       are consistent; dedupe [data-notifs]
+
+14   RECRUITER PLACEHOLDERS: find-talent, talent-pool,      P2    Visible but non-blocking
+       talent-profile (fix its wrong data-page),
+       internships, hiring-analytics, company-profile,
+       recruiter-settings
+
+15   LIVE-LEARNING MATCH FLOW: requires a NEW BACKEND       P2    Missing backend, not a
+       decision; DEFER past Stage 9.4                               frontend bug
+
+16   credits.html: render the daily/purchased split,        P2    Small, high-value
+       renewal time and room cost that the API already              honesty fix
+       returns
+
+17   LEGACY / DUPLICATE CLEANUP: innovation-lab1/2/3.html   P3    Cleanup only
+       + JS, profile_fixed.js, calendar.html,
+       session-room.html, tutor-profile.html, faculty +
+       study placeholders, stage8-bridges.js raw-fetch
+       pipeline
+
+========================================================================
+SPECIAL NOTIFICATION DECISION
+========================================================================
+
+QUESTION: "Should notification.js be patched, or should the notification
+           page/system be rebuilt first?"
+
+NOTE FIRST: there is NO notification.js and NO notification.html.
+            The files are notifications.js / notifications.html.
+            Any task referencing "notification.js" needs re-pointing.
+
+ANSWER: ** REBUILD -- DO NOT PATCH. **
+
+Evidence, against the stated criteria:
+
+REBUILD CRITERION                                    EVIDENCE
+--------------------------------------------------------------------------------------
+page is fundamentally dummy ....................... YES -- notifications.html
+                                                     renders a static .empty-state
+                                                     whose text is "You are all
+                                                     caught up. New notifications
+                                                     will appear here once connected
+                                                     to the backend."
+
+multiple notification pipelines exist ............. YES -- TWO:
+                                                     (a) the notifications table
+                                                         (/api/notifications)
+                                                     (b) /api/dashboard.notifications
+                                                         (pending requests + unread
+                                                          conversations)
+
+notification page and navbar use different systems  YES -- page -> dead
+                                                     notifications.js;
+                                                     navbar -> plain href link in
+                                                     BOTH portal-shell.js:130 and
+                                                     portal-unify.js:316;
+                                                     dashboard -> /api/dashboard
+
+no coherent user-owned notification data model ..... NO -- the model IS fine
+                                                     (Notification.user_id ->
+                                                      users.id, owner-scoped).
+                                                     This criterion does NOT apply.
+
+current JS assumes fake objects/statuses .......... YES -- calls 6 functions that
+                                                     no longer exist and 3 undefined
+                                                     variables; implements delete /
+                                                     undo / filters / search with NO
+                                                     delete endpoint
+
+route/API structure is incompatible ............... PARTIAL -- the route is fine;
+                                                     the page's MARKUP STRUCTURE is
+                                                     not (no shared shell, own :root
+                                                     palette, no data-page /
+                                                     data-role)
+
+patching would create more technical debt ......... YES -- the file must be
+                                                     rewritten from line 1 anyway
+                                                     (SyntaxError), so "patching" IS
+                                                     rewriting -- plus it would
+                                                     preserve the un-shelled layout
+                                                     and the 8 fake-action extras
+
+------------------------------------------------------------------------
+MINIMUM ARCHITECTURE REQUIRED AFTER REBUILD
+------------------------------------------------------------------------
+
+notifications.html  (rebuilt)
+  <body data-page="notifications.html"
+        data-role="<student|recruiter|shared>">
+  scripts: config.js -> api-client.js -> auth.js -> portal-shell.js
+           -> portal.js -> notifications.js
+  styles : design-system.css -> dashboard.css -> portal.css
+           -> portal-shell.css
+  (NOT the standalone :root palette / global `*` reset in notifications.css)
+  DOM    : one list container + loading + empty + error + retry
+           + "Load more"
+
+notifications.js  (rewritten)
+  boot   : SkillShareAuth.requireUser()
+           -> 401 -> login (handled globally by auth.js)
+  load   : API.getNotifications({limit:20, offset:0, unread_only?})
+           -> {items[], total, has_more, unread_count}
+  render : item.id, item.type, item.title, item.message, item.link,
+           item.is_read, item.created_at
+           -> .notification-item card (+ .unread / .read)
+           -> icon from notificationIcon(type)
+           -> link -> item.link (server-controlled, currently
+                      "applications.html")
+           -> clicking a row calls API.markNotificationRead(id) and
+              repaints from the response
+  actions: "Mark all as read" -> API.markAllNotificationsRead()
+                                -> {marked}
+           "Load more"        -> same call, offset += limit
+  states : loading skeleton, empty state, error state + Retry,
+           401 handled globally, 403 / 404 / 500 surfaced
+  RULES  : NO localStorage, NO fake arrays, NO client-side counters,
+           NO delete (there is no endpoint)
+
+navbar (portal-shell.js)
+  On [data-notifs]: if a token exists, call API.getNotifications({limit:1})
+  once per page load and paint an unread badge from response.unread_count.
+  Keep the click -> notifications.html.
+  (Optionally add GET /api/notifications/unread-count later to avoid
+   fetching a page of rows.)
+  Remove the duplicate handler at portal-unify.js:316.
+
+backend notifications_api.py          -- UNCHANGED (already correct,
+                                         owner-scoped, JWT-only)
+producer opportunities_api
+  ._notify_application_status         -- UNCHANGED (already fires after commit)
+
+========================================================================
+SPECIAL APPLICATION PIPELINE DECISION
+========================================================================
+
+QUESTION: "Is the current application pipeline coherent enough to continue
+           Stage 9.4?"
+
+ANSWER: YES -- with TWO NAMED EXCEPTIONS.
+
+HOP                                                STATUS
+--------------------------------------------------------------------------------------
+Student: Opportunity -> Details ................. OK  GET /api/opportunities/{id}
+
+Student: Details -> Apply ....................... OK  POST /api/opportunities/{id}/apply
+                                                      - duplicate-click guard
+                                                      - 409 duplicate
+                                                      - 409 not-eligible adopts the
+                                                        server verdict
+
+Student: Apply -> Application ................... OK  Application row;
+                                                      already-applied state derived
+                                                      from the real
+                                                      GET /api/applications/me walk
+
+Student: Application -> Recruiter review ........ OK  GET /api/opportunities/{id}/
+                                                      applications
+                                                      (_require_recruiter +
+                                                       owner_user_id == cu.id)
+
+Student: Status -> visible to student ........... OK  GET /api/applications/me;
+                                                      withdrawal via
+                                                      POST /api/applications/
+                                                      {id}/withdraw
+
+Recruiter: Opportunity -> Applicants ............ OK  jobs.js
+
+Recruiter: Applicants -> Review ................. OK  real evidence panel;
+                                                      API returns safe student data
+
+Recruiter: Review -> Pipeline ................... OK  GET /api/opportunities/{id}/
+                                                      pipeline
+                                                      (owner-only, single GROUP BY)
+
+Recruiter: Status transition .................... OK  PATCH /api/applications/
+                                                      {id}/status
+                                                      (server-side transition table
+                                                       _allowed_targets,
+                                                       recruiter note,
+                                                       rejection reason)
+
+Status transition -> Notification row ........... OK  _notify_application_status
+                                                      writes to `notifications`
+                                                      AFTER commit; recipient
+                                                      resolved server-side;
+                                                      failure isolated
+
+Notification row -> Student sees it ............. X   ** BROKEN **
+                                                      notifications.js is dead;
+                                                      no navbar badge
+
+Recruiter nav "Applications" .................... X   ** BROKEN **
+                                                      applications.html?role=
+                                                      recruiter is hardcoded
+                                                      dummy
+
+EXACT BROKEN LINKS
+
+  1. `notifications` table -> student UI.
+     BREAK POINT: peer to peer skill share/notifications.js:1 (SyntaxError)
+     AND the absence of any /api/notifications call in portal-shell.js.
+
+  2. Recruiter "Applications" nav entry -> real review workflow.
+     BREAK POINT: peer to peer skill share/applications.js:149
+     (`if (state.view !== "student") return;`)
+     combined with the hardcoded table at applications.html:62-67.
+
+NEITHER BREAK IS IN THE BACKEND.
+The backend is ready for Stage 9.4 today; the frontend notification surface
+is the single blocker.
+
+========================================================================
+FINAL ANSWER TO THE AUDIT QUESTION
+========================================================================
+
+QUESTION: "Can a real authenticated student/recruiter use this page today with
+           real database data?"
+
+STUDENT: MOSTLY YES.
+  26 pages are genuinely production-ready against PostgreSQL.
+  The student's real workflow (learn -> build -> discover -> apply -> track
+  -> withdraw) works end to end.
+
+RECRUITER: NOT YET.
+  Exactly ONE recruiter page (jobs.html) is real, and it is UNCOMMITTED.
+  The recruiter's login lands on an empty placeholder, the sidebar's
+  "Applications" and "Interviews" entries point at dummy data, and the
+  talent / find-talent / analytics / company / settings pages are all static.
+  The notification inbox that should confirm a status change to the student
+  renders nothing.
+
+THE SINGLE MOST URGENT FILE IN THE REPOSITORY:
+    peer to peer skill share/notifications.js
+  It is a truncated, non-parsing, half-rewritten file sitting between a fully
+  working backend notification API and the user.
+
+========================================================================
+AUDIT CONSTRAINT COMPLIANCE
+========================================================================
+
+  Files modified ................. NONE
+  Files created .................. this report only
+  Files renamed .................. NONE
+  Files deleted .................. NONE
+  Routes changed ................. NONE
+  Database schema changed ........ NONE
+  API endpoints changed .......... NONE
+  UI changed ..................... NONE
+  notification.js / notifications.js changed ... NO
+  Migrations run ................. NONE
+  Data seeded .................... NONE
+  Production data modified ....... NONE
+  Commits ........................ NONE
+  Pushes ......................... NONE
+
+========================================================================
+END OF REPORT
+========================================================================

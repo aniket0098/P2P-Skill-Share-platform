@@ -1,2727 +1,750 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-    <!-- =====================================================
-         BASIC META
-         ===================================================== -->
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <meta name="description" content="SkillShare account settings and profile management">
-
-    <meta name="theme-color" content="#050817">
-
-    <title>SkillShare — Settings</title>
-
-
-    <!-- =====================================================
-         GOOGLE FONT
-         ===================================================== -->
-
+    <meta name="description" content="SkillShare account settings: profile, security, privacy, notifications, career preferences, appearance and data controls.">
+    <meta name="theme-color" content="#060a17">
+    <title>SkillShare - Settings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-
-    <!-- =====================================================
-         ICONS
-         ===================================================== -->
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-
-    <!-- =====================================================
-         SETTINGS CSS
-         ===================================================== -->
-
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="portal.css">
+    <link rel="stylesheet" href="portal-shell.css">
     <link rel="stylesheet" href="setting.css">
-
     <link rel="stylesheet" href="components/profile-dropdown.css">
-    <script src="components/profile-dropdown.js"></script>
 </head>
+<body data-page="setting.html" data-role="shared">
+<div id="app-sidebar"></div>
+<div class="app-main">
+    <div id="app-topbar"></div>
+    <main class="page-content settings-page">
+        <a class="skip-link" href="#settingsMain">Skip to settings content</a>
 
-
-<body>
-
-
-    <!-- =========================================================
-     APP SHELL
-     ========================================================= -->
-
-    <div class="app-shell">
-
-
-        <!-- =====================================================
-         TOP NAVIGATION
-         ===================================================== -->
-
-        <header class="topbar">
-
-
-            <!-- BRAND -->
-
-            <a href="dashboard.html" class="brand">
-
-                <span class="brand-mark">
-
-                    <span></span>
-                    <span></span>
-                    <span></span>
-
-                </span>
-
-                <span class="brand-copy">
-
-                    <strong>SkillShare</strong>
-
-                    <small>
-                        Learn. Share. Grow.
-                    </small>
-
-                </span>
-
-            </a>
-
-
-            <!-- MAIN NAV -->
-
-            <nav class="top-nav">
-
-                <a href="explore.html">
-                    Explore
-                </a>
-
-                <a href="community.html">
-                    Community
-                </a>
-
-                <a href="messages.html" class="messages-link">Messages</a>
-
-            </nav>
-
-
-            <!-- TOP —TIONS -->
-
-            <div class="top-actions">
-
-
-                <!-- SEARCH -->
-
-                <button class="icon-btn" id="searchButton" type="button" title="Search">
-
-                    <i class="fa-solid fa-magnifying-glass"></i>
-
-                </button>
-
-
-                <!-- NOTIFICATIONS -->
-
-                <button class="icon-btn" id="notificationButton" type="button" title="Notifications">
-
-                    <i class="fa-regular fa-bell"></i>
-
-                </button>
-
-
-                <!-- CREDITS (real balance via the shared chip component) -->
-
-                <a class="credits-chip" href="credits.html" data-credits-chip title="Your credit balance">
-
-                    <span class="cc-coin">&#129473;</span>
-
-                    <span class="cc-num" data-credits-value>—</span>
-
-                    <span class="cc-label">Credits</span>
-
-                </a>
-
-
-                <!-- USER MENU -->
-
-                <button class="user-menu-trigger" id="userMenuButton" type="button" aria-expanded="false">
-
-                    <span class="mini-avatar">
-                        P
-                    </span>
-
-                    <span>
-                        —
-                    </span>
-
-                    <span class="chevron">
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </span>
-
-                </button>
-
-
-            </div>
-
-
+        <header class="settings-hero">
+            <p class="eyebrow">Account control</p>
+            <h1>Settings</h1>
+            <p class="settings-sub">One place for your account, security, privacy, notifications and preferences.</p>
         </header>
 
+        <!-- BOOTSTRAP ERROR STATE (shown only when real data cannot load) -->
+        <section class="settings-state" id="settingsError" hidden role="alert">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <h2>We could not load your settings</h2>
+            <p id="settingsErrorMsg">Server unavailable. Check your connection and try again.</p>
+            <button type="button" class="btn btn-primary" id="settingsRetry">Retry</button>
+        </section>
 
-
-        <!-- =====================================================
-         USER DROPDOWN
-         ===================================================== -->
-
-        <div class="user-dropdown" id="userDropdown">
-
-            <div class="dropdown-profile">
-
-                <span class="mini-avatar">
-                    —
-                </span>
-
-                <div>
-
-                    <strong>
-                        —
-                    </strong>
-
-                    <small>
-                        —
-                    </small>
-
-                </div>
-
+        <!-- SKELETON LOADING STATE -->
+        <div class="settings-skeleton" id="settingsLoading" aria-hidden="true">
+            <div class="skel skel-hero"></div>
+            <div class="skel-row">
+                <div class="skel skel-nav"></div>
+                <div class="skel skel-body"></div>
             </div>
-
-
-            <button type="button" data-go="profile">
-
-                <i class="fa-regular fa-user"></i>
-                &nbsp;
-                My Profile
-
-            </button>
-
-
-            <button type="button" data-go="settings">
-
-                <i class="fa-solid fa-gear"></i>
-                &nbsp;
-                Settings
-
-            </button>
-
-
-            <div class="dropdown-divider"></div>
-
-            <button type="button" class="danger-text" id="dropdownLogout">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                &nbsp;
-                <a href="login.html">Log-Out</a>
-            </button>
         </div>
 
+        <div class="settings-shell" id="settingsShell" hidden>
 
+            <!-- IDENTITY SUMMARY: who am I logged in as -->
+            <section class="identity-card" aria-label="Signed-in account">
+                <div class="identity-main">
+                    <img id="identityAvatar" class="identity-avatar" alt="" hidden>
+                    <span class="identity-fallback" id="identityFallback" aria-hidden="true">?</span>
+                    <div class="identity-text">
+                        <h2 id="identityName">Loading&hellip;</h2>
+                        <p id="identityEmail"></p>
+                        <div class="identity-pills">
+                            <span class="pill pill-role" id="identityRole">&mdash;</span>
+                            <span class="pill pill-status is-active" id="identityStatus">&mdash;</span>
+                            <span class="pill pill-id" id="identityPublicId" hidden></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="identity-actions">
+                    <a class="btn btn-ghost" href="profile.html"><i class="fa-regular fa-user" aria-hidden="true"></i> View profile</a>
+                    <a class="btn btn-ghost" href="notifications.html"><i class="fa-regular fa-bell" aria-hidden="true"></i> Notification center</a>
+                    <button type="button" class="btn btn-primary" id="reactivateBtn" hidden>Reactivate account</button>
+                </div>
+            </section>
 
-        <!-- =====================================================
-         MAIN LAYOUT
-         ===================================================== -->
+            <!-- MOBILE: back to the category list -->
+            <button type="button" class="settings-back" id="settingsBack" hidden>
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All settings
+            </button>
 
-        <div class="layout">
+            <div class="settings-layout">
 
-
-            <!-- =================================================
-             SIDEBAR
-             ================================================= -->
-
-            <aside class="sidebar">
-
-
-                <nav class="main-sidebar-nav">
-
-
-                    <a href="dashboard.html" class="side-link">
-
-                        <span>
-                            <i class="fa-solid fa-house"></i>
-                        </span>
-
-                        Dashboard
-
-                    </a>
-
-
-                    <a href="explore.html" class="side-link">
-
-                        <span>
-                            <i class="fa-solid fa-compass"></i>
-                        </span>
-
-                        Explore
-
-                    </a>
-
-
-                    <a href="profile.html" class="side-link">
-
-                        <span>
-                            <i class="fa-solid fa-bolt"></i>
-                        </span>
-
-                        My Skills
-
-                    </a>
-
-
-                    <a href="my-learning.html" class="side-link">
-
-                        <span>
-                            <i class="fa-solid fa-graduation-cap"></i>
-                        </span>
-
-                        Learning
-
-                    </a>
-
-
-                    <a href="messages.html" class="side-link">
-
-                        <span>
-                            <i class="fa-regular fa-message"></i>
-                        </span>
-
-                        Messages
-
-                        <b>
-                            3
-                        </b>
-
-                    </a>
-
-
-                    <a href="community.html" class="side-link">
-
-                        <span>
-                            <i class="fa-solid fa-users"></i>
-                        </span>
-
-                        Community
-
-                    </a>
-
-
-                    <a href="bookmarks.html" class="side-link">
-
-                        <span>
-                            <i class="fa-regular fa-bookmark"></i>
-                        </span>
-
-                        Saved
-
-                    </a>
-
-
-                    <a href="setting.html" class="side-link active">
-
-                        <span>
-                            <i class="fa-solid fa-gear"></i>
-                        </span>
-
-                        Settings
-
-                    </a>
-
-
-                    <a href="login.html" class="side-link logout-tab">
-
-                        <span>
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </span>
-
-                        Log Out
-
-                    </a>
-
-
+                <!-- SETTINGS NAVIGATION -->
+                <nav class="settings-nav" id="settingsNav" aria-label="Settings sections">
+                    <div class="nav-group">
+                        <span class="nav-group-title">Account</span>
+                        <button type="button" class="nav-item active" data-section="account" aria-current="page">
+                            <i class="fa-regular fa-circle-user" aria-hidden="true"></i><span>Profile &amp; account</span>
+                        </button>
+                        <button type="button" class="nav-item" data-section="security">
+                            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Security &amp; login</span>
+                        </button>
+                    </div>
+                    <div class="nav-group">
+                        <span class="nav-group-title">Preferences</span>
+                        <button type="button" class="nav-item" data-section="privacy">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i><span>Privacy &amp; visibility</span>
+                        </button>
+                        <button type="button" class="nav-item" data-section="notifications">
+                            <i class="fa-regular fa-bell" aria-hidden="true"></i><span>Notifications</span>
+                        </button>
+                        <button type="button" class="nav-item" data-section="career">
+                            <i class="fa-solid fa-bullseye" aria-hidden="true"></i><span id="navCareerLabel">Career preferences</span>
+                        </button>
+                        <button type="button" class="nav-item" data-section="appearance">
+                            <i class="fa-solid fa-palette" aria-hidden="true"></i><span>Appearance</span>
+                        </button>
+                        <button type="button" class="nav-item" data-section="accessibility">
+                            <i class="fa-solid fa-universal-access" aria-hidden="true"></i><span>Accessibility</span>
+                        </button>
+                    </div>
+                    <div class="nav-group">
+                        <span class="nav-group-title">Data</span>
+                        <button type="button" class="nav-item" data-section="data">
+                            <i class="fa-solid fa-database" aria-hidden="true"></i><span>Data &amp; account</span>
+                        </button>
+                        <button type="button" class="nav-item nav-danger" data-section="danger">
+                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>Danger zone</span>
+                        </button>
+                    </div>
+                    <button type="button" class="nav-item nav-logout" id="settingsLogout">
+                        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Log out</span>
+                    </button>
                 </nav>
 
-
-
-                <!-- =============================================
-                 TE—H CARD
-                 ============================================= -->
-
-                <div>
-                </div>
-
-
-            </aside>
-
-
-
-            <!-- =================================================
-             MAIN CONTENT
-             ================================================= -->
-
-            <main class="main-content">
-
-
-                <!-- =============================================
-                 PAGE HEADING
-                 ============================================= -->
-
-                <div class="page-heading">
-
-                    <div>
-
-                        <h1>
-                            Settings
-                        </h1>
-
-                        <p>
-                            Manage your profile, account,
-                            privacy and SkillShare preferences.
-                        </p>
-
-                    </div>
-
-
-                    <div class="heading-actions">
-
-                        <button class="ghost-btn" id="resetSettings" type="button">
-
-                            <i class="fa-solid fa-rotate-left"></i>
-
-                            Reset
-
-                        </button>
-
-
-                        <button class="primary-btn" id="saveAllSettings" type="button">
-
-                            <i class="fa-solid fa-check"></i>
-
-                            Save Changes
-
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-
-                <!-- =============================================
-                 SETTINGS LAYOUT
-                 ============================================= -->
-
-                <div class="settings-layout">
-
-
-                    <!-- =========================================
-                     SETTINGS NAVIGATION
-                     ========================================= -->
-
-                    <aside class="settings-nav">
-
-
-                        <button class="settings-tab active" type="button" data-target="profileSettings">
-
-                            <span>
-                                <i class="fa-regular fa-user"></i>
-                            </span>
-
-                            Profile
-
-                        </button>
-
-
-                        <button class="settings-tab" type="button" data-target="accountSettings">
-
-                            <span>
-                                <i class="fa-solid fa-user-shield"></i>
-                            </span>
-
-                            Account
-
-                        </button>
-
-
-                        <button class="settings-tab" type="button" data-target="privacySettings">
-
-                            <span>
-                                <i class="fa-solid fa-lock"></i>
-                            </span>
-
-                            Privacy
-
-                        </button>
-
-
-                        <button class="settings-tab" type="button" data-target="notificationSettings">
-
-                            <span>
-                                <i class="fa-regular fa-bell"></i>
-                            </span>
-
-                            Notifications
-
-                        </button>
-
-
-                        <button class="settings-tab" type="button" data-target="appearanceSettings">
-
-                            <span>
-                                <i class="fa-solid fa-palette"></i>
-                            </span>
-
-                            Appearance
-
-                        </button>
-
-
-                        <button class="settings-tab" type="button" data-target="paymentSettings">
-
-                            <span>
-                                <i class="fa-regular fa-credit-card"></i>
-                            </span>
-
-                            Payments
-
-                        </button>
-
-
-                        <button class="settings-tab" type="button" data-target="blockedSettings">
-
-                            <span>
-                                <i class="fa-solid fa-user-slash"></i>
-                            </span>
-
-                            Blocked Users
-
-                        </button>
-
-
-                        <button class="settings-tab" type="button" data-target="supportSettings">
-
-                            <span>
-                                <i class="fa-solid fa-life-ring"></i>
-                            </span>
-
-                            Help & Support
-
-                        </button>
-
-
-                        <button class="settings-tab logout-tab" type="button" id="settingsLogout">
-
-                            <span>
-                                <i class="fa-solid fa-right-from-bracket"></i>
-                            </span>
-
-                            Log Out
-
-                        </button>
-
-
-                    </aside>
-
-
-
-                    <!-- =========================================
-                     SETTINGS CONTENT
-                     ========================================= -->
-
-                    <section class="settings-content">
-
-
-                        <!-- PROFILE SETTINGS -->
-
-                        <div class="settings-panel active" id="profileSettings">
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Profile Information
-                                        </h2>
-
-                                        <p>
-                                            Update the information
-                                            other SkillShare members
-                                            can see.
-                                        </p>
-
-                                    </div>
-
-
-                                    <button class="outline-btn" id="previewProfile" type="button">
-
-                                        <i class="fa-regular fa-eye"></i>
-
-                                        Preview
-
-                                    </button>
-
-                                </div>
-
-
-
-                                <div class="profile-editor">
-
-
-                                    <div class="avatar-editor">
-
-                                        <div class="big-avatar-wrap">
-
-                                            <img id="profileAvatar"
-                                                src="assets/avatar1.svg"
-                                                alt="Your avatar">
-
-                                            <span class="online-dot"></span>
-
-
-                                            <button class="camera-btn" id="changeAvatar" type="button"
-                                                title="Change profile photo">
-
-                                                <i class="fa-solid fa-camera"></i>
-
-                                            </button>
-
-                                        </div>
-
-
-                                        <button class="text-btn" id="removeAvatar" type="button">
-
-                                            Remove photo
-
-                                        </button>
-
-
-                                        <small>
-                                            JPG, PNG or WEBP.<br>
-                                            Maximum 5 MB.
-                                        </small>
-
-
-                                        <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp"
-                                            hidden>
-
-                                    </div>
-
-
-
-                                    <div class="profile-fields">
-
-
-                                        <div class="field-grid">
-
-
-                                            <label class="field">
-
-                                                <span>
-                                                    First Name
-                                                </span>
-
-                                                <input type="text" id="firstName" value="—"
-                                                    placeholder="First name">
-
-                                            </label>
-
-
-                                            <label class="field">
-
-                                                <span>
-                                                    Last Name
-                                                </span>
-
-                                                <input type="text" id="lastName" value="" placeholder="Last name">
-
-                                            </label>
-
-
-                                        </div>
-
-
-
-                                        <div class="field">
-
-                                            <span>
-                                                Username
-                                            </span>
-
-
-                                            <div class="input-prefix">
-
-                                                <b>@</b>
-
-                                                <input type="text" id="username" value="" placeholder="username">
-
-                                            </div>
-
-                                        </div>
-
-
-
-                                        <div class="field">
-
-                                            <span>
-                                                Bio
-
-                                                <em>
-                                                    160 characters
-                                                </em>
-
-                                            </span>
-
-                                            <textarea id="profileBio" maxlength="160"
-                                                placeholder="Tell the community about yourself..."></textarea>
-
-                                        </div>
-
-
-
-                                        <div class="field-grid">
-
-
-                                            <label class="field">
-
-                                                <span>
-                                                    Location
-                                                </span>
-
-                                                <input type="text" id="location" value=""
-                                                    placeholder="Your location">
-
-                                            </label>
-
-
-                                            <label class="field">
-
-                                                <span>
-                                                    Website
-                                                </span>
-
-                                                <input type="url" id="website" value=""
-                                                    placeholder="https://example.com">
-
-                                            </label>
-
-
-                                        </div>
-
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Skills & Interests
-                                        </h2>
-
-                                        <p>
-                                            Add skills you can teach
-                                            or want to learn.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="skill-editor" id="skillEditor">
-
-                                    <span class="skill-tag">
-
-                                        HTML
-
-                                        <button class="skill-remove" type="button">
-                                            ×
-                                        </button>
-
-                                    </span>
-
-
-                                    <span class="skill-tag">
-
-                                        CSS
-
-                                        <button class="skill-remove" type="button">
-                                            ×
-                                        </button>
-
-                                    </span>
-
-
-                                    <span class="skill-tag">
-
-                                        JavaScript
-
-                                        <button class="skill-remove" type="button">
-                                            ×
-                                        </button>
-
-                                    </span>
-
-
-                                    <span class="skill-tag">
-
-                                        UI/UX
-
-                                        <button class="skill-remove" type="button">
-                                            ×
-                                        </button>
-
-                                    </span>
-
-                                </div>
-
-
-                                <div class="skill-add-row" id="skillAddRow" hidden>
-
-                                    <input type="text" id="newSkill" placeholder="Enter a skill...">
-
-                                    <button class="primary-btn" id="addSkill" type="button">
-
-                                        Add
-
-                                    </button>
-
-                                </div>
-
-
-                                <button class="outline-btn" id="showSkillInput" type="button" style="margin-top: 15px;">
-
-                                    <i class="fa-solid fa-plus"></i>
-
-                                    Add Skill
-
-                                </button>
-
-                            </div>
-
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Interests
-                                        </h2>
-
-                                        <p>
-                                            Topics you want to learn about.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="skill-editor" id="interestEditor"></div>
-
-
-                                <div class="skill-add-row" id="interestAddRow" hidden>
-
-                                    <input type="text" id="newInterest" placeholder="Enter an interest...">
-
-                                    <button class="primary-btn" id="addInterest" type="button">
-
-                                        Add
-
-                                    </button>
-
-                                </div>
-
-
-                                <button class="outline-btn" id="showInterestInput" type="button" style="margin-top: 15px;">
-
-                                    <i class="fa-solid fa-plus"></i>
-
-                                    Add Interest
-
-                                </button>
-
-                            </div>
-
-
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Profile Visibility
-                                        </h2>
-
-                                        <p>
-                                            Choose how other users
-                                            discover you.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Public profile
-                                        </strong>
-
-                                        <small>
-                                            Allow anyone to view
-                                            your profile.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="publicProfile" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Show online status
-                                        </strong>
-
-                                        <small>
-                                            Let others know when
-                                            you're online.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="onlineStatus" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Show learning progress
-                                        </strong>
-
-                                        <small>
-                                            Display your achievements
-                                            on your profile.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="learningProgress" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-
+                <!-- SETTINGS PANELS -->
+                <div class="settings-content" id="settingsMain" tabindex="-1">
+
+                    <!-- =============================================
+                     PANEL: PROFILE & ACCOUNT
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="account" hidden aria-labelledby="titleAccount">
+                        <div class="panel-head">
+                            <h2 id="titleAccount" tabindex="-1">Profile &amp; account</h2>
+                            <p>Core account details used across SkillShare. For your public, professional
+                                presentation, use the <a href="profile.html">Profile page</a>.</p>
                         </div>
 
-
-
-                        <!-- —COUNT SETTINGS -->
-
-                        <div class="settings-panel" id="accountSettings">
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Account Information
-                                        </h2>
-
-                                        <p>
-                                            Manage your login and
-                                            account information.
-                                        </p>
-
-                                    </div>
-
+                        <div class="panel-card">
+                            <div class="avatar-row">
+                                <img id="acctAvatar" class="avatar-img" alt="" hidden>
+                                <span class="avatar-fallback" id="acctAvatarFallback" aria-hidden="true">?</span>
+                                <div class="avatar-actions">
+                                    <button type="button" class="btn btn-secondary" id="acctAvatarBtn">Change avatar</button>
+                                    <button type="button" class="btn btn-ghost" id="acctAvatarClear" hidden>Remove</button>
+                                    <input type="file" id="acctAvatarFile" accept="image/png,image/jpeg,image/webp" hidden>
+                                    <small class="field-hint">JPG, PNG or WebP up to 500&nbsp;KB. Stored with your account.</small>
+                                    <small class="field-error" id="acctAvatarError" hidden></small>
                                 </div>
-
-
-                                <div class="account-item">
-
-                                    <div>
-
-                                        <strong>
-                                            Email Address
-                                        </strong>
-
-                                        <small>
-                                            —
-                                        </small>
-
-                                    </div>
-
-
-                                    <div class="account-actions">
-
-                                        <span class="verified">
-                                            VERIFIED
-                                        </span>
-
-                                        <button class="outline-btn" id="changeEmail" type="button">
-
-                                            Change
-
-                                        </button>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="account-item">
-
-                                    <div>
-
-                                        <strong>
-                                            Password
-                                        </strong>
-
-                                        <small>
-                                            Last changed recently
-                                        </small>
-
-                                    </div>
-
-
-                                    <button class="outline-btn" id="changePassword" type="button">
-
-                                        Change Password
-
-                                    </button>
-
-                                </div>
-
-
-                                <div class="account-item">
-
-                                    <div>
-
-                                        <strong>
-                                            Two-Factor Authentication
-                                        </strong>
-
-                                        <small>
-                                            Add an extra layer of
-                                            security to your account.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="twoFactor">
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
                             </div>
 
-
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Active Sessions
-                                        </h2>
-
-                                        <p>
-                                            Devices currently signed
-                                            into your account.
-                                        </p>
-
-                                    </div>
-
-
-                                    <button class="danger-btn" id="logoutOtherDevices" type="button">
-
-                                        Log Out Other Devices
-
-                                    </button>
-
-                                </div>
-
-
-                                <div class="sessions-list">
-
-
-                                    <div class="session-item">
-
-                                        <div class="session-device">
-
-                                            <i class="fa-solid fa-mobile-screen"></i>
-
-                                        </div>
-
-
-                                        <div class="session-info">
-
-                                            <strong>
-                                                Android Device
-                                            </strong>
-
-                                            <small>
-                                                India · Active now
-                                            </small>
-
-                                        </div>
-
-
-                                        <span class="current-session">
-                                            CURRENT
-                                        </span>
-
-                                    </div>
-
-
-
-                                    <div class="session-item">
-
-                                        <div class="session-device">
-
-                                            <i class="fa-solid fa-laptop"></i>
-
-                                        </div>
-
-
-                                        <div class="session-info">
-
-                                            <strong>
-                                                Windows PC
-                                            </strong>
-
-                                            <small>
-                                                Chrome · 2 hours ago
-                                            </small>
-
-                                        </div>
-
-
-                                        <button class="danger-btn" type="button" data-session="windows">
-
-                                            Revoke
-
-                                        </button>
-
-                                    </div>
-
-
-
-                                    <div class="session-item">
-
-                                        <div class="session-device">
-
-                                            <i class="fa-brands fa-apple"></i>
-
-                                        </div>
-
-
-                                        <div class="session-info">
-
-                                            <strong>
-                                                iPhone
-                                            </strong>
-
-                                            <small>
-                                                Safari · Yesterday
-                                            </small>
-
-                                        </div>
-
-
-                                        <button class="danger-btn" type="button" data-session="iphone">
-
-                                            Revoke
-
-                                        </button>
-
-                                    </div>
-
-
-                                </div>
-
+                            <div class="field-grid">
+                                <label class="field" for="acctName">
+                                    <span>Display name <em>required</em></span>
+                                    <input id="acctName" type="text" autocomplete="name" maxlength="80"
+                                        aria-describedby="acctNameError">
+                                    <small class="field-error" id="acctNameError" hidden></small>
+                                </label>
+                                <label class="field" for="acctUsername">
+                                    <span>Username <em>optional</em></span>
+                                    <span class="input-prefix"><b aria-hidden="true">@</b>
+                                        <input id="acctUsername" type="text" autocomplete="username" maxlength="24"
+                                            spellcheck="false" aria-describedby="acctUsernameHint acctUsernameError"></span>
+                                    <small class="field-hint" id="acctUsernameHint">3&ndash;24 letters, numbers or underscores. Used in search.</small>
+                                    <small class="field-error" id="acctUsernameError" hidden></small>
+                                </label>
+                                <label class="field" for="acctEmail">
+                                    <span>Email <em>read-only</em></span>
+                                    <input id="acctEmail" type="email" autocomplete="email" readonly disabled>
+                                    <small class="field-hint">Changing your login email requires identity
+                                        verification, which is not available yet.</small>
+                                </label>
+                                <label class="field" for="acctPhone">
+                                    <span>Phone <em>optional</em></span>
+                                    <input id="acctPhone" type="tel" autocomplete="tel" maxlength="32"
+                                        aria-describedby="acctPhoneError">
+                                    <small class="field-error" id="acctPhoneError" hidden></small>
+                                </label>
                             </div>
 
-
-
-                            <div class="card danger-zone">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Danger Zone
-                                        </h2>
-
-                                        <p>
-                                            These actions can permanently
-                                            affect your account.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="danger-action">
-
-                                    <div>
-
-                                        <strong>
-                                            Delete Account
-                                        </strong>
-
-                                        <small>
-                                            Permanently delete your
-                                            SkillShare account and data.
-                                        </small>
-
-                                    </div>
-
-
-                                    <button class="danger-btn" id="deleteAccount" type="button">
-
-                                        Delete Account
-
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-
+                            <dl class="meta-grid">
+                                <div><dt>Account ID</dt><dd id="acctPublicId">&mdash;</dd></div>
+                                <div><dt>Role</dt><dd id="acctRole">&mdash;</dd></div>
+                                <div><dt>Status</dt><dd id="acctStatus">&mdash;</dd></div>
+                                <div><dt>Member since</dt><dd id="acctCreated">&mdash;</dd></div>
+                            </dl>
                         </div>
 
-
-
-                        <!-- PRIV—Y SETTINGS -->
-
-                        <div class="settings-panel" id="privacySettings">
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Privacy
-                                        </h2>
-
-                                        <p>
-                                            Control who can interact
-                                            with you.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Allow messages from everyone
-                                        </strong>
-
-                                        <small>
-                                            Anyone can send you a
-                                            direct message.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="allowMessages" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Show profile in search
-                                        </strong>
-
-                                        <small>
-                                            Your profile can appear
-                                            in SkillShare search.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="searchVisibility" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Show learning interests
-                                        </strong>
-
-                                        <small>
-                                            Let people see what
-                                            you're interested in learning.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="showInterests" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Personalized recommendations
-                                        </strong>
-
-                                        <small>
-                                            Use your activity to improve
-                                            recommendations.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="personalizedRecommendations" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Activity Privacy
-                                        </h2>
-
-                                        <p>
-                                            Choose what other people
-                                            can see about your activity.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Show liked content
-                                        </strong>
-
-                                        <small>
-                                            Display your liked posts
-                                            and resources.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="showLikes">
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Show saved resources
-                                        </strong>
-
-                                        <small>
-                                            Allow others to see
-                                            your saved resources.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="showSaved">
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-
+                        <div class="save-bar" data-save-for="account" hidden>
+                            <span class="save-status" data-status-for="account" role="status" aria-live="polite"></span>
+                            <span class="save-actions">
+                                <button type="button" class="btn btn-ghost" id="resetAccount">Reset</button>
+                                <button type="button" class="btn btn-primary" id="saveAccount" disabled>Save changes</button>
+                            </span>
                         </div>
-
-
-
-                        <!-- NOTIFICATIONS -->
-
-                        <div class="settings-panel" id="notificationSettings">
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Notification Preferences
-                                        </h2>
-
-                                        <p>
-                                            Choose which notifications
-                                            you receive.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-
-                                <div class="notification-setting">
-
-                                    <div class="notification-icon blue">
-
-                                        <i class="fa-regular fa-message"></i>
-
-                                    </div>
-
-                                    <div>
-
-                                        <strong>
-                                            Messages
-                                        </strong>
-
-                                        <small>
-                                            New direct messages.
-                                        </small>
-
-                                    </div>
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="notifyMessages" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-
-                                <div class="notification-setting">
-
-                                    <div class="notification-icon purple">
-
-                                        <i class="fa-solid fa-users"></i>
-
-                                    </div>
-
-                                    <div>
-
-                                        <strong>
-                                            Community activity
-                                        </strong>
-
-                                        <small>
-                                            Replies, mentions and
-                                            community interactions.
-                                        </small>
-
-                                    </div>
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="notifyCommunity" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-
-                                <div class="notification-setting">
-
-                                    <div class="notification-icon green">
-
-                                        <i class="fa-solid fa-user-plus"></i>
-
-                                    </div>
-
-                                    <div>
-
-                                        <strong>
-                                            New connections
-                                        </strong>
-
-                                        <small>
-                                            New followers and connection
-                                            requests.
-                                        </small>
-
-                                    </div>
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="notifyConnections" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-
-                                <div class="notification-setting">
-
-                                    <div class="notification-icon orange">
-
-                                        <i class="fa-solid fa-bolt"></i>
-
-                                    </div>
-
-                                    <div>
-
-                                        <strong>
-                                            Learning reminders
-                                        </strong>
-
-                                        <small>
-                                            Reminders about your learning
-                                            goals.
-                                        </small>
-
-                                    </div>
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="notifyLearning" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-
-                                <div class="notification-setting">
-
-                                    <div class="notification-icon pink">
-
-                                        <i class="fa-solid fa-bullhorn"></i>
-
-                                    </div>
-
-                                    <div>
-
-                                        <strong>
-                                            SkillShare updates
-                                        </strong>
-
-                                        <small>
-                                            Product announcements and
-                                            important updates.
-                                        </small>
-
-                                    </div>
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="notifyUpdates">
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                            </div>
-
-
-                            <div class="card">
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Email notifications
-                                        </strong>
-
-                                        <small>
-                                            Receive important notifications
-                                            by email.
-                                        </small>
-
-                                    </div>
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="emailNotifications" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Push notifications
-                                        </strong>
-
-                                        <small>
-                                            Receive notifications on
-                                            supported devices.
-                                        </small>
-
-                                    </div>
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="pushNotifications" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <!-- APPEARANCE -->
-
-                        <div class="settings-panel" id="appearanceSettings">
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Appearance
-                                        </h2>
-
-                                        <p>
-                                            Customize how SkillShare
-                                            looks for you.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Dark Mode
-                                        </strong>
-
-                                        <small>
-                                            Use the dark SkillShare
-                                            interface.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="darkMode" checked>
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Compact mode
-                                        </strong>
-
-                                        <small>
-                                            Reduce spacing throughout
-                                            the settings interface.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="compactMode">
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-
-                                <div class="setting-row">
-
-                                    <div>
-
-                                        <strong>
-                                            Reduce animations
-                                        </strong>
-
-                                        <small>
-                                            Minimize interface animations
-                                            and transitions.
-                                        </small>
-
-                                    </div>
-
-
-                                    <label class="switch">
-
-                                        <input type="checkbox" id="reduceAnimations">
-
-                                        <span></span>
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Interface Preview
-                                        </h2>
-
-                                        <p>
-                                            Your appearance settings are
-                                            saved locally.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="support-grid">
-
-                                    <button class="support-card" id="previewDark" type="button">
-
-                                        <span>
-                                            <i class="fa-solid fa-moon"></i>
-                                        </span>
-
-                                        <strong>
-                                            Dark
-                                        </strong>
-
-                                        <small>
-                                            Dark interface for a
-                                            focused experience.
-                                        </small>
-
-                                    </button>
-
-
-                                    <button class="support-card" id="previewLight" type="button">
-
-                                        <span>
-                                            <i class="fa-solid fa-sun"></i>
-                                        </span>
-
-                                        <strong>
-                                            Light
-                                        </strong>
-
-                                        <small>
-                                            Bright interface for
-                                            daytime use.
-                                        </small>
-
-                                    </button>
-
-
-                                    <button class="support-card" id="previewSystem" type="button">
-
-                                        <span>
-                                            <i class="fa-solid fa-desktop"></i>
-                                        </span>
-
-                                        <strong>
-                                            System
-                                        </strong>
-
-                                        <small>
-                                            Follow your device's
-                                            appearance preference.
-                                        </small>
-
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <!-- PAYMENTS -->
-
-                        <div class="settings-panel" id="paymentSettings">
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Payment Methods
-                                        </h2>
-
-                                        <p>
-                                            Manage payment methods
-                                            associated with your account.
-                                        </p>
-
-                                    </div>
-
-
-                                    <button class="primary-btn" id="addPayment" type="button">
-
-                                        <i class="fa-solid fa-plus"></i>
-
-                                        Add Payment
-
-                                    </button>
-
-                                </div>
-
-
-                                <div class="payment-card">
-
-                                    <div class="payment-brand">
-                                        VISA
-                                    </div>
-
-                                    <div>
-
-                                        <strong>
-                                            •••• •••• •••• 4242
-                                        </strong>
-
-                                        <small>
-                                            Expires 08/29
-                                        </small>
-
-                                    </div>
-
-                                    <span class="verified">
-                                        DEFAULT
-                                    </span>
-
-                                    <button class="more-btn" type="button" title="Payment options">
-
-                                        ⋮
-
-                                    </button>
-
-                                </div>
-
-
-                                <div class="payment-card">
-
-                                    <div class="payment-brand mastercard">
-                                        MC
-                                    </div>
-
-                                    <div>
-
-                                        <strong>
-                                            •••• •••• •••• 8214
-                                        </strong>
-
-                                        <small>
-                                            Expires 02/28
-                                        </small>
-
-                                    </div>
-
-                                    <button class="more-btn" type="button" title="Payment options">
-
-                                        ⋮
-
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="card info-card">
-
-                                <span class="info-icon">
-
-                                    <i class="fa-solid fa-lock"></i>
-
-                                </span>
-
-                                <div>
-
-                                    <strong>
-                                        Your payment information is secure.
-                                    </strong>
-
-                                    <p>
-                                        SkillShare uses secure payment
-                                        processing to protect your information.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <!-- BLOCKED USERS -->
-
-                        <div class="settings-panel" id="blockedSettings">
-
-                            <div class="card">
-
-                                <div class="card-header">
-
-                                    <div>
-
-                                        <h2>
-                                            Blocked Users
-                                        </h2>
-
-                                        <p>
-                                            Manage people you've blocked.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="blocked-list" id="blockedList">
-
-
-                                    <div class="blocked-user">
-
-                                        <span class="avatar">—</span>
-
-                                        <div class="blocked-user-info">
-
-                                            <strong>
-                                                Alex Morgan
-                                            </strong>
-
-                                            <small>
-                                                @alexm
-                                            </small>
-
-                                        </div>
-
-                                        <button class="outline-btn unblock-user" type="button">
-
-                                            Unblock
-
-                                        </button>
-
-                                    </div>
-
-
-
-                                    <div class="blocked-user">
-
-                                        <span class="avatar">—</span>
-
-                                        <div class="blocked-user-info">
-
-                                            <strong>
-                                                Sarah Wilson
-                                            </strong>
-
-                                            <small>
-                                                @sarahw
-                                            </small>
-
-                                        </div>
-
-                                        <button class="outline-btn unblock-user" type="button">
-
-                                            Unblock
-
-                                        </button>
-
-                                    </div>
-
-
-                                </div>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <!-- HELP & SUPPORT -->
-
-                        <div class="settings-panel" id="supportSettings">
-
-                            <div class="card support-hero">
-
-                                <div class="support-icon">
-
-                                    <i class="fa-solid fa-headset"></i>
-
-                                </div>
-
-
-                                <div>
-
-                                    <h2>
-                                        How can we help?
-                                    </h2>
-
-                                    <p>
-                                        Find answers or contact
-                                        the SkillShare team.
-                                    </p>
-
-                                </div>
-
-
-                                <button class="primary-btn" id="contactSupport" type="button">
-
-                                    Contact Support
-
-                                </button>
-
-                            </div>
-
-
-
-                            <div class="support-grid">
-
-
-                                <button class="support-card" id="openHelpCenter" type="button">
-
-                                    <span>
-
-                                        <i class="fa-solid fa-book-open"></i>
-
-                                    </span>
-
-                                    <strong>
-                                        Help Center
-                                    </strong>
-
-                                    <small>
-                                        Browse guides and answers
-                                        to common questions.
-                                    </small>
-
-                                </button>
-
-
-
-                                <button class="support-card" id="reportProblem" type="button">
-
-                                    <span>
-
-                                        <i class="fa-solid fa-bug"></i>
-
-                                    </span>
-
-                                    <strong>
-                                        Report a Problem
-                                    </strong>
-
-                                    <small>
-                                        Tell us about something
-                                        that isn't working.
-                                    </small>
-
-                                </button>
-
-
-
-                                <button class="support-card" id="communityGuidelines" type="button">
-
-                                    <span>
-
-                                        <i class="fa-solid fa-shield-halved"></i>
-
-                                    </span>
-
-                                    <strong>
-                                        Community Guidelines
-                                    </strong>
-
-                                    <small>
-                                        Learn how to keep SkillShare
-                                        welcoming for everyone.
-                                    </small>
-
-                                </button>
-
-
-                            </div>
-
-
-                        </div>
-
-
                     </section>
 
+                    <!-- =============================================
+                     PANEL: SECURITY & LOGIN
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="security" hidden aria-labelledby="titleSecurity">
+                        <div class="panel-head">
+                            <h2 id="titleSecurity" tabindex="-1">Security &amp; login</h2>
+                            <p>How your account is protected. Sessions are stateless tokens &mdash;
+                                signing out ends access on this device immediately.</p>
+                        </div>
 
-                </div>
+                        <div class="panel-card">
+                            <h3 class="card-title">Security status</h3>
+                            <ul class="status-list">
+                                <li>
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                    <div><strong>Password set</strong>
+                                        <p>Your password is stored as a bcrypt hash &mdash; never visible to
+                                            anyone, including us.</p></div>
+                                </li>
+                                <li>
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                    <div><strong id="secStatusLine">Account active</strong>
+                                        <p>Signed in with a JWT session that stays valid until it expires
+                                            or you log out.</p></div>
+                                </li>
+                                <li class="is-info">
+                                    <i class="fa-solid fa-minus" aria-hidden="true"></i>
+                                    <div><strong>No device list available</strong>
+                                        <p>CareerBridge sessions are stateless &mdash; there is no server-side
+                                            device registry to show, so none is displayed here.</p></div>
+                                </li>
+                            </ul>
+                        </div>
 
+                        <form class="panel-card" id="passwordForm" novalidate>
+                            <h3 class="card-title">Change password</h3>
+                            <div class="field-grid">
+                                <label class="field" for="curPassword">
+                                    <span>Current password <em>required</em></span>
+                                    <input id="curPassword" type="password" autocomplete="current-password">
+                                </label>
+                                <label class="field" for="newPassword">
+                                    <span>New password <em>8+ characters</em></span>
+                                    <input id="newPassword" type="password" autocomplete="new-password"
+                                        aria-describedby="pwStrengthText">
+                                </label>
+                                <label class="field" for="confirmPassword">
+                                    <span>Confirm new password</span>
+                                    <input id="confirmPassword" type="password" autocomplete="new-password">
+                                </label>
+                            </div>
+                            <div class="pw-meter" aria-hidden="true"><span class="pw-meter-bar" id="pwMeterBar"></span></div>
+                            <p class="field-hint" id="pwStrengthText" role="status">Use 8+ characters mixing
+                                letters, numbers and symbols.</p>
+                            <small class="field-error" id="pwFormError" hidden></small>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-ghost" id="resetPassword">Clear</button>
+                                <button type="submit" class="btn btn-primary" id="savePassword">Update password</button>
+                            </div>
+                            <p class="save-status" id="pwStatus" role="status" aria-live="polite"></p>
+                        </form>
 
-            </main>
+                        <div class="panel-card">
+                            <h3 class="card-title">Session</h3>
+                            <p class="card-copy">Logging out clears this device's session token and returns
+                                you to the sign-in page.</p>
+                            <button type="button" class="btn btn-secondary" id="securityLogout">
+                                <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Log out this device
+                            </button>
+                        </div>
+                    </section>
 
+                    <!-- =============================================
+                     PANEL: PRIVACY & VISIBILITY
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="privacy" hidden aria-labelledby="titlePrivacy">
+                        <div class="panel-head">
+                            <h2 id="titlePrivacy" tabindex="-1">Privacy &amp; visibility</h2>
+                            <p>Every control here is enforced by the server &mdash; other users cannot
+                                bypass these choices by opening a direct link.</p>
+                        </div>
 
+                        <div class="panel-card">
+                            <fieldset class="field-group">
+                                <legend>Who can view your profile</legend>
+                                <label class="radio-row">
+                                    <input type="radio" name="profileVisibility" id="visPublic" value="public" checked>
+                                    <span><strong>Everyone on CareerBridge</strong>
+                                        <small>Any signed-in member can open your profile from search or links.</small></span>
+                                </label>
+                                <label class="radio-row">
+                                    <input type="radio" name="profileVisibility" id="visPrivate" value="private">
+                                    <span><strong>Only me</strong>
+                                        <small>Your profile returns "not found" for everyone else and never
+                                            appears in people search.</small></span>
+                                </label>
+                            </fieldset>
+                        </div>
+
+                        <div class="panel-card">
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblDiscoverable">Discoverable in search</strong>
+                                    <p>Allow other members to find your profile in people search and
+                                        collaboration suggestions. Turning this off keeps direct links
+                                        working while your profile stays private.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="privDiscoverable" aria-labelledby="lblDiscoverable">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblAllowMessages">Allow new message requests</strong>
+                                    <p>When off, other members cannot start <em>new</em> direct
+                                        conversations with you. Your existing conversations keep working.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="privAllowMessages" aria-labelledby="lblAllowMessages">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="save-bar" data-save-for="privacy" hidden>
+                            <span class="save-status" data-status-for="privacy" role="status" aria-live="polite"></span>
+                            <span class="save-actions">
+                                <button type="button" class="btn btn-ghost" id="resetPrivacy">Reset</button>
+                                <button type="button" class="btn btn-primary" id="savePrivacy" disabled>Save changes</button>
+                            </span>
+                        </div>
+                    </section>
+
+                    <!-- =============================================
+                     PANEL: NOTIFICATION PREFERENCES
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="notifications" hidden aria-labelledby="titleNotifications">
+                        <div class="panel-head">
+                            <h2 id="titleNotifications" tabindex="-1">Notification preferences</h2>
+                            <p>Choose what appears in your
+                                <a href="notifications.html">Notification Center</a>. These categories map
+                                one-to-one to the notifications the platform actually creates.</p>
+                        </div>
+
+                        <div class="panel-card">
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblInApp">In-app notifications</strong>
+                                    <p>Master switch &mdash; turn everything below off at once.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="notifyInApp" aria-labelledby="lblInApp">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="panel-card" id="notifyCategoryRows">
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblNotifyApp">Application status updates</strong>
+                                    <p>When a recruiter moves your application to reviewing, shortlist,
+                                        interview, selection or rejection.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="notifyApplicationStatus" aria-labelledby="lblNotifyApp">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblNotifyInnovation">Innovation Lab activity</strong>
+                                    <p>Evaluations and updates on ideas you own in the Innovation Lab.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="notifyInnovation" aria-labelledby="lblNotifyInnovation">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblNotifyInvite">Team invitations</strong>
+                                    <p>Invites to join an Innovation Lab team.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="notifyInnovationInvite" aria-labelledby="lblNotifyInvite">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblNotifyFeedback">Feedback on your work</strong>
+                                    <p>When a reviewer leaves feedback related to your ideas.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="notifyInnovationFeedback" aria-labelledby="lblNotifyFeedback">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblNotifyGeneral">Platform &amp; general</strong>
+                                    <p>Requests, system messages and everything else.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="true"
+                                    id="notifyGeneral" aria-labelledby="lblNotifyGeneral">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <p class="panel-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            CareerBridge currently delivers notifications <strong>in the app only</strong>
+                            &mdash; there is no email or browser push pipeline, so those controls are
+                            intentionally not shown.</p>
+
+                        <div class="save-bar" data-save-for="notifications" hidden>
+                            <span class="save-status" data-status-for="notifications" role="status" aria-live="polite"></span>
+                            <span class="save-actions">
+                                <button type="button" class="btn btn-ghost" id="resetNotifications">Reset</button>
+                                <button type="button" class="btn btn-primary" id="saveNotifications" disabled>Save changes</button>
+                            </span>
+                        </div>
+                    </section>
+
+                    <!-- =============================================
+                     PANEL: CAREER / HIRING PREFERENCES (role-aware)
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="career" hidden aria-labelledby="titleCareer">
+                        <div class="panel-head">
+                            <h2 id="titleCareer" tabindex="-1">Career preferences</h2>
+                            <p id="careerIntro">These values feed real personalization: opportunity
+                                recommendations, the AI Career Coach and CareerVerse all read your target
+                                role and preferred industry.</p>
+                        </div>
+
+                        <form class="panel-card" id="careerForm" novalidate>
+                            <div class="field-grid">
+                                <label class="field" for="carTargetRole">
+                                    <span>Target role <em>optional</em></span>
+                                    <input id="carTargetRole" type="text" maxlength="120"
+                                        list="targetRoleOptions" placeholder="e.g. Backend Developer"
+                                        aria-describedby="carTargetRoleError">
+                                    <datalist id="targetRoleOptions">
+                                        <option value="Backend Developer"></option>
+                                        <option value="Frontend Developer"></option>
+                                        <option value="Full Stack Developer"></option>
+                                        <option value="Data Analyst"></option>
+                                        <option value="Data Scientist"></option>
+                                        <option value="Machine Learning Engineer"></option>
+                                        <option value="Product Manager"></option>
+                                        <option value="UI/UX Designer"></option>
+                                        <option value="DevOps Engineer"></option>
+                                        <option value="QA Engineer"></option>
+                                    </datalist>
+                                    <small class="field-error" id="carTargetRoleError" hidden></small>
+                                </label>
+                                <label class="field" for="carIndustry">
+                                    <span>Preferred industry <em>optional</em></span>
+                                    <input id="carIndustry" type="text" maxlength="120"
+                                        list="industryOptions" placeholder="e.g. FinTech"
+                                        aria-describedby="carIndustryError">
+                                    <datalist id="industryOptions">
+                                        <option value="FinTech"></option>
+                                        <option value="EdTech"></option>
+                                        <option value="HealthTech"></option>
+                                        <option value="E-Commerce"></option>
+                                        <option value="SaaS"></option>
+                                        <option value="Consulting"></option>
+                                        <option value="Manufacturing"></option>
+                                        <option value="Banking &amp; Finance"></option>
+                                        <option value="IT Services"></option>
+                                        <option value="Startups"></option>
+                                    </datalist>
+                                    <small class="field-error" id="carIndustryError" hidden></small>
+                                </label>
+                            </div>
+
+                            <fieldset class="field-group">
+                                <legend>I am looking for</legend>
+                                <div class="chip-grid" id="lookingForChips">
+                                    <label class="chip"><input type="checkbox" value="Internship"><span>Internship</span></label>
+                                    <label class="chip"><input type="checkbox" value="Job"><span>Job / Placement</span></label>
+                                    <label class="chip"><input type="checkbox" value="Part-time"><span>Part-time</span></label>
+                                    <label class="chip"><input type="checkbox" value="Freelance"><span>Freelance</span></label>
+                                    <label class="chip"><input type="checkbox" value="Mentorship"><span>Mentorship</span></label>
+                                    <label class="chip"><input type="checkbox" value="Research"><span>Research</span></label>
+                                </div>
+                                <small class="field-hint">Saved on your student profile and shown to
+                                    opportunity matching.</small>
+                            </fieldset>
+                        </form>
+
+                        <div class="panel-card" id="careerReadonly" hidden>
+                            <h3 class="card-title" id="careerReadonlyTitle">Your hiring preferences</h3>
+                            <dl class="meta-grid meta-grid-wide" id="careerSummary">
+                                <div><dt>Company</dt><dd data-summary="company">&mdash;</dd></div>
+                                <div><dt>Hiring for</dt><dd data-summary="hiring">&mdash;</dd></div>
+                                <div><dt>Job roles</dt><dd data-summary="roles">&mdash;</dd></div>
+                                <div><dt>Required skills</dt><dd data-summary="skills">&mdash;</dd></div>
+                            </dl>
+                            <p class="card-copy">Editing lives on your profile and company pages so
+                                professional presentation stays in one place.</p>
+                            <a class="btn btn-secondary" href="profile.html">Manage on profile</a>
+                        </div>
+
+                        <p class="panel-note"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            Connected surfaces:
+                            <a href="opportunities.html">Opportunities</a>,
+                            <a href="ai-career-coach.html">AI Career Coach</a>,
+                            <a href="careerverse.html">CareerVerse</a> and
+                            <a href="industry-skills.html">Industry Insights</a>.</p>
+
+                        <div class="save-bar" data-save-for="career" hidden>
+                            <span class="save-status" data-status-for="career" role="status" aria-live="polite"></span>
+                            <span class="save-actions">
+                                <button type="button" class="btn btn-ghost" id="resetCareer">Reset</button>
+                                <button type="button" class="btn btn-primary" id="saveCareer" disabled>Save changes</button>
+                            </span>
+                        </div>
+                    </section>
+
+                    <!-- =============================================
+                     PANEL: APPEARANCE
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="appearance" hidden aria-labelledby="titleAppearance">
+                        <div class="panel-head">
+                            <h2 id="titleAppearance" tabindex="-1">Appearance</h2>
+                            <p>Interface preferences are stored <strong>on this device</strong> &mdash;
+                                they are not part of your account data.</p>
+                        </div>
+
+                        <fieldset class="panel-card field-group">
+                            <legend>Theme</legend>
+                            <label class="radio-row">
+                                <input type="radio" name="themeChoice" id="themeSystem" value="system">
+                                <span><strong>System</strong><small>Follow your operating system setting.</small></span>
+                            </label>
+                            <label class="radio-row">
+                                <input type="radio" name="themeChoice" id="themeDark" value="dark" checked>
+                                <span><strong>Dark</strong><small>Deep navy surfaces, low glare.</small></span>
+                            </label>
+                            <label class="radio-row">
+                                <input type="radio" name="themeChoice" id="themeLight" value="light">
+                                <span><strong>Light</strong><small>Bright surfaces for well-lit spaces.</small></span>
+                            </label>
+                        </fieldset>
+
+                        <fieldset class="panel-card field-group">
+                            <legend>Layout density</legend>
+                            <label class="radio-row">
+                                <input type="radio" name="densityChoice" id="densityComfortable" value="comfortable" checked>
+                                <span><strong>Comfortable</strong><small>Standard spacing everywhere.</small></span>
+                            </label>
+                            <label class="radio-row">
+                                <input type="radio" name="densityChoice" id="densityCompact" value="compact">
+                                <span><strong>Compact</strong><small>Tighter cards and panels, more content on screen.</small></span>
+                            </label>
+                        </fieldset>
+
+                        <p class="panel-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            Applied instantly. Theme also syncs with the theme used on your dashboard.</p>
+                    </section>
+
+                    <!-- =============================================
+                     PANEL: ACCESSIBILITY
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="accessibility" hidden aria-labelledby="titleA11y">
+                        <div class="panel-head">
+                            <h2 id="titleA11y" tabindex="-1">Accessibility</h2>
+                            <p>Preferences take effect immediately and are stored on this device.
+                                Your operating system's reduce-motion setting is always respected too.</p>
+                        </div>
+
+                        <div class="panel-card">
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblReducedMotion">Reduce motion</strong>
+                                    <p>Turn off interface animations and transitions across the portal.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="false"
+                                    id="a11yReducedMotion" aria-labelledby="lblReducedMotion">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-copy">
+                                    <strong id="lblLargeText">Larger interface text</strong>
+                                    <p>Scale the whole interface up slightly for easier reading.</p>
+                                </div>
+                                <button type="button" class="switch" role="switch" aria-checked="false"
+                                    id="a11yLargeText" aria-labelledby="lblLargeText">
+                                    <span class="switch-thumb"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <p class="panel-note"><i class="fa-solid fa-keyboard" aria-hidden="true"></i>
+                            Keyboard tips: <kbd>Tab</kbd> moves through every control, switches respond to
+                            <kbd>Space</kbd> and <kbd>Enter</kbd>, and <kbd>Esc</kbd> closes dialogs.</p>
+                    </section>
+
+                    <!-- =============================================
+                     PANEL: DATA & ACCOUNT
+                     ============================================= -->
+                    <section class="settings-panel" data-panel="data" hidden aria-labelledby="titleData">
+                        <div class="panel-head">
+                            <h2 id="titleData" tabindex="-1">Data &amp; account</h2>
+                            <p>Take your data with you and understand exactly what SkillShare stores.</p>
+                        </div>
+
+                        <div class="panel-card">
+                            <h3 class="card-title">Export your data</h3>
+                            <p class="card-copy">Download a JSON copy of everything tied to your account:</p>
+                            <ul class="plain-list">
+                                <li>Profile and account fields (never your password)</li>
+                                <li>Your settings and privacy choices</li>
+                                <li>Education, skills, projects and activity history</li>
+                                <li>Notification counts by category</li>
+                            </ul>
+                            <p class="card-copy">Message threads with other people are intentionally
+                                excluded so their content is never exported through your account.</p>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-primary" id="exportData">
+                                    <i class="fa-solid fa-download" aria-hidden="true"></i> Download my data
+                                </button>
+                            </div>
+                            <p class="save-status" id="exportStatus" role="status" aria-live="polite"></p>
+                        </div>
+
+                        <div class="panel-card">
+                            <h3 class="card-title">How your data is used</h3>
+                            <ul class="plain-list">
+                                <li>Your profile fields power search, discovery and opportunity matching.</li>
+                                <li>Privacy choices in this Settings page are enforced server-side.</li>
+                                <li>Notifications stay in your account until you read or they are pruned.</li>
+                                <li>Appearance and accessibility choices never leave this device.</li>
+                            </ul>
+                            <p class="card-copy">Questions? See the
+                                <a href="privacy.html">Privacy Policy</a> and
+                                <a href="safety.html">Safety Center</a>.</p>
+                        </div>
+                    </section>
+
+                    <!-- =============================================
+                     PANEL: DANGER ZONE
+                     ============================================= -->
+                    <section class="settings-panel danger-panel" data-panel="danger" hidden aria-labelledby="titleDanger">
+                        <div class="panel-head">
+                            <h2 id="titleDanger" tabindex="-1">Danger zone</h2>
+                            <p>Actions here affect your whole account. Read each description carefully.</p>
+                        </div>
+
+                        <div class="danger-card">
+                            <div>
+                                <h3>Deactivate account</h3>
+                                <p>Temporarily leave the platform. You disappear from discovery and
+                                    collaboration suggestions, and your account is flagged until you
+                                    reactivate by signing in and returning here. Fully reversible.</p>
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="openDeactivate">Deactivate</button>
+                        </div>
+
+                        <div class="danger-card">
+                            <div>
+                                <h3>Delete account</h3>
+                                <p>Permanently erase and anonymize your personal data: name, email,
+                                    password, profile and settings. Projects, messages and applications
+                                    you created remain for other members' integrity but display as
+                                    &ldquo;Deleted user&rdquo;. <strong>This cannot be undone</strong> and
+                                    you will not be able to sign in again.</p>
+                            </div>
+                            <button type="button" class="btn btn-danger" id="openDelete">Delete account</button>
+                        </div>
+                    </section>
+
+                </div><!-- /.settings-content -->
+            </div><!-- /.settings-layout -->
+        </div><!-- /.settings-shell -->
+    </main>
+</div><!-- /.app-main -->
+
+<!-- =============================================
+     DEACTIVATE MODAL (password re-authentication)
+     ============================================= -->
+<div class="modal-backdrop" id="deactivateModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deactivateTitle">
+        <button type="button" class="modal-close" data-close-modal aria-label="Close dialog">&times;</button>
+        <div class="modal-icon"><i class="fa-solid fa-pause" aria-hidden="true"></i></div>
+        <h2 id="deactivateTitle">Deactivate your account</h2>
+        <p>You will disappear from search, discovery and collaboration suggestions. Nothing is
+            deleted. Sign in again any time and reactivate from Settings.</p>
+        <label class="field" for="deactivatePassword">
+            <span>Confirm your password</span>
+            <input id="deactivatePassword" type="password" autocomplete="current-password">
+        </label>
+        <small class="field-error" id="deactivateError" hidden></small>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" data-close-modal>Cancel</button>
+            <button type="button" class="btn btn-secondary" id="confirmDeactivate" disabled>Deactivate account</button>
         </div>
-
-
     </div>
+</div>
 
-
-
-    <!-- CHANGE PASSWORD MODAL -->
-
-    <div class="modal-backdrop" id="passwordModal">
-
-        <div class="modal" role="dialog" aria-modal="true">
-
-
-            <button class="modal-close" data-close-modal="passwordModal" type="button">
-
-                ×
-
-            </button>
-
-
-            <div class="modal-icon purple">
-
-                <i class="fa-solid fa-key"></i>
-
-            </div>
-
-
-            <h2>
-                Change Password
-            </h2>
-
-
-            <p>
-                Create a strong new password for
-                your SkillShare account.
-            </p>
-
-
-            <label class="field">
-
-                <span>
-                    Current Password
-                </span>
-
-                <input type="password" id="currentPassword" placeholder="Enter current password">
-
-            </label>
-
-
-            <label class="field">
-
-                <span>
-                    New Password
-                </span>
-
-                <input type="password" id="newPassword" placeholder="Enter new password">
-
-            </label>
-
-
-            <div class="password-strength">
-
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-
-            </div>
-
-
-            <label class="field">
-
-                <span>
-                    Confirm Password
-                </span>
-
-                <input type="password" id="confirmPassword" placeholder="Confirm new password">
-
-            </label>
-
-
-            <div class="modal-actions">
-
-                <button class="ghost-btn" data-close-modal="passwordModal" type="button">
-
-                    Cancel
-
-                </button>
-
-
-                <button class="primary-btn" id="savePassword" type="button">
-
-                    Update Password
-
-                </button>
-
-            </div>
-
-
+<!-- =============================================
+     DELETE MODAL (typed confirmation + password)
+     ============================================= -->
+<div class="modal-backdrop" id="deleteModal" hidden>
+    <div class="modal modal-danger" role="alertdialog" aria-modal="true"
+        aria-labelledby="deleteTitle" aria-describedby="deleteDesc">
+        <button type="button" class="modal-close" data-close-modal aria-label="Close dialog">&times;</button>
+        <div class="modal-icon danger"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div>
+        <h2 id="deleteTitle">Delete your account</h2>
+        <p id="deleteDesc">This permanently erases and anonymizes your personal data.
+            <strong>It cannot be undone.</strong></p>
+        <ul class="danger-list">
+            <li>Your name, email, password and profile are destroyed.</li>
+            <li>You sign out everywhere and cannot log in again.</li>
+            <li>Projects, messages and applications you created stay for
+                other members, de-identified as &ldquo;Deleted user&rdquo;.</li>
+            <li>Your settings and notifications are removed.</li>
+        </ul>
+        <label class="field" for="deleteConfirmText">
+            <span>Type <strong>DELETE</strong> to confirm</span>
+            <input id="deleteConfirmText" type="text" autocomplete="off" spellcheck="false"
+                maxlength="16" placeholder="DELETE">
+        </label>
+        <label class="field" for="deletePassword">
+            <span>Confirm your password</span>
+            <input id="deletePassword" type="password" autocomplete="current-password">
+        </label>
+        <small class="field-error" id="deleteError" hidden></small>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" data-close-modal>Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDelete" disabled>Delete forever</button>
         </div>
-
     </div>
-
-
-
-    <!-- CHANGE EMAIL MODAL -->
-
-    <div class="modal-backdrop" id="emailModal">
-
-        <div class="modal">
-
-            <button class="modal-close" data-close-modal="emailModal" type="button">
-                ×
-            </button>
-
-
-            <div class="modal-icon blue">
-
-                <i class="fa-regular fa-envelope"></i>
-
-            </div>
-
-
-            <h2>
-                Change Email
-            </h2>
-
-
-            <p>
-                Enter your new email address.
-            </p>
-
-
-            <label class="field">
-
-                <span>
-                    New Email Address
-                </span>
-
-                <input type="email" id="newEmail" placeholder="you@example.com">
-
-            </label>
-
-
-            <div class="modal-actions">
-
-                <button class="ghost-btn" data-close-modal="emailModal" type="button">
-
-                    Cancel
-
-                </button>
-
-
-                <button class="primary-btn" id="saveEmail" type="button">
-
-                    Change Email
-
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- DELETE —COUNT MODAL -->
-
-    <div class="modal-backdrop" id="deleteModal">
-
-        <div class="modal compact-modal">
-
-            <button class="modal-close" data-close-modal="deleteModal" type="button">
-                ×
-            </button>
-
-
-            <div class="modal-icon orange">
-
-                <i class="fa-solid fa-triangle-exclamation"></i>
-
-            </div>
-
-
-            <h2>
-                Delete Account?
-            </h2>
-
-
-            <p>
-                This action cannot be undone.
-                Your profile, messages, saved content
-                and account data will be permanently removed.
-            </p>
-
-
-            <label class="field">
-
-                <span>
-                    Type DELETE to confirm
-                </span>
-
-                <input type="text" id="deleteConfirmation" placeholder="DELETE" autocomplete="off">
-
-            </label>
-
-
-            <div class="modal-actions">
-
-                <button class="ghost-btn" data-close-modal="deleteModal" type="button">
-
-                    Keep Account
-
-                </button>
-
-
-                <button class="danger-btn" id="confirmDeleteAccount" type="button" disabled>
-
-                    Permanently Delete
-
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- LOGOUT MODAL -->
-
-    <div class="modal-backdrop" id="logoutModal">
-
-        <div class="modal compact-modal">
-
-            <button class="modal-close" data-close-modal="logoutModal" type="button">
-                ×
-            </button>
-
-
-            <div class="modal-icon purple">
-
-                <i class="fa-solid fa-right-from-bracket"></i>
-
-            </div>
-
-
-            <h2>
-                Log out of SkillShare?
-            </h2>
-
-
-            <p>
-                You can sign back in anytime using
-                your SkillShare account.
-            </p>
-
-
-            <div class="modal-actions">
-
-                <button class="ghost-btn" data-close-modal="logoutModal" type="button">
-
-                    Stay Logged In
-
-                </button>
-
-
-                <button class="primary-btn" id="confirmLogout" type="button">
-
-                    Log Out
-
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- SUPPORT MODAL -->
-
-    <div class="modal-backdrop" id="supportModal">
-
-        <div class="modal">
-
-            <button class="modal-close" data-close-modal="supportModal" type="button">
-                ×
-            </button>
-
-
-            <div class="modal-icon green">
-
-                <i class="fa-solid fa-headset"></i>
-
-            </div>
-
-
-            <h2>
-                Contact Support
-            </h2>
-
-
-            <p>
-                Tell us what you need help with
-                and we'll get back to you.
-            </p>
-
-
-            <label class="field">
-
-                <span>
-                    Subject
-                </span>
-
-                <input type="text" id="supportSubject" placeholder="What do you need help with?">
-
-            </label>
-
-
-            <label class="field">
-
-                <span>
-                    Message
-                </span>
-
-                <textarea id="supportMessage" placeholder="Describe your problem..."></textarea>
-
-            </label>
-
-
-            <div class="modal-actions">
-
-                <button class="ghost-btn" data-close-modal="supportModal" type="button">
-
-                    Cancel
-
-                </button>
-
-
-                <button class="primary-btn" id="sendSupport" type="button">
-
-                    Send Request
-
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- ADD PAYMENT MODAL -->
-
-    <div class="modal-backdrop" id="paymentModal">
-
-        <div class="modal">
-
-            <button class="modal-close" data-close-modal="paymentModal" type="button">
-                ×
-            </button>
-
-
-            <div class="modal-icon blue">
-
-                <i class="fa-regular fa-credit-card"></i>
-
-            </div>
-
-
-            <h2>
-                Add Payment Method
-            </h2>
-
-
-            <p>
-                Add a payment method to your SkillShare account.
-            </p>
-
-
-            <label class="field">
-
-                <span>
-                    Card Number
-                </span>
-
-                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
-
-            </label>
-
-
-            <div class="field-grid">
-
-                <label class="field">
-
-                    <span>
-                        Expiry
-                    </span>
-
-                    <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5">
-
-                </label>
-
-
-                <label class="field">
-
-                    <span>
-                        CVV
-                    </span>
-
-                    <input type="password" id="cardCvv" placeholder="•••" maxlength="4">
-
-                </label>
-
-            </div>
-
-
-            <label class="field">
-
-                <span>
-                    Name on Card
-                </span>
-
-                <input type="text" id="cardName" placeholder="Full name">
-
-            </label>
-
-
-            <div class="modal-actions">
-
-                <button class="ghost-btn" data-close-modal="paymentModal" type="button">
-
-                    Cancel
-
-                </button>
-
-
-                <button class="primary-btn" id="savePayment" type="button">
-
-                    Add Card
-
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- TOAST CONTAINER -->
-
-    <div class="toast-container" id="toastContainer"></div>
-
-
-
-    <!-- ENVIRONMENT CONFIG (API base URL) — must load BEFORE api-client.js -->
-
-    <script src="config.js"></script>
-
-    <!-- FRONTEND API CLIENT (JWT auth + FastAPI/PostgreSQL access) -->
-
-    <script src="api-client.js"></script>
-
-    <!-- AUTH GUARD (redirects to login when the session is missing/expired) -->
-
-    <script src="auth.js"></script>
-
-    <!-- SETTINGS JAVASCRIPT -->
-
-    <script src="setting.js"></script>
-
-
-    <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
-    <script src="portal-unify.js"></script>
+</div>
+
+<!-- LIVE STATUS TOAST -->
+<div class="toast" id="settingsToast" role="status" aria-live="polite" hidden></div>
+
+<!-- ENVIRONMENT CONFIG (API base URL) - loads BEFORE api-client.js -->
+<script src="config.js"></script>
+<!-- SINGLE FRONTEND API CLIENT (JWT + FastAPI/PostgreSQL) -->
+<script src="api-client.js"></script>
+<!-- AUTH SERVICE (redirects to login when the session is missing/expired) -->
+<script src="auth.js"></script>
+<!-- SHARED PORTAL SHELL (one navigation for every portal page) -->
+<script src="portal-shell.js"></script>
+<script src="portal.js"></script>
+<!-- SETTINGS PAGE LOGIC -->
+<script src="setting.js"></script>
 </body>
-
 </html>
-

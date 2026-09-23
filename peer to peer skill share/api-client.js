@@ -153,6 +153,27 @@ window.SkillShareAPI = (() => {
                 body: JSON.stringify(data || {}),
             }),
 
+        /* --- Profile aggregate (Profile rebuild): ONE request per view --- */
+        /* Own profile: JWT-only, includes private fields + completion + privacy. */
+        getProfileSummary: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.activity_limit) query.set("activity_limit", String(params.activity_limit));
+            if (params.project_limit) query.set("project_limit", String(params.project_limit));
+            const qs = query.toString();
+            return request("/api/profile/me/summary" + (qs ? `?${qs}` : ""));
+        },
+        /* Another member's profile: server enforces visibility + field privacy. */
+        getPublicProfileSummary: (userId, params = {}, options = {}) => {
+            const query = new URLSearchParams();
+            if (params.activity_limit) query.set("activity_limit", String(params.activity_limit));
+            if (params.project_limit) query.set("project_limit", String(params.project_limit));
+            const qs = query.toString();
+            return request(
+                `/api/profile/view/${encodeURIComponent(userId)}` + (qs ? `?${qs}` : ""),
+                { signal: options.signal }
+            );
+        },
+
         // --- Profile completion ---
         getProfileCompletion: () => request("/api/profile/completion"),
 
@@ -718,6 +739,75 @@ window.SkillShareAPI = (() => {
                 }),
             }),
 
+        /* --- Stage 9.4: notifications (existing single store) ---
+           These wrap the platform's one notification table (written
+           server-side by stage8_service.notify()). JWT-only: the backend
+           scopes every call to the token's user, so no user ids are ever
+           sent from the frontend. Additive only — nothing else changes. */
+        /* GET /api/notifications — the caller's own notifications, newest
+           first. Returns { items, total, limit, offset, has_more,
+           unread_count }. */
+        getNotifications: (params = {}) => {
+            const query = new URLSearchParams();
+            if (params.limit) query.set("limit", String(params.limit));
+            if (params.offset) query.set("offset", String(params.offset));
+            if (params.unread_only) query.set("unread_only", "true");
+            const qs = query.toString();
+            return request("/api/notifications" + (qs ? `?${qs}` : ""));
+        },
+        /* POST /api/notifications/{id}/read — own row only (404 otherwise). */
+        markNotificationRead: (id) =>
+            request(`/api/notifications/${encodeURIComponent(id)}/read`, {
+                method: "POST",
+            }),
+        /* POST /api/notifications/read-all — marks the caller's unread rows. */
+        markAllNotificationsRead: () =>
+            request("/api/notifications/read-all", { method: "POST" }),
+
+        /* --- Stage 32: Settings + Account Control Center (additive) ---
+           JWT-only: every call below is scoped server-side to the token
+           owner. No user_id is ever sent from the frontend. */
+        /* GET /api/settings — caller's privacy + notification prefs.
+           Returns { settings: { profile_visibility, discoverable,
+           allow_messages, notifications }, defaults_applied }. */
+        getSettings: () => request("/api/settings"),
+        /* PATCH /api/settings — partial update; send only changed keys
+           (profile_visibility / discoverable / allow_messages /
+           notifications category map). */
+        updateSettings: (data) =>
+            request("/api/settings", {
+                method: "PATCH",
+                body: JSON.stringify(data || {}),
+            }),
+        /* POST /api/account/password — { current_password, new_password }.
+           Server verifies the current bcrypt hash first (400 on wrong). */
+        changeMyPassword: (data) =>
+            request("/api/account/password", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        /* GET /api/account/export — own-data JSON bundle (never
+           password_hash / tokens / other users' content). */
+        exportMyAccount: () => request("/api/account/export"),
+        /* POST /api/account/deactivate — { password } re-auth required.
+           Reversible via reactivateMyAccount(). */
+        deactivateMyAccount: (data) =>
+            request("/api/account/deactivate", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+        /* POST /api/account/reactivate — JWT only; undo deactivation. */
+        reactivateMyAccount: () =>
+            request("/api/account/reactivate", { method: "POST" }),
+        /* POST /api/account/delete — { password, confirm:"DELETE" }.
+           Server performs anonymizing soft-delete (never a raw row delete;
+           many user-owned FKs are not CASCADE). */
+        deleteMyAccount: (data) =>
+            request("/api/account/delete", {
+                method: "POST",
+                body: JSON.stringify(data || {}),
+            }),
+
         /* --- Student applications (Stage 2.5C) ---
            JWT-only: the backend derives the student from the token;
            no student/user ids are ever sent from the frontend.
@@ -820,6 +910,13 @@ window.SkillShareAPI = (() => {
                 `/api/opportunities/${encodeURIComponent(id)}/applications` + (qs ? `?${qs}` : "")
             );
         },
+        /* GET /api/opportunities/{id}/pipeline — Stage 9.4 owner-only
+           per-status application totals, computed server-side with one
+           GROUP BY. Returns { opportunity_id, total, applied, reviewing,
+           shortlisted, interview, selected, rejected, withdrawn, other }.
+           The frontend never counts a paginated list itself. */
+        getOpportunityPipeline: (id) =>
+            request(`/api/opportunities/${encodeURIComponent(id)}/pipeline`),
         /* PATCH /api/applications/{id}/status — Stage 9.3 recruiter status
            transition. Payload: { status, recruiter_note?, rejection_reason? }.
            Empty optional strings are OMITTED (an omitted recruiter_note

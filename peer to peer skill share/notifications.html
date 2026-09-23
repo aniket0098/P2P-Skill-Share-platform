@@ -15,28 +15,31 @@
 </head>
 
 <body>
-    <header class="app-head"><a class="app-brand" href="dashboard.html"><b>◇</b>SkillShare</a>
+    <header class="app-head"><a class="app-brand" href="dashboard.html"><b>&#9670;</b>SkillShare</a>
         <nav class="app-nav"><a href="dashboard.html">Dashboard</a><a href="explore.html">Explore</a><a
                 href="my-learning.html">Learning</a></nav>
         <div class="head-right"><a class="credits-chip" href="credits.html" data-credits-chip
                 title="Your credit balance"><span class="cc-coin">&#129473;</span><span class="cc-num"
-                    data-credits-value>—</span><span class="cc-label">Credits</span></a><div
+                    data-credits-value>&mdash;</span><span class="cc-label">Credits</span></a><div
                 id="profileDropdownContainer"></div></div>
     </header>
     <main class="page">
         <div class="page-heading">
             <div>
                 <h1>Notifications</h1>
-                <p>Stay up to date with your skill-sharing activity.</p>
-            </div><button id="markRead" class="outline">Mark all as read</button>
+                <p id="notifSubtitle">Stay up to date with your skill-sharing activity.</p>
+            </div><button id="markRead" class="outline" disabled>Mark all as read</button>
         </div>
-        <section class="cards">
-            <div class="empty-state">You are all caught up. New notifications will appear here once connected to the backend.</div>
+        <!-- Rendered from GET /api/notifications (the platform's single
+             PostgreSQL notification store). Real rows only - never static
+             demo cards. -->
+        <section class="cards" aria-live="polite" aria-busy="true">
+            <div class="empty-state">Loading your notifications&hellip;</div>
         </section>
     </main>
     <div id="toast" class="toast"></div>
-    <!-- STAGE 2 unify adapter: active nav + mobile drawer + shared
-         Credits chip + shared profile dropdown. No UI rewrite. -->
+    <!-- Stage 2 unify adapter: active nav + mobile drawer + shared
+         Credits chip + shared profile dropdown. -->
     <script src="portal-unify.js"></script>
 </body>
 

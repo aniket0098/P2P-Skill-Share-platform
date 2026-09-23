@@ -20,7 +20,7 @@ recruiter: [
 ["Industry", [["Industry Challenges", "&#127981;", "industry-challenges.html"]]],
 ["Communication", [["Messages", "&#128172;", "messages.html"], ["Calendar", "&#128197;", "calendar.html"]]],
 ["Analytics", [["Hiring Analytics", "&#128202;", "hiring-analytics.html"]]],
-["Company", [["Company Profile", "&#127981;", "company-profile.html"], ["Settings", "&#9881;", "recruiter-settings.html"], ["Credits", "&#129473;", "credits.html"]]]
+["Company", [["Company Profile", "&#127981;", "company-profile.html"], ["Settings", "&#9881;", "setting.html"], ["Credits", "&#129473;", "credits.html"]]]
 ],
 faculty: [
 [null, [["Faculty Dashboard", "&#127968;", "faculty-dashboard.html"]]],
@@ -37,6 +37,59 @@ shared: [
 
 window.PortalShell = (() => {
 var STORE = "skillshare_portal_role";
+/* ---- Stage 32: shared UI preference applier (device-scoped) ----
+   Theme / density / reduced-motion / larger-text live in localStorage
+   (a genuine device preference, NOT account data). Defined idempotently
+   in BOTH shells (first definition wins; behaviour identical), and kept
+   in sync with dashboard.js via the existing skillshare_theme key.
+   Settings pushes live changes with window.SkillShareUIPrefs.set(...). */
+if (!window.SkillShareUIPrefs) {
+  window.SkillShareUIPrefs = (function () {
+    var KEY = "skillshare_ui_prefs";
+    var THEME_KEY = "skillshare_theme";
+    function load() {
+      try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+    }
+    function save(prefs) { try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {} }
+    function themeChoice() {
+      var c = load().themeChoice;
+      return c === "light" || c === "dark" || c === "system" ? c : "dark";
+    }
+    function resolvedTheme() {
+      if (themeChoice() === "system") {
+        try { return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; }
+        catch (e) { return "dark"; }
+      }
+      return themeChoice();
+    }
+    function setAttrs(name, value) {
+      try { document.documentElement.setAttribute(name, value); } catch (e) {}
+      try { if (document.body) document.body.setAttribute(name, value); } catch (e) {}
+    }
+    function apply() {
+      var p = load();
+      var theme = resolvedTheme();
+      try { localStorage.setItem(THEME_KEY, theme === "light" ? "light" : "dark"); } catch (e) {}
+      setAttrs("data-theme", theme);
+      setAttrs("data-density", p.density === "compact" ? "compact" : "comfortable");
+      setAttrs("data-reduced-motion", p.reducedMotion ? "true" : "false");
+      setAttrs("data-text-scale", p.largeText ? "large" : "normal");
+      try {
+        if (document.body) document.body.classList.toggle("light-theme", theme === "light");
+      } catch (e) {}
+    }
+    function set(patch) {
+      var p = load();
+      for (var k in patch) { if (Object.prototype.hasOwnProperty.call(patch, k)) p[k] = patch[k]; }
+      save(p); apply(); return p;
+    }
+    return { load: load, save: save, apply: apply, set: set,
+             resolvedTheme: resolvedTheme, themeChoice: themeChoice };
+  })();
+  document.addEventListener("DOMContentLoaded", function () {
+    try { window.SkillShareUIPrefs.apply(); } catch (e) {}
+  });
+}
 const TAGLINES = {
 student: "Ready to learn, share and grow today?",
 recruiter: "Find verified talent with real skill evidence.",

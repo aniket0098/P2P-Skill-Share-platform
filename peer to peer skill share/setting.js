@@ -1,4532 +1,1319 @@
 /* =========================================================
-   SKILLSHARE SETTINGS
-   settings.js
+   SKILLSHARE - SETTINGS (Stage 32 rebuild)
+   Account & Platform Control Center
+
+   Real-data only:
+     GET    /me                    -> identity + account form
+     PATCH  /api/users/me          -> account field saves
+     PUT    /profile/me            -> career preferences
+     GET    /api/settings          -> privacy + notification prefs
+     PATCH  /api/settings          -> privacy + notification saves
+     POST   /api/account/password  -> password change
+     GET    /api/account/export    -> data export
+     POST   /api/account/deactivate|reactivate|delete
+   Appearance/accessibility are DEVICE preferences (localStorage via
+   SkillShareUIPrefs) - never presented as account data.
+   No request fires per keystroke: every section uses a controlled
+   save bar with dirty tracking, validation and duplicate-submit lock.
    ========================================================= */
+(function () {
+    "use strict";
 
+    /* =======================================================
+       CONSTANTS
+       ======================================================= */
+    var SECTION_IDS = ["account", "security", "privacy", "notifications",
+        "career", "appearance", "accessibility", "data", "danger"];
 
-/* =========================================================
-   GLOBAL SETTINGS OBJECT
-   ========================================================= */
+    /* Old page hashes keep working after the rebuild. */
+    var LEGACY_HASH = {
+        profileSettings: "account",
+        accountSettings: "account",
+        privacySettings: "privacy",
+        notificationSettings: "notifications",
+        appearanceSettings: "appearance",
+        blockedSettings: "privacy",
+        paymentSettings: "data",
+        supportSettings: "data"
+    };
 
-const DEFAULT_SETTINGS = {
+    var USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
+    var SAVE_DIRTY = { account: false, privacy: false, notifications: false, career: false };
 
-    profile: {
-        firstName: "",
-        lastName: "",
-        username: "",
-        bio: "",
-        location: "",
-        website: "",
-        avatar: ""
-    },
+    /* =======================================================
+       STATE (all hydrated from real API responses)
+       ======================================================= */
+    var state = {
+        user: null,
+        role: "student",
+        roleProfile: null,
+        roleProfileError: null,
+        settings: null,
+        pendingAvatar: null,   /* dataURL staged for save; null = unchanged */
+        avatarCleared: false,  /* user pressed Remove */
+        booted: false,
+        bound: false,
+        modalsBound: false,
+        saving: {}
+    };
+    var baseline = {
+        account: null,
+        privacy: null,
+        notifications: null,
+        career: null
+    };
 
-    skills: [],
+    /* =======================================================
+       SMALL HELPERS
+       ======================================================= */
+    function $(id) { return document.getElementById(id); }
 
-    interests: [],
-
-    privacy: {
-        publicProfile: true,
-        onlineStatus: true,
-        learningProgress: true,
-        allowMessages: true,
-        searchVisibility: true,
-        showInterests: true,
-        personalizedRecommendations: true,
-        showLikes: false,
-        showSaved: false
-    },
-
-    notifications: {
-        messages: true,
-        community: true,
-        connections: true,
-        learning: true,
-        updates: false,
-        email: true,
-        push: true
-    },
-
-    appearance: {
-        darkMode: true,
-        compactMode: false,
-        reduceAnimations: false,
-        theme: "dark"
-    },
-
-    security: {
-        twoFactor: false
+    function on(el, ev, fn) {
+        if (el && el.addEventListener) el.addEventListener(ev, fn);
     }
 
-};
-
-
-/* =========================================================
-   LOAD SETTINGS
-   ========================================================= */
-
-let settings = loadSettings();
-/* =========================================================
-   CURRENT USER (PostgreSQL source of truth)
-   ========================================================= */
-
-let currentUser = null;
-let currentUserPromise = null;
-
-
-async function ensureCurrentUser(force) {
-
-    if (currentUser && !force) {
-
-        return currentUser;
-
+    function all(sel, root) {
+        return Array.prototype.slice.call((root || document).querySelectorAll(sel));
     }
 
-    if (currentUserPromise) {
-
-        return currentUserPromise;
-
+    function normalizeRole(role) {
+        var r = String(role || "student").trim().toLowerCase();
+        if (["student", "recruiter", "mentor", "faculty", "admin", "tpo", "college",
+            "college_placement", "learner"].indexOf(r) !== -1) return r;
+        return "student";
     }
 
-    currentUserPromise = (async () => {
-
+    function fmtDate(value) {
+        if (!value) return "-";
         try {
+            var d = new Date(value);
+            if (isNaN(d.getTime())) return "-";
+            return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        } catch (e) { return "-"; }
+    }
 
-            const res =
+    function initialsOf(name) {
+        var parts = String(name || "").trim().split(/\s+/);
+        var out = "";
+        if (parts[0]) out += parts[0].charAt(0);
+        if (parts[1]) out += parts[1].charAt(0);
+        return (out || "?").toUpperCase();
+    }
 
-                await window.SkillShareAPI.getMe();
+    var toastTimer = null;
+    function toast(message, type) {
+        var el = $("settingsToast");
+        if (!el) return;
+        el.hidden = false;
+        el.className = "toast" + (type === "error" ? " is-error" :
+            type === "success" ? " is-success" : "");
+        el.textContent = String(message || "");
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { el.hidden = true; }, 3200);
+    }
 
-            currentUser =
+    function setStatus(section, message, kind) {
+        var el = document.querySelector('[data-status-for="' + section + '"]');
+        if (!el) return;
+        el.className = "save-status" + (kind ? " is-" + kind : "");
+        el.textContent = message || "";
+    }
 
-                (res && res.user) || res || null;
+    function setBtnSaved(btn, doneLabel) {
+        if (!btn) return;
+        var original = btn.dataset.label || btn.textContent;
+        btn.dataset.label = original;
+        btn.classList.add("is-saved");
+        btn.textContent = doneLabel || "Saved";
+        setTimeout(function () {
+            btn.classList.remove("is-saved");
+            btn.textContent = btn.dataset.label || original;
+        }, 1600);
+    }
 
-        } catch (err) {
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        btn.disabled = !!busy;
+        btn.setAttribute("aria-busy", busy ? "true" : "false");
+    }
 
-            // 401 is handled by the API client (session cleared + redirect).
-            // For transient errors fall back to the cached session user.
-            if (err && err.status !== 401) {
+    function showFieldError(inputId, errorId, message) {
+        var input = $(inputId);
+        var err = $(errorId);
+        if (input) {
+            if (message) input.setAttribute("aria-invalid", "true");
+            else input.removeAttribute("aria-invalid");
+        }
+        if (err) {
+            err.hidden = !message;
+            err.textContent = message || "";
+        }
+        return !message;
+    }
 
-                currentUser =
+    function errText(error, fallback) {
+        if (!error) return fallback;
+        return error.detail || error.message || fallback;
+    }
 
-                    window.SkillShareAPI.getUser?.() || null;
+    /* =======================================================
+       CLIENT-SIDE VALIDATION (mirrors server rules)
+       ======================================================= */
+    function validateAccountFields() {
+        var ok = true;
+        var name = ($("acctName") || {}).value || "";
+        ok = showFieldError("acctName", "acctNameError",
+            name.trim().length >= 2 ? null : "Display name must be at least 2 characters.") && ok;
 
+        var username = ($("acctUsername") || {}).value || "";
+        username = username.trim().replace(/^@+/, "");
+        var usernameMsg = null;
+        if (username && !USERNAME_RE.test(username)) {
+            usernameMsg = "Use 3-24 letters, numbers or underscores.";
+        }
+        ok = showFieldError("acctUsername", "acctUsernameError", usernameMsg) && ok;
+
+        var phone = ($("acctPhone") || {}).value || "";
+        var phoneMsg = null;
+        if (phone.trim()) {
+            var digits = phone.replace(/\D/g, "");
+            if (digits.length < 7 || digits.length > 15) {
+                phoneMsg = "Enter a valid phone number (7-15 digits).";
             }
-
-        } finally {
-
-            currentUserPromise = null;
-
         }
-
-        return currentUser;
-
-    })();
-
-    return currentUserPromise;
-
-}
-
-
-/* =========================================================
-   SAVE PROFILE TO SERVER
-   (PostgreSQL is the source of truth; JWT identifies the user)
-   ========================================================= */
-
-async function saveProfileToServer() {
-
-    const profile =
-
-        settings.profile;
-
-    const displayName =
-
-        [
-            profile.firstName,
-            profile.lastName
-        ]
-
-            .filter(Boolean)
-
-            .join(" ")
-
-            .trim();
-
-    const payload = {
-
-        name: displayName || undefined,
-
-        username: profile.username || "",
-
-        bio: profile.bio || "",
-
-        location: profile.location || "",
-
-        website: profile.website || "",
-
-        avatar_url: profile.avatar || "",
-
-        /* An empty ARRAY (not null) must be sent when the user removed
-           every tag, otherwise the backend keeps the old CSV value and
-           the removal never persists to PostgreSQL. */
-
-        skills: (settings.skills && settings.skills.length)
-
-            ? settings.skills.join(", ")
-
-            : [],
-
-        interests: (settings.interests && settings.interests.length)
-
-            ? settings.interests.join(", ")
-
-            : []
-
-    };
-
-    const res =
-
-        await window.SkillShareAPI.updateMyProfile(payload);
-
-    const updated =
-
-        (res && res.user) || res || null;
-
-    if (updated) {
-
-        currentUser = updated;
-
-    }
-
-    return updated;
-
-}
-
-
-function loadSettings() {
-
-    try {
-
-        const saved = localStorage.getItem(
-            "skillshareSettings"
-        );
-
-        if (!saved) {
-
-            return structuredClone(DEFAULT_SETTINGS);
-
-        }
-
-        const parsed = JSON.parse(saved);
-
-        return deepMerge(
-            structuredClone(DEFAULT_SETTINGS),
-            parsed
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Unable to load settings:",
-            error
-        );
-
-        return structuredClone(DEFAULT_SETTINGS);
-
-    }
-
-}
-
-
-/* =========================================================
-   DEEP MERGE
-   ========================================================= */
-
-function deepMerge(target, source) {
-
-    Object.keys(source || {}).forEach(key => {
-
-        if (
-            source[key] &&
-            typeof source[key] === "object" &&
-            !Array.isArray(source[key])
-        ) {
-
-            target[key] = deepMerge(
-                target[key] || {},
-                source[key]
-            );
-
-        } else {
-
-            target[key] = source[key];
-
-        }
-
-    });
-
-    return target;
-
-}
-
-
-/* =========================================================
-   SAVE SETTINGS
-   ========================================================= */
-
-function saveSettings(showMessage = false) {
-
-    try {
-
-        localStorage.setItem(
-            "skillshareSettings",
-            JSON.stringify(settings)
-        );
-
-        // When the user explicitly clicks Save, ALSO persist the
-        // profile fields + skills to PostgreSQL (source of truth).
-        if (showMessage) {
-
-            return saveProfileToServer();
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Unable to save settings:",
-            error
-        );
-
-        showToast(
-            "Could not save your changes",
-            "error"
-        );
-
-    }
-
-    return Promise.resolve(null);
-
-}
-
-
-/* =========================================================
-   DOM READY
-   ========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initializeSettings
-);
-
-
-function initializeSettings() {
-
-    console.log(
-        "SkillShare Settings initialized."
-    );
-
-
-    initializeTabs();
-
-    initializeProfile();
-
-    initializeSkills();
-
-    initializeInterests();
-
-    initializeSwitches();
-
-    initializeAppearance();
-
-    initializeModals();
-
-    initializeNavigation();
-
-    initializeLogout();
-
-    initializeAccountActions();
-
-    initializeSessions();
-
-    initializeBlockedUsers();
-
-    initializeSupport();
-
-    initializePayments();
-
-    initializeSearch();
-
-    initializeUserMenu();
-
-    initializeGlobalButtons();
-
-    initializeKeyboardShortcuts();
-
-    loadSettingsIntoInterface();
-
-}
-
-
-/* =========================================================
-   LOAD EVERYTHING INTO UI
-   ========================================================= */
-
-function loadSettingsIntoInterface() {
-
-    // Load the authenticated user's database record FIRST so the
-    // form always reflects PostgreSQL (the single source of truth),
-    // then populate all panels from it.
-    syncFromServerUser().then(() => {
-
-        loadProfile();
-
-        loadSkills();
-
-        loadInterests();
-
-        loadPrivacy();
-
-        loadNotifications();
-
-        loadAppearance();
-
-    });
-
-}
-
-
-/* =========================================================
-   SYNC FROM SERVER USER (PostgreSQL source of truth)
-   ========================================================= */
-
-function parseListField(value) {
-
-    if (Array.isArray(value)) {
-
-        return value.map(item => String(item).trim()).filter(Boolean);
-
-    }
-
-    if (typeof value !== "string") {
-
-        return [];
-
-    }
-
-    return value
-        .split(",")
-        .map(item => item.trim())
-        .filter(Boolean);
-
-}
-
-
-async function syncFromServerUser() {
-
-    const user = await ensureCurrentUser();
-
-    if (!user) return;
-
-    currentUser = user;
-
-    // Split the full display name into first/last for the form.
-    const displayName = (user.name || "").trim();
-
-    if (displayName) {
-
-        const parts = displayName.split(/\s+/);
-
-        settings.profile.firstName = parts.shift() || "";
-
-        settings.profile.lastName = parts.join(" ");
-
-    }
-
-    settings.profile.username = user.username || "";
-
-    settings.profile.bio = user.bio || "";
-
-    settings.profile.location = user.location || "";
-
-    settings.profile.website = user.website || "";
-
-    settings.profile.avatar = user.avatar_url || "";
-
-    settings.skills = parseListField(user.skills);
-
-    settings.interests = parseListField(user.interests);
-
-    // Keep the local cache aligned with the database record.
-    saveSettings();
-
-}
-
-
-/* =========================================================
-   SETTINGS TABS
-   ========================================================= */
-
-function initializeTabs() {
-
-    const tabs = document.querySelectorAll(
-        ".settings-tab[data-target]"
-    );
-
-    const panels = document.querySelectorAll(
-        ".settings-panel"
-    );
-
-
-    tabs.forEach(tab => {
-
-        tab.addEventListener(
-            "click",
-            () => {
-
-                const targetId =
-                    tab.dataset.target;
-
-                if (!targetId) return;
-
-
-                tabs.forEach(item => {
-
-                    item.classList.remove(
-                        "active"
-                    );
-
-                });
-
-
-                panels.forEach(panel => {
-
-                    panel.classList.remove(
-                        "active"
-                    );
-
-                });
-
-
-                tab.classList.add(
-                    "active"
-                );
-
-
-                const target =
-                    document.getElementById(
-                        targetId
-                    );
-
-
-                if (target) {
-
-                    target.classList.add(
-                        "active"
-                    );
-
-                    window.scrollTo({
-                        top: 0,
-                        behavior: "smooth"
-                    });
-
-                }
-
-            }
-        );
-
-    });
-
-}
-
-
-/* =========================================================
-   PROFILE
-   ========================================================= */
-
-function initializeProfile() {
-
-    const firstName =
-        document.getElementById("firstName");
-
-    const lastName =
-        document.getElementById("lastName");
-
-    const username =
-        document.getElementById("username");
-
-    const bio =
-        document.getElementById("profileBio");
-
-    const location =
-        document.getElementById("location");
-
-    const website =
-        document.getElementById("website");
-
-
-    const fields = [
-        firstName,
-        lastName,
-        username,
-        bio,
-        location,
-        website
-    ];
-
-
-    fields.forEach(field => {
-
-        if (!field) return;
-
-        field.addEventListener(
-            "input",
-            updateProfileFromUI
-        );
-
-    });
-
-
-    if (bio) {
-
-        updateBioCounter();
-
-        bio.addEventListener(
-            "input",
-            updateBioCounter
-        );
-
-    }
-
-
-    const changeAvatar =
-        document.getElementById(
-            "changeAvatar"
-        );
-
-    const avatarInput =
-        document.getElementById(
-            "avatarInput"
-        );
-
-
-    if (
-        changeAvatar &&
-        avatarInput
-    ) {
-
-        changeAvatar.addEventListener(
-            "click",
-            () => avatarInput.click()
-        );
-
-
-        avatarInput.addEventListener(
-            "change",
-            handleAvatarUpload
-        );
-
-    }
-
-
-    const removeAvatar =
-        document.getElementById(
-            "removeAvatar"
-        );
-
-
-    if (removeAvatar) {
-
-        removeAvatar.addEventListener(
-            "click",
-            removeAvatarImage
-        );
-
-    }
-
-
-    const previewProfile =
-        document.getElementById(
-            "previewProfile"
-        );
-
-
-    if (previewProfile) {
-
-        previewProfile.addEventListener(
-            "click",
-            previewProfilePage
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   UPDATE PROFILE
-   ========================================================= */
-
-function updateProfileFromUI() {
-
-    const firstName =
-        document.getElementById(
-            "firstName"
-        );
-
-    const lastName =
-        document.getElementById(
-            "lastName"
-        );
-
-    const username =
-        document.getElementById(
-            "username"
-        );
-
-    const bio =
-        document.getElementById(
-            "profileBio"
-        );
-
-    const location =
-        document.getElementById(
-            "location"
-        );
-
-    const website =
-        document.getElementById(
-            "website"
-        );
-
-
-    settings.profile.firstName =
-        firstName?.value.trim() || "";
-
-
-    settings.profile.lastName =
-        lastName?.value.trim() || "";
-
-
-    settings.profile.username =
-        username?.value.trim() || "";
-
-
-    settings.profile.bio =
-        bio?.value.trim() || "";
-
-
-    settings.profile.location =
-        location?.value.trim() || "";
-
-
-    settings.profile.website =
-        website?.value.trim() || "";
-
-}
-
-
-/* =========================================================
-   LOAD PROFILE
-   ========================================================= */
-
-function loadProfile() {
-
-    const profile =
-        settings.profile;
-
-
-    setValue(
-        "firstName",
-        profile.firstName
-    );
-
-
-    setValue(
-        "lastName",
-        profile.lastName
-    );
-
-
-    setValue(
-        "username",
-        profile.username
-    );
-
-
-    setValue(
-        "profileBio",
-        profile.bio
-    );
-
-
-    setValue(
-        "location",
-        profile.location
-    );
-
-
-    setValue(
-        "website",
-        profile.website
-    );
-
-
-    const avatar =
-        document.getElementById(
-            "profileAvatar"
-        );
-
-
-    if (avatar) {
-
-        avatar.src =
-            profile.avatar || "assets/avatar1.svg";
-
-    }
-
-
-    updateBioCounter();
-
-}
-
-
-/* =========================================================
-   SET VALUE HELPER
-   ========================================================= */
-
-function setValue(id, value) {
-
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-
-        element.value =
-            value ?? "";
-
-    }
-
-}
-
-
-/* =========================================================
-   BIO COUNTER
-   ========================================================= */
-
-function updateBioCounter() {
-
-    const bio =
-        document.getElementById(
-            "profileBio"
-        );
-
-    if (!bio) return;
-
-
-    const field =
-        bio.closest(".field");
-
-    if (!field) return;
-
-
-    const counter =
-        field.querySelector("em");
-
-
-    if (counter) {
-
-        counter.textContent =
-            `${bio.value.length}/160`;
-
-    }
-
-}
-
-
-/* =========================================================
-   AVATAR UPLOAD
-   ========================================================= */
-
-function handleAvatarUpload(event) {
-
-    const file =
-        event.target.files?.[0];
-
-    if (!file) return;
-
-
-    if (!file.type.startsWith("image/")) {
-
-        showToast(
-            "Please select an image file.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (file.size > 5 * 1024 * 1024) {
-
-        showToast(
-            "Image must be smaller than 5 MB.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const reader =
-        new FileReader();
-
-
-    reader.onload = async function () {
-
-        const image =
-            reader.result;
-
-
-        settings.profile.avatar =
-            image;
-
-
-        const avatar =
-            document.getElementById(
-                "profileAvatar"
-            );
-
-
-        if (avatar) {
-
-            avatar.src =
-                image;
-
-        }
-
-
-        /* Persist immediately: PATCH /api/users/me (the backend
-           derives the user from the JWT and updates PostgreSQL). */
-
-        try {
-
-            const res =
-                await window.SkillShareAPI.updateMyProfile(
-                    { avatar_url: image }
-                );
-
-            const updated =
-                (res && res.user) || res || null;
-
-            if (updated) {
-
-                currentUser = updated;
-
-                updateSessionUserCache(updated);
-
-            }
-
-            saveSettings();
-
-            showToast(
-                "Profile photo updated.",
-                "success"
-            );
-
-        } catch (error) {
-
-            /* Revert the preview when the server rejects it. */
-
-            settings.profile.avatar = "";
-
-            if (avatar) {
-
-                avatar.src =
-                    "assets/avatar1.svg";
-
-            }
-
-            saveSettings();
-
-            showToast(
-                error?.detail ||
-                "Could not save your photo. Please try again.",
-                "error"
-            );
-
-        }
-
-    };
-
-
-    reader.readAsDataURL(file);
-
-}
-
-
-/* =========================================================
-   REMOVE AVATAR
-   ========================================================= */
-
-async function removeAvatarImage() {
-
-    const previousAvatar =
-        settings.profile.avatar;
-
-
-    settings.profile.avatar =
-        "";
-
-
-    const avatar =
-        document.getElementById(
-            "profileAvatar"
-        );
-
-
-    if (avatar) {
-
-        avatar.src =
-            "assets/avatar1.svg";
-
-    }
-
-
-    /* Persist immediately (empty string clears the column). */
-
-    try {
-
-        const res =
-            await window.SkillShareAPI.updateMyProfile(
-                { avatar_url: "" }
-            );
-
-        const updated =
-            (res && res.user) || res || null;
-
-        if (updated) {
-
-            currentUser = updated;
-
-            updateSessionUserCache(updated);
-
-        }
-
-        saveSettings();
-
-        showToast(
-            "Profile photo removed.",
-            "success"
-        );
-
-    } catch (error) {
-
-        /* Revert the preview when the server rejects it. */
-
-        settings.profile.avatar =
-            previousAvatar;
-
-        if (avatar && previousAvatar) {
-
-            avatar.src =
-                previousAvatar;
-
-        }
-
-        saveSettings();
-
-        showToast(
-            error?.detail ||
-            "Could not remove your photo. Please try again.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   PROFILE PREVIEW
-   ========================================================= */
-
-function previewProfilePage() {
-
-    saveSettings();
-
-
-    const profileUrl =
-        "profile.html";
-
-
-    if (
-        typeof profileUrl ===
-        "string"
-    ) {
-
-        window.location.href =
-            profileUrl;
-
-    }
-
-}
-
-
-/* =========================================================
-   SKILLS
-   ========================================================= */
-
-function initializeSkills() {
-
-    const addButton =
-        document.getElementById(
-            "addSkill"
-        );
-
-    const showInput =
-        document.getElementById(
-            "showSkillInput"
-        );
-
-    const input =
-        document.getElementById(
-            "newSkill"
-        );
-
-
-    if (showInput) {
-
-        showInput.addEventListener(
-            "click",
-            () => {
-
-                const row =
-                    document.getElementById(
-                        "skillAddRow"
-                    );
-
-                if (!row) return;
-
-
-                row.hidden =
-                    !row.hidden;
-
-
-                if (!row.hidden) {
-
-                    input?.focus();
-
-                }
-
-            }
-        );
-
-    }
-
-
-    if (addButton) {
-
-        addButton.addEventListener(
-            "click",
-            addSkill
-        );
-
-    }
-
-
-    if (input) {
-
-        input.addEventListener(
-            "keydown",
-            event => {
-
-                if (
-                    event.key ===
-                    "Enter"
-                ) {
-
-                    event.preventDefault();
-
-                    addSkill();
-
-                }
-
-            }
-        );
-
-    }
-
-
-    document.addEventListener(
-        "click",
-        event => {
-
-            const remove =
-                event.target.closest(
-                    ".skill-remove"
-                );
-
-
-            if (!remove) return;
-
-
-            const tag =
-                remove.closest(
-                    ".skill-tag"
-                );
-
-
-            /* Interest tags share the tag styling but
-               belong to the interests list. */
-
-            if (
-                tag?.classList.contains(
-                    "interest-tag"
-                )
-            ) {
-
-                removeInterest(
-                    tag.dataset.interest ||
-                        tag.textContent
-                            .replace("×", "")
-                            .trim()
-                );
-
-                return;
-
-            }
-
-
-            const skill =
-                tag?.dataset.skill ||
-                tag?.textContent
-                    .replace("×", "")
-                    .trim();
-
-
-            removeSkill(
-                skill
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   LOAD SKILLS
-   ========================================================= */
-
-function loadSkills() {
-
-    const editor =
-        document.getElementById(
-            "skillEditor"
-        );
-
-
-    if (!editor) return;
-
-
-    editor.innerHTML = "";
-
-
-    settings.skills.forEach(
-        skill => {
-
-            createSkillElement(
-                skill
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   CREATE SKILL
-   ========================================================= */
-
-function createSkillElement(
-    skill
-) {
-
-    const editor =
-        document.getElementById(
-            "skillEditor"
-        );
-
-
-    if (!editor) return;
-
-
-    const tag =
-        document.createElement(
-            "span"
-        );
-
-
-    tag.className =
-        "skill-tag";
-
-
-    tag.dataset.skill =
-        skill;
-
-
-    tag.innerHTML = `
-
-        <span>
-            ${escapeHTML(skill)}
-        </span>
-
-        <button
-            class="skill-remove"
-            type="button"
-            aria-label="Remove ${escapeHTML(skill)}"
-        >
-            ×
-        </button>
-
-    `;
-
-
-    editor.appendChild(
-        tag
-    );
-
-}
-
-
-/* =========================================================
-   ADD SKILL
-   ========================================================= */
-
-function addSkill() {
-
-    const input =
-        document.getElementById(
-            "newSkill"
-        );
-
-
-    if (!input) return;
-
-
-    const skill =
-        input.value.trim();
-
-
-    if (!skill) {
-
-        showToast(
-            "Enter a skill first.",
-            "error"
-        );
-
-        input.focus();
-
-        return;
-
-    }
-
-
-    if (
-        settings.skills.some(
-            item =>
-                item.toLowerCase() ===
-                skill.toLowerCase()
-        )
-    ) {
-
-        showToast(
-            "That skill is already added.",
-            "error"
-        );
-
-        input.focus();
-
-        return;
-
-    }
-
-
-    if (settings.skills.length >= 15) {
-
-        showToast(
-            "You can add up to 15 skills.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    settings.skills.push(
-        skill
-    );
-
-
-    input.value = "";
-
-
-    loadSkills();
-
-    saveSettings();
-
-
-    showToast(
-        `${skill} added to your skills.`,
-        "success"
-    );
-
-
-    input.focus();
-
-}
-
-
-/* =========================================================
-   REMOVE SKILL
-   ========================================================= */
-
-function removeSkill(
-    skill
-) {
-
-    if (!skill) return;
-
-
-    settings.skills =
-        settings.skills.filter(
-            item =>
-                item.toLowerCase() !==
-                skill.toLowerCase()
-        );
-
-
-    loadSkills();
-
-    saveSettings();
-
-
-    showToast(
-        `${skill} removed.`,
-        "success"
-    );
-
-}
-
-
-/* =========================================================
-   INTERESTS (mirrors the skills editor)
-   ========================================================= */
-
-function initializeInterests() {
-
-    const addButton =
-        document.getElementById(
-            "addInterest"
-        );
-
-    const showInput =
-        document.getElementById(
-            "showInterestInput"
-        );
-
-    const input =
-        document.getElementById(
-            "newInterest"
-        );
-
-
-    if (showInput) {
-
-        showInput.addEventListener(
-            "click",
-            () => {
-
-                const row =
-                    document.getElementById(
-                        "interestAddRow"
-                    );
-
-                if (!row) return;
-
-
-                row.hidden =
-                    !row.hidden;
-
-
-                if (!row.hidden) {
-
-                    input?.focus();
-
-                }
-
-            }
-        );
-
-    }
-
-
-    if (addButton) {
-
-        addButton.addEventListener(
-            "click",
-            addInterest
-        );
-
-    }
-
-
-    if (input) {
-
-        input.addEventListener(
-            "keydown",
-            event => {
-
-                if (
-                    event.key ===
-                    "Enter"
-                ) {
-
-                    event.preventDefault();
-
-                    addInterest();
-
-                }
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   GENERIC TAG ELEMENT (skills & interests share this)
-   ========================================================= */
-
-function createTagElement(
-    editorId,
-    value
-) {
-
-    const editor =
-        document.getElementById(
-            editorId
-        );
-
-
-    if (!editor) return;
-
-
-    const tag =
-        document.createElement(
-            "span"
-        );
-
-
-    tag.className =
-        "skill-tag interest-tag";
-
-
-    tag.dataset.interest =
-        value;
-
-
-    tag.innerHTML = `
-
-        <span>
-            ${escapeHTML(value)}
-        </span>
-
-        <button
-            class="tag-remove skill-remove"
-            type="button"
-            aria-label="Remove ${escapeHTML(value)}"
-        >
-            ×
-        </button>
-
-    `;
-
-
-    editor.appendChild(
-        tag
-    );
-
-}
-
-
-/* =========================================================
-   LOAD INTERESTS
-   ========================================================= */
-
-function loadInterests() {
-
-    const editor =
-        document.getElementById(
-            "interestEditor"
-        );
-
-
-    if (!editor) return;
-
-
-    editor.innerHTML = "";
-
-
-    settings.interests.forEach(
-        interest => {
-
-            createTagElement(
-                "interestEditor",
-                interest
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   ADD / REMOVE INTEREST
-   ========================================================= */
-
-function addInterest() {
-
-    const input =
-        document.getElementById(
-            "newInterest"
-        );
-
-
-    if (!input) return;
-
-
-    const interest =
-        input.value.trim();
-
-
-    if (!interest) {
-
-        showToast(
-            "Enter an interest first.",
-            "error"
-        );
-
-        input.focus();
-
-        return;
-
-    }
-
-
-    if (
-        settings.interests.some(
-            item =>
-                item.toLowerCase() ===
-                interest.toLowerCase()
-        )
-    ) {
-
-        showToast(
-            "That interest is already added.",
-            "error"
-        );
-
-        input.focus();
-
-        return;
-
-    }
-
-
-    if (settings.interests.length >= 15) {
-
-        showToast(
-            "You can add up to 15 interests.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    settings.interests.push(
-        interest
-    );
-
-
-    input.value = "";
-
-
-    loadInterests();
-
-    saveSettings();
-
-
-    showToast(
-        `${interest} added to your interests.`,
-        "success"
-    );
-
-
-    input.focus();
-
-}
-
-
-function removeInterest(
-    interest
-) {
-
-    if (!interest) return;
-
-
-    settings.interests =
-        settings.interests.filter(
-            item =>
-                item.toLowerCase() !==
-                interest.toLowerCase()
-        );
-
-
-    loadInterests();
-
-    saveSettings();
-
-
-    showToast(
-        `${interest} removed.`,
-        "success"
-    );
-
-}
-
-
-/* =========================================================
-   PRIVACY SWITCHES
-   ========================================================= */
-
-function initializeSwitches() {
-
-    const switchMap = {
-
-        publicProfile:
-            [
-                "privacy",
-                "publicProfile"
-            ],
-
-        onlineStatus:
-            [
-                "privacy",
-                "onlineStatus"
-            ],
-
-        learningProgress:
-            [
-                "privacy",
-                "learningProgress"
-            ],
-
-        allowMessages:
-            [
-                "privacy",
-                "allowMessages"
-            ],
-
-        searchVisibility:
-            [
-                "privacy",
-                "searchVisibility"
-            ],
-
-        showInterests:
-            [
-                "privacy",
-                "showInterests"
-            ],
-
-        personalizedRecommendations:
-            [
-                "privacy",
-                "personalizedRecommendations"
-            ],
-
-        showLikes:
-            [
-                "privacy",
-                "showLikes"
-            ],
-
-        showSaved:
-            [
-                "privacy",
-                "showSaved"
-            ],
-
-        notifyMessages:
-            [
-                "notifications",
-                "messages"
-            ],
-
-        notifyCommunity:
-            [
-                "notifications",
-                "community"
-            ],
-
-        notifyConnections:
-            [
-                "notifications",
-                "connections"
-            ],
-
-        notifyLearning:
-            [
-                "notifications",
-                "learning"
-            ],
-
-        notifyUpdates:
-            [
-                "notifications",
-                "updates"
-            ],
-
-        emailNotifications:
-            [
-                "notifications",
-                "email"
-            ],
-
-        pushNotifications:
-            [
-                "notifications",
-                "push"
-            ],
-
-        twoFactor:
-            [
-                "security",
-                "twoFactor"
-            ]
-
-    };
-
-
-    Object.entries(
-        switchMap
-    ).forEach(
-        ([id, path]) => {
-
-            const checkbox =
-                document.getElementById(
-                    id
-                );
-
-
-            if (!checkbox) return;
-
-
-            checkbox.addEventListener(
-                "change",
-                () => {
-
-                    setNestedValue(
-                        settings,
-                        path,
-                        checkbox.checked
-                    );
-
-
-                    saveSettings();
-
-                    handleSwitchSideEffects(
-                        id,
-                        checkbox.checked
-                    );
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   LOAD PRIVACY
-   ========================================================= */
-
-function loadPrivacy() {
-
-    const map = {
-
-        publicProfile:
-            settings.privacy.publicProfile,
-
-        onlineStatus:
-            settings.privacy.onlineStatus,
-
-        learningProgress:
-            settings.privacy.learningProgress,
-
-        allowMessages:
-            settings.privacy.allowMessages,
-
-        searchVisibility:
-            settings.privacy.searchVisibility,
-
-        showInterests:
-            settings.privacy.showInterests,
-
-        personalizedRecommendations:
-            settings.privacy.personalizedRecommendations,
-
-        showLikes:
-            settings.privacy.showLikes,
-
-        showSaved:
-            settings.privacy.showSaved,
-
-        twoFactor:
-            settings.security.twoFactor
-
-    };
-
-
-    Object.entries(map)
-        .forEach(
-            ([id, value]) => {
-
-                setChecked(
-                    id,
-                    value
-                );
-
-            }
-        );
-
-}
-
-
-/* =========================================================
-   LOAD NOTIFICATIONS
-   ========================================================= */
-
-function loadNotifications() {
-
-    const map = {
-
-        notifyMessages:
-            settings.notifications.messages,
-
-        notifyCommunity:
-            settings.notifications.community,
-
-        notifyConnections:
-            settings.notifications.connections,
-
-        notifyLearning:
-            settings.notifications.learning,
-
-        notifyUpdates:
-            settings.notifications.updates,
-
-        emailNotifications:
-            settings.notifications.email,
-
-        pushNotifications:
-            settings.notifications.push
-
-    };
-
-
-    Object.entries(map)
-        .forEach(
-            ([id, value]) => {
-
-                setChecked(
-                    id,
-                    value
-                );
-
-            }
-        );
-
-}
-
-
-/* =========================================================
-   CHECKBOX HELPER
-   ========================================================= */
-
-function setChecked(
-    id,
-    value
-) {
-
-    const element =
-        document.getElementById(
-            id
-        );
-
-
-    if (element) {
-
-        element.checked =
-            Boolean(value);
-
-    }
-
-}
-
-
-/* =========================================================
-   NESTED VALUE SETTER
-   ========================================================= */
-
-function setNestedValue(
-    object,
-    path,
-    value
-) {
-
-    let current =
-        object;
-
-
-    for (
-        let i = 0;
-        i < path.length - 1;
-        i++
-    ) {
-
-        current =
-            current[path[i]];
-
-    }
-
-
-    current[
-        path[path.length - 1]
-    ] = value;
-
-}
-
-
-/* =========================================================
-   SWITCH SIDE EFFECTS
-   ========================================================= */
-
-function handleSwitchSideEffects(
-    id,
-    value
-) {
-
-    if (
-        id ===
-        "twoFactor"
-    ) {
-
-        showToast(
-            value
-                ? "Two-factor authentication enabled."
-                : "Two-factor authentication disabled.",
-            "success"
-        );
-
-    }
-
-
-    if (
-        id ===
-        "allowMessages" &&
-        !value
-    ) {
-
-        showToast(
-            "New direct messages are now restricted.",
-            "info"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   APPEARANCE
-   ========================================================= */
-
-function initializeAppearance() {
-
-    const darkMode =
-        document.getElementById(
-            "darkMode"
-        );
-
-    const compactMode =
-        document.getElementById(
-            "compactMode"
-        );
-
-    const reduceAnimations =
-        document.getElementById(
-            "reduceAnimations"
-        );
-
-
-    if (darkMode) {
-
-        darkMode.addEventListener(
-            "change",
-            () => {
-
-                settings.appearance.darkMode =
-                    darkMode.checked;
-
-
-                settings.appearance.theme =
-                    darkMode.checked
-                        ? "dark"
-                        : "light";
-
-
-                applyAppearance();
-
-                saveSettings();
-
-            }
-        );
-
-    }
-
-
-    if (compactMode) {
-
-        compactMode.addEventListener(
-            "change",
-            () => {
-
-                settings.appearance.compactMode =
-                    compactMode.checked;
-
-
-                applyCompactMode();
-
-                saveSettings();
-
-            }
-        );
-
-    }
-
-
-    if (reduceAnimations) {
-
-        reduceAnimations.addEventListener(
-            "change",
-            () => {
-
-                settings.appearance.reduceAnimations =
-                    reduceAnimations.checked;
-
-
-                applyReducedMotion();
-
-                saveSettings();
-
-            }
-        );
-
-    }
-
-
-    const darkButton =
-        document.getElementById(
-            "previewDark"
-        );
-
-    const lightButton =
-        document.getElementById(
-            "previewLight"
-        );
-
-    const systemButton =
-        document.getElementById(
-            "previewSystem"
-        );
-
-
-    darkButton?.addEventListener(
-        "click",
-        () => {
-
-            setTheme(
-                "dark"
-            );
-
-        }
-    );
-
-
-    lightButton?.addEventListener(
-        "click",
-        () => {
-
-            setTheme(
-                "light"
-            );
-
-        }
-    );
-
-
-    systemButton?.addEventListener(
-        "click",
-        () => {
-
-            setTheme(
-                "system"
-            );
-
-        }
-    );
-
-
-    loadAppearance();
-
-}
-
-
-/* =========================================================
-   LOAD APPEARANCE
-   ========================================================= */
-
-function loadAppearance() {
-
-    const darkMode =
-        document.getElementById(
-            "darkMode"
-        );
-
-    const compactMode =
-        document.getElementById(
-            "compactMode"
-        );
-
-    const reduceAnimations =
-        document.getElementById(
-            "reduceAnimations"
-        );
-
-
-    if (darkMode) {
-
-        darkMode.checked =
-            settings.appearance.darkMode;
-
-    }
-
-
-    if (compactMode) {
-
-        compactMode.checked =
-            settings.appearance.compactMode;
-
-    }
-
-
-    if (reduceAnimations) {
-
-        reduceAnimations.checked =
-            settings.appearance.reduceAnimations;
-
-    }
-
-
-    applyAppearance();
-
-    applyCompactMode();
-
-    applyReducedMotion();
-
-}
-
-
-/* =========================================================
-   SET THEME
-   ========================================================= */
-
-function setTheme(
-    theme
-) {
-
-    settings.appearance.theme =
-        theme;
-
-
-    if (theme === "dark") {
-
-        settings.appearance.darkMode =
-            true;
-
-    }
-
-
-    if (theme === "light") {
-
-        settings.appearance.darkMode =
-            false;
-
-    }
-
-
-    if (theme === "system") {
-
-        const prefersDark =
-            window.matchMedia(
-                "(prefers-color-scheme: dark)"
-            ).matches;
-
-
-        settings.appearance.darkMode =
-            prefersDark;
-
-    }
-
-
-    const darkMode =
-        document.getElementById(
-            "darkMode"
-        );
-
-
-    if (darkMode) {
-
-        darkMode.checked =
-            settings.appearance.darkMode;
-
-    }
-
-
-    applyAppearance();
-
-    saveSettings();
-
-
-    showToast(
-        `${capitalize(theme)} theme selected.`,
-        "success"
-    );
-
-}
-
-
-/* =========================================================
-   APPLY APPEARANCE
-   ========================================================= */
-
-function applyAppearance() {
-
-    const root =
-        document.documentElement;
-
-
-    root.classList.toggle(
-        "light-theme",
-        !settings.appearance.darkMode
-    );
-
-
-    document.body.classList.toggle(
-        "light-theme",
-        !settings.appearance.darkMode
-    );
-
-
-    root.dataset.theme =
-        settings.appearance.darkMode
-            ? "dark"
-            : "light";
-
-}
-
-
-/* =========================================================
-   COMPACT MODE
-   ========================================================= */
-
-function applyCompactMode() {
-
-    document.body.classList.toggle(
-        "compact-mode",
-        settings.appearance.compactMode
-    );
-
-}
-
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
-
-function applyReducedMotion() {
-
-    document.body.classList.toggle(
-        "reduce-motion",
-        settings.appearance.reduceAnimations
-    );
-
-}
-
-
-/* =========================================================
-   MODALS
-   ========================================================= */
-
-function initializeModals() {
-
-    document.querySelectorAll(
-        "[data-close-modal]"
-    ).forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    closeModal(
-                        button.dataset.closeModal
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    document.querySelectorAll(
-        ".modal-backdrop"
-    ).forEach(
-        backdrop => {
-
-            backdrop.addEventListener(
-                "click",
-                event => {
-
-                    if (
-                        event.target ===
-                        backdrop
-                    ) {
-
-                        backdrop.classList.remove(
-                            "active"
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-
-    const changePassword =
-        document.getElementById(
-            "changePassword"
-        );
-
-
-    changePassword?.addEventListener(
-        "click",
-        () => {
-
-            openModal(
-                "passwordModal"
-            );
-
-        }
-    );
-
-
-    const changeEmail =
-        document.getElementById(
-            "changeEmail"
-        );
-
-
-    changeEmail?.addEventListener(
-        "click",
-        () => {
-
-            openModal(
-                "emailModal"
-            );
-
-        }
-    );
-
-
-    const deleteAccount =
-        document.getElementById(
-            "deleteAccount"
-        );
-
-
-    deleteAccount?.addEventListener(
-        "click",
-        () => {
-
-            openModal(
-                "deleteModal"
-            );
-
-        }
-    );
-
-
-    const contactSupport =
-        document.getElementById(
-            "contactSupport"
-        );
-
-
-    contactSupport?.addEventListener(
-        "click",
-        () => {
-
-            openModal(
-                "supportModal"
-            );
-
-        }
-    );
-
-
-    const addPayment =
-        document.getElementById(
-            "addPayment"
-        );
-
-
-    addPayment?.addEventListener(
-        "click",
-        () => {
-
-            openModal(
-                "paymentModal"
-            );
-
-        }
-    );
-
-
-    initializePassword();
-
-    initializeEmail();
-
-    initializeDeleteAccount();
-
-}
-
-
-/* =========================================================
-   OPEN MODAL
-   ========================================================= */
-
-function openModal(
-    id
-) {
-
-    const modal =
-        document.getElementById(
-            id
-        );
-
-
-    if (!modal) return;
-
-
-    modal.classList.add(
-        "active"
-    );
-
-
-    document.body.classList.add(
-        "modal-open"
-    );
-
-
-    setTimeout(
-        () => {
-
-            const firstInput =
-                modal.querySelector(
-                    "input, textarea, button"
-                );
-
-
-            firstInput?.focus();
-
-        },
-        100
-    );
-
-}
-
-
-/* =========================================================
-   CLOSE MODAL
-   ========================================================= */
-
-function closeModal(
-    id
-) {
-
-    const modal =
-        document.getElementById(
-            id
-        );
-
-
-    if (!modal) return;
-
-
-    modal.classList.remove(
-        "active"
-    );
-
-
-    if (
-        !document.querySelector(
-            ".modal-backdrop.active"
-        )
-    ) {
-
-        document.body.classList.remove(
-            "modal-open"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   PASSWORD
-   ========================================================= */
-
-function initializePassword() {
-
-    const newPassword =
-        document.getElementById(
-            "newPassword"
-        );
-
-    const confirmPassword =
-        document.getElementById(
-            "confirmPassword"
-        );
-
-    const savePassword =
-        document.getElementById(
-            "savePassword"
-        );
-
-
-    newPassword?.addEventListener(
-        "input",
-        updatePasswordStrength
-    );
-
-
-    savePassword?.addEventListener(
-        "click",
-        saveNewPassword
-    );
-
-
-    confirmPassword?.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key ===
-                "Enter"
-            ) {
-
-                saveNewPassword();
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   PASSWORD STRENGTH
-   ========================================================= */
-
-function updatePasswordStrength() {
-
-    const password =
-        document.getElementById(
-            "newPassword"
-        )?.value || "";
-
-
-    const bars =
-        document.querySelectorAll(
-            ".password-strength i"
-        );
-
-
-    let score = 0;
-
-
-    if (
-        password.length >= 8
-    ) {
-
-        score++;
-
-    }
-
-
-    if (
-        /[A-Z]/.test(password)
-    ) {
-
-        score++;
-
-    }
-
-
-    if (
-        /[0-9]/.test(password)
-    ) {
-
-        score++;
-
-    }
-
-
-    if (
-        /[^A-Za-z0-9]/.test(password)
-    ) {
-
-        score++;
-
-    }
-
-
-    bars.forEach(
-        (bar, index) => {
-
-            bar.classList.toggle(
-                "filled",
-                index < score
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SAVE NEW PASSWORD
-   ========================================================= */
-
-function saveNewPassword() {
-
-    const current =
-        document.getElementById(
-            "currentPassword"
-        )?.value;
-
-
-    const password =
-        document.getElementById(
-            "newPassword"
-        )?.value;
-
-
-    const confirmation =
-        document.getElementById(
-            "confirmPassword"
-        )?.value;
-
-
-    if (!current) {
-
-        showToast(
-            "Enter your current password.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!password) {
-
-        showToast(
-            "Enter a new password.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (
-        password.length < 8
-    ) {
-
-        showToast(
-            "Password must contain at least 8 characters.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (
-        password !==
-        confirmation
-    ) {
-
-        showToast(
-            "Passwords do not match.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    closeModal(
-        "passwordModal"
-    );
-
-
-    document.getElementById(
-        "currentPassword"
-    ).value = "";
-
-
-    document.getElementById(
-        "newPassword"
-    ).value = "";
-
-
-    document.getElementById(
-        "confirmPassword"
-    ).value = "";
-
-
-    showToast(
-        "Password updated successfully.",
-        "success"
-    );
-
-}
-
-
-/* =========================================================
-   EMAIL
-   ========================================================= */
-
-function initializeEmail() {
-
-    const saveEmail =
-        document.getElementById(
-            "saveEmail"
-        );
-
-
-    saveEmail?.addEventListener(
-        "click",
-        saveNewEmail
-    );
-
-}
-
-
-/* =========================================================
-   SAVE EMAIL
-   ========================================================= */
-
-function saveNewEmail() {
-
-    const input =
-        document.getElementById(
-            "newEmail"
-        );
-
-
-    const email =
-        input?.value.trim();
-
-
-    if (!email) {
-
-        showToast(
-            "Enter your new email address.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const validEmail =
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-
-    if (
-        !validEmail.test(email)
-    ) {
-
-        showToast(
-            "Enter a valid email address.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    closeModal(
-        "emailModal"
-    );
-
-
-    if (input) {
-
-        input.value = "";
-
-    }
-
-
-    showToast(
-        "Email change request submitted.",
-        "success"
-    );
-
-}
-
-
-/* =========================================================
-   DELETE ACCOUNT
-   ========================================================= */
-
-function initializeDeleteAccount() {
-
-    const confirmation =
-        document.getElementById(
-            "deleteConfirmation"
-        );
-
-
-    const button =
-        document.getElementById(
-            "confirmDeleteAccount"
-        );
-
-
-    confirmation?.addEventListener(
-        "input",
-        () => {
-
-            const valid =
-                confirmation.value
-                    .trim()
-                    .toUpperCase() ===
-                "DELETE";
-
-
-            if (button) {
-
-                button.disabled =
-                    !valid;
-
-            }
-
-        }
-    );
-
-
-    button?.addEventListener(
-        "click",
-        permanentlyDeleteAccount
-    );
-
-}
-
-
-/* =========================================================
-   DELETE ACCOUNT
-   ========================================================= */
-
-function permanentlyDeleteAccount() {
-
-    const confirmation =
-        document.getElementById(
-            "deleteConfirmation"
-        );
-
-
-    if (
-        confirmation?.value
-            .trim()
-            .toUpperCase() !==
-        "DELETE"
-    ) {
-
-        return;
-
-    }
-
-
-    localStorage.removeItem(
-        "skillshareSettings"
-    );
-
-
-    localStorage.removeItem(
-        "skillshareUser"
-    );
-
-
-    closeModal(
-        "deleteModal"
-    );
-
-
-    showToast(
-        "Your account has been deleted.",
-        "success"
-    );
-
-
-    setTimeout(
-        () => {
-
-            window.location.href =
-                "login.html";
-
-        },
-        1500
-    );
-
-}
-
-
-/* =========================================================
-   NAVIGATION
-   ========================================================= */
-
-function initializeNavigation() {
-
-    document.querySelectorAll(
-        "[data-go]"
-    ).forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const destination =
-                        button.dataset.go;
-
-
-                    if (
-                        destination ===
-                        "profile"
-                    ) {
-
-                        window.location.href =
-                            "profile.html";
-
-                    }
-
-
-                    if (
-                        destination ===
-                        "settings"
-                    ) {
-
-                        window.location.href =
-                            "setting.html";
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-
-    const startTeaching =
-        document.getElementById(
-            "startTeaching"
-        );
-
-
-    startTeaching?.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "tutor-profile.html";
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   LOGOUT
-   ========================================================= */
-
-function initializeLogout() {
-
-    const logoutButtons = [
-
-        document.getElementById(
-            "sidebarLogout"
-        ),
-
-        document.getElementById(
-            "settingsLogout"
-        ),
-
-        document.getElementById(
-            "dropdownLogout"
-        )
-
-    ];
-
-
-    logoutButtons.forEach(
-        button => {
-
-            button?.addEventListener(
-                "click",
-                event => {
-
-                    event.preventDefault();
-
-                    openModal(
-                        "logoutModal"
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    const confirmLogout =
-        document.getElementById(
-            "confirmLogout"
-        );
-
-
-    confirmLogout?.addEventListener(
-        "click",
-        performLogout
-    );
-
-}
-
-
-/* =========================================================
-   PERFORM LOGOUT
-   ========================================================= */
-
-function performLogout() {
-
-    closeModal(
-        "logoutModal"
-    );
-
-
-    /*
-       Remove temporary session data.
-       Keep normal settings so the user's
-       preferences remain available later.
-    */
-
-    localStorage.removeItem(
-        "skillshareSession"
-    );
-
-
-    localStorage.setItem(
-        "skillshareLoggedOut",
-        "true"
-    );
-
-
-    showToast(
-        "You have been logged out.",
-        "success"
-    );
-
-
-    setTimeout(
-        () => {
-
-            window.location.href =
-                "login.html";
-
-        },
-        900
-    );
-
-}
-
-
-/* =========================================================
-   ACCOUNT ACTIONS
-   ========================================================= */
-
-function initializeAccountActions() {
-
-    const logoutOtherDevices =
-        document.getElementById(
-            "logoutOtherDevices"
-        );
-
-
-    logoutOtherDevices?.addEventListener(
-        "click",
-        () => {
-
-            document.querySelectorAll(
-                "[data-session]"
-            ).forEach(
-                button => {
-
-                    const item =
-                        button.closest(
-                            ".session-item"
-                        );
-
-
-                    item?.remove();
-
-                }
-            );
-
-
-            showToast(
-                "Other devices have been signed out.",
-                "success"
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SESSIONS
-   ========================================================= */
-
-function initializeSessions() {
-
-    document.querySelectorAll(
-        "[data-session]"
-    ).forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const item =
-                        button.closest(
-                            ".session-item"
-                        );
-
-
-                    if (!item) return;
-
-
-                    item.style.opacity =
-                        "0";
-
-
-                    item.style.transform =
-                        "translateX(20px)";
-
-
-                    setTimeout(
-                        () => {
-
-                            item.remove();
-
-                        },
-                        250
-                    );
-
-
-                    showToast(
-                        "Session revoked.",
-                        "success"
-                    );
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   BLOCKED USERS
-   ========================================================= */
-
-function initializeBlockedUsers() {
-
-    document.querySelectorAll(
-        ".unblock-user"
-    ).forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const user =
-                        button.closest(
-                            ".blocked-user"
-                        );
-
-
-                    const name =
-                        user?.querySelector(
-                            "strong"
-                        )?.textContent ||
-                        "User";
-
-
-                    if (!user) return;
-
-
-                    user.style.opacity =
-                        "0";
-
-
-                    user.style.transform =
-                        "translateX(20px)";
-
-
-                    setTimeout(
-                        () => {
-
-                            user.remove();
-
-                        },
-                        250
-                    );
-
-
-                    showToast(
-                        `${name} has been unblocked.`,
-                        "success"
-                    );
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SUPPORT
-   ========================================================= */
-
-function initializeSupport() {
-
-    const sendSupport =
-        document.getElementById(
-            "sendSupport"
-        );
-
-
-    sendSupport?.addEventListener(
-        "click",
-        () => {
-
-            const subject =
-                document.getElementById(
-                    "supportSubject"
-                )?.value.trim();
-
-
-            const message =
-                document.getElementById(
-                    "supportMessage"
-                )?.value.trim();
-
-
-            if (!subject) {
-
-                showToast(
-                    "Please enter a subject.",
-                    "error"
-                );
-
-                return;
-
-            }
-
-
-            if (!message) {
-
-                showToast(
-                    "Please describe your problem.",
-                    "error"
-                );
-
-                return;
-
-            }
-
-
-            closeModal(
-                "supportModal"
-            );
-
-
-            document.getElementById(
-                "supportSubject"
-            ).value = "";
-
-
-            document.getElementById(
-                "supportMessage"
-            ).value = "";
-
-
-            showToast(
-                "Support request sent successfully.",
-                "success"
-            );
-
-        }
-    );
-
-
-    const help =
-        document.getElementById(
-            "openHelpCenter"
-        );
-
-
-    help?.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "help.html";
-
-        }
-    );
-
-
-    const report =
-        document.getElementById(
-            "reportProblem"
-        );
-
-
-    report?.addEventListener(
-        "click",
-        () => {
-
-            openModal(
-                "supportModal"
-            );
-
-        }
-    );
-
-
-    const guidelines =
-        document.getElementById(
-            "communityGuidelines"
-        );
-
-
-    guidelines?.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "community.html";
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   PAYMENTS
-   ========================================================= */
-
-function initializePayments() {
-
-    const savePayment =
-        document.getElementById(
-            "savePayment"
-        );
-
-
-    savePayment?.addEventListener(
-        "click",
-        savePaymentMethod
-    );
-
-
-    const cardNumber =
-        document.getElementById(
-            "cardNumber"
-        );
-
-
-    cardNumber?.addEventListener(
-        "input",
-        () => {
-
-            cardNumber.value =
-                formatCardNumber(
-                    cardNumber.value
-                );
-
-        }
-    );
-
-
-    const expiry =
-        document.getElementById(
-            "cardExpiry"
-        );
-
-
-    expiry?.addEventListener(
-        "input",
-        () => {
-
-            let value =
-                expiry.value
-                    .replace(/\D/g, "")
-                    .slice(0, 4);
-
-
-            if (value.length >= 3) {
-
-                value =
-                    value.slice(0, 2) +
-                    "/" +
-                    value.slice(2);
-
-            }
-
-
-            expiry.value =
-                value;
-
-        }
-    );
-
-
-    document.querySelectorAll(
-        ".more-btn"
-    ).forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    showToast(
-                        "Payment options opened.",
-                        "info"
-                    );
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   FORMAT CARD NUMBER
-   ========================================================= */
-
-function formatCardNumber(
-    value
-) {
-
-    return value
-        .replace(/\D/g, "")
-        .slice(0, 16)
-        .replace(
-            /(\d{4})(?=\d)/g,
-            "$1 "
-        );
-
-}
-
-
-/* =========================================================
-   SAVE PAYMENT
-   ========================================================= */
-
-function savePaymentMethod() {
-
-    const number =
-        document.getElementById(
-            "cardNumber"
-        )?.value.trim();
-
-
-    const expiry =
-        document.getElementById(
-            "cardExpiry"
-        )?.value.trim();
-
-
-    const cvv =
-        document.getElementById(
-            "cardCvv"
-        )?.value.trim();
-
-
-    const name =
-        document.getElementById(
-            "cardName"
-        )?.value.trim();
-
-
-    if (
-        number.replace(/\s/g, "").length <
-        16
-    ) {
-
-        showToast(
-            "Enter a valid card number.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !/^\d{2}\/\d{2}$/.test(expiry)
-    ) {
-
-        showToast(
-            "Enter a valid expiry date.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (
-        cvv.length < 3
-    ) {
-
-        showToast(
-            "Enter a valid CVV.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!name) {
-
-        showToast(
-            "Enter the name on the card.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    closeModal(
-        "paymentModal"
-    );
-
-
-    document.getElementById(
-        "cardNumber"
-    ).value = "";
-
-
-    document.getElementById(
-        "cardExpiry"
-    ).value = "";
-
-
-    document.getElementById(
-        "cardCvv"
-    ).value = "";
-
-
-    document.getElementById(
-        "cardName"
-    ).value = "";
-
-
-    showToast(
-        "Payment method added.",
-        "success"
-    );
-
-}
-
-
-/* =========================================================
-   SEARCH
-   ========================================================= */
-
-function initializeSearch() {
-
-    const searchButton =
-        document.getElementById(
-            "searchButton"
-        );
-
-
-    searchButton?.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "explore.html";
-
-        }
-    );
-
-
-    const notificationButton =
-        document.getElementById(
-            "notificationButton"
-        );
-
-
-    notificationButton?.addEventListener(
-        "click",
-        () => {
-
-            showToast(
-                "You have 3 new notifications.",
-                "info"
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   USER DROPDOWN
-   ========================================================= */
-
-function initializeUserMenu() {
-
-    const button =
-        document.getElementById(
-            "userMenuButton"
-        );
-
-
-    const dropdown =
-        document.getElementById(
-            "userDropdown"
-        );
-
-
-    if (
-        !button ||
-        !dropdown
-    ) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        event => {
-
-            event.stopPropagation();
-
-
-            const isOpen =
-                dropdown.classList.toggle(
-                    "active"
-                );
-
-
-            button.setAttribute(
-                "aria-expanded",
-                String(isOpen)
-            );
-
-        }
-    );
-
-
-    document.addEventListener(
-        "click",
-        event => {
-
-            if (
-                !dropdown.contains(
-                    event.target
-                ) &&
-                !button.contains(
-                    event.target
-                )
-            ) {
-
-                dropdown.classList.remove(
-                    "active"
-                );
-
-
-                button.setAttribute(
-                    "aria-expanded",
-                    "false"
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   GLOBAL BUTTONS
-   ========================================================= */
-
-function initializeGlobalButtons() {
-
-    const saveButton =
-        document.getElementById(
-            "saveAllSettings"
-        );
-
-
-    saveButton?.addEventListener(
-        "click",
-        () => {
-
-            handleProfileSave(
-                saveButton
-            );
-
-        }
-    );
-
-
-    const resetButton =
-        document.getElementById(
-            "resetSettings"
-        );
-
-
-    resetButton?.addEventListener(
-        "click",
-        resetAllSettings
-    );
-
-}
-
-
-/* =========================================================
-   PROFILE SAVE (server round-trip)
-   Shows a saving state on the button, awaits the FastAPI
-   PATCH, refreshes the cached session user, and reports
-   success or the real server error via a toast.
-   ========================================================= */
-
-let profileSaveInFlight = false;
-
-
-function updateSessionUserCache(user) {
-
-    /* Keep the localStorage session cache (token + user) in
-       sync so other pages' headers show the saved values.
-       localStorage is ONLY the auth session — never the
-       profile database. */
-
-    if (!user || !window.SkillShareAPI?.setSession) {
-
-        return;
-
-    }
-
-
-    const token =
-        window.SkillShareAPI.getToken();
-
-    const cached =
-        window.SkillShareAPI.getUser() || {};
-
-
-    window.SkillShareAPI.setSession(
-        token,
-        Object.assign({}, cached, {
-            id: user.id ?? cached.id,
-            public_id: user.public_id ?? cached.public_id,
-            name: user.name ?? cached.name,
-            email: user.email ?? cached.email,
-            username: user.username ?? cached.username,
-            avatar_url: user.avatar_url ?? cached.avatar_url
-        })
-    );
-
-}
-
-
-async function handleProfileSave(
-    saveButton
-) {
-
-    if (profileSaveInFlight) {
-
-        return;
-
-    }
-
-    profileSaveInFlight = true;
-
-
-    updateProfileFromUI();
-
-
-    const original =
-        saveButton
-            ? saveButton.innerHTML
-            : "";
-
-
-    if (saveButton) {
-
-        saveButton.disabled = true;
-
-        saveButton.innerHTML = `
-            <i class="fa-solid fa-spinner fa-spin"></i>
-            Saving…
-        `;
-
-    }
-
-
-    try {
-
-        const updated =
-            await saveSettings(true);
-
-
-        if (updated) {
-
-            currentUser = updated;
-
-            updateSessionUserCache(updated);
-
-        }
-
-
-        showToast(
-            "Profile saved to your account.",
-            "success"
-        );
-
-
-        if (saveButton) {
-
-            saveButton.innerHTML = `
-                <i class="fa-solid fa-check"></i>
-                Saved
-            `;
-
-            saveButton.classList.add("saved");
-
-            setTimeout(
-                () => {
-
-                    saveButton.innerHTML =
-                        original;
-
-                    saveButton.classList.remove(
-                        "saved"
-                    );
-
-                    saveButton.disabled = false;
-
-                },
-                1800
-            );
-
-        }
-
-    } catch (error) {
-
-        showToast(
-            error?.detail ||
-            error?.message ||
-            "Could not save your profile. Please try again.",
-            "error"
-        );
-
-
-        if (saveButton) {
-
-            saveButton.innerHTML =
-                original;
-
-            saveButton.disabled = false;
-
-        }
-
-    } finally {
-
-        profileSaveInFlight = false;
-
-    }
-
-}
-
-
-/* =========================================================
-   RESET SETTINGS
-   ========================================================= */
-
-function resetAllSettings() {
-
-    const confirmed =
-        window.confirm(
-            "Reset all SkillShare settings to their default values?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    settings =
-        structuredClone(
-            DEFAULT_SETTINGS
-        );
-
-
-    saveSettings();
-
-
-    loadSettingsIntoInterface();
-
-
-    showToast(
-        "Settings restored to defaults.",
-        "success"
-    );
-
-}
-
-
-/* =========================================================
-   KEYBOARD SHORTCUTS
-   ========================================================= */
-
-function initializeKeyboardShortcuts() {
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            /*
-               ESC closes modal
-            */
-
-            if (
-                event.key ===
-                "Escape"
-            ) {
-
-                document.querySelectorAll(
-                    ".modal-backdrop.active"
-                ).forEach(
-                    modal => {
-
-                        modal.classList.remove(
-                            "active"
-                        );
-
-                    }
-                );
-
-
-                document.body.classList.remove(
-                    "modal-open"
-                );
-
-
-                return;
-
-            }
-
-
-            /*
-               CTRL/CMD + S
-            */
-
-            if (
-                (
-                    event.ctrlKey ||
-                    event.metaKey
-                ) &&
-                event.key.toLowerCase() ===
-                "s"
-            ) {
-
-                event.preventDefault();
-
-
-                const button =
-                    document.getElementById(
-                        "saveAllSettings"
-                    );
-
-
-                button?.click();
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   TOAST SYSTEM
-   ========================================================= */
-
-function showToast(
-    message,
-    type = "info"
-) {
-
-    const container =
-        document.getElementById(
-            "toastContainer"
-        );
-
-
-    if (!container) {
-
-        console.log(
-            message
-        );
-
-        return;
-
-    }
-
-
-    const toast =
-        document.createElement(
-            "div"
-        );
-
-
-    toast.className =
-        `toast toast-${type}`;
-
-
-    let icon =
-        "fa-circle-info";
-
-
-    if (
-        type ===
-        "success"
-    ) {
-
-        icon =
-            "fa-circle-check";
-
-    }
-
-
-    if (
-        type ===
-        "error"
-    ) {
-
-        icon =
-            "fa-circle-xmark";
-
-    }
-
-
-    if (
-        type ===
-        "warning"
-    ) {
-
-        icon =
-            "fa-triangle-exclamation";
-
-    }
-
-
-    toast.innerHTML = `
-
-        <div class="toast-icon">
-
-            <i class="fa-solid ${icon}"></i>
-
-        </div>
-
-        <div class="toast-message">
-
-            ${escapeHTML(message)}
-
-        </div>
-
-        <button
-            class="toast-close"
-            type="button"
-            aria-label="Close notification"
-        >
-
-            ×
-
-        </button>
-
-    `;
-
-
-    container.appendChild(
-        toast
-    );
-
-
-    requestAnimationFrame(
-        () => {
-
-            toast.classList.add(
-                "show"
-            );
-
-        }
-    );
-
-
-    const close =
-        toast.querySelector(
-            ".toast-close"
-        );
-
-
-    close?.addEventListener(
-        "click",
-        () => {
-
-            removeToast(
-                toast
-            );
-
-        }
-    );
-
-
-    setTimeout(
-        () => {
-
-            removeToast(
-                toast
-            );
-
-        },
-        4000
-    );
-
-}
-
-
-/* =========================================================
-   REMOVE TOAST
-   ========================================================= */
-
-function removeToast(
-    toast
-) {
-
-    if (!toast) return;
-
-
-    toast.classList.remove(
-        "show"
-    );
-
-
-    setTimeout(
-        () => {
-
-            toast.remove();
-
-        },
-        250
-    );
-
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-   ========================================================= */
-
-function escapeHTML(
-    value
-) {
-
-    return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-/* =========================================================
-   CAPITALIZE
-   ========================================================= */
-
-function capitalize(
-    value
-) {
-
-    if (!value) return "";
-
-    return (
-        value.charAt(0).toUpperCase() +
-        value.slice(1)
-    );
-
-}
-
-
-/* =========================================================
-   AUTO SAVE BEFORE LEAVING
-   ========================================================= */
-
-window.addEventListener(
-    "beforeunload",
-    () => {
-
-        updateProfileFromUI();
-
-        saveSettings();
-
-    }
-);
-
-
-/* =========================================================
-   SYSTEM THEME CHANGE
-   ========================================================= */
-
-const systemTheme =
-    window.matchMedia(
-        "(prefers-color-scheme: dark)"
-    );
-
-
-systemTheme.addEventListener(
-    "change",
-    event => {
-
-        if (
-            settings.appearance.theme !==
-            "system"
-        ) {
-
+        ok = showFieldError("acctPhone", "acctPhoneError", phoneMsg) && ok;
+        return ok;
+    }
+
+    function passwordScore(value) {
+        var v = String(value || "");
+        if (v.length < 8) return 0;
+        var score = 1;
+        if (/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
+        if (/\d/.test(v)) score++;
+        if (/[^\w\s]/.test(v)) score++;
+        return score;
+    }
+
+    function updatePasswordMeter() {
+        var v = ($("newPassword") || {}).value || "";
+        var bar = $("pwMeterBar");
+        var txt = $("pwStrengthText");
+        if (!bar || !txt) return;
+        bar.className = "pw-meter-bar";
+        if (!v) {
+            txt.textContent = "Use 8+ characters mixing letters, numbers and symbols.";
             return;
+        }
+        if (v.length < 8) {
+            bar.classList.add("is-weak");
+            txt.textContent = "Too short - use at least 8 characters.";
+            return;
+        }
+        var score = passwordScore(v);
+        if (score >= 4) {
+            bar.classList.add("is-strong");
+            txt.textContent = "Strong password.";
+        } else {
+            bar.classList.add("is-fair");
+            txt.textContent = "Fair - add uppercase, numbers or symbols for a stronger password.";
+        }
+    }
 
+    /* =======================================================
+       SWITCH / RADIO CONTROLS
+       ======================================================= */
+    function switchOn(id) {
+        var el = $(id);
+        return !!(el && el.getAttribute("aria-checked") === "true");
+    }
+    function setSwitch(id, on) {
+        var el = $(id);
+        if (el) el.setAttribute("aria-checked", on ? "true" : "false");
+    }
+    function setRadio(name, value) {
+        all('input[name="' + name + '"]').forEach(function (r) {
+            r.checked = (r.value === value);
+        });
+    }
+    function radioValue(name) {
+        var checked = document.querySelector('input[name="' + name + '"]:checked');
+        return checked ? checked.value : null;
+    }
+
+    /* =======================================================
+       COLLECTORS (current UI state per section)
+       ======================================================= */
+    function collectAccount() {
+        return {
+            name: (($("acctName") || {}).value || "").trim(),
+            username: (($("acctUsername") || {}).value || "").trim().replace(/^@+/, ""),
+            phone: (($("acctPhone") || {}).value || "").trim(),
+            avatar: state.avatarCleared ? "" : (state.pendingAvatar || null)
+        };
+    }
+    function collectPrivacy() {
+        return {
+            profile_visibility: radioValue("profileVisibility") || "public",
+            discoverable: switchOn("privDiscoverable"),
+            allow_messages: switchOn("privAllowMessages")
+        };
+    }
+    function collectNotifications() {
+        return {
+            in_app: switchOn("notifyInApp"),
+            application_status: switchOn("notifyApplicationStatus"),
+            innovation: switchOn("notifyInnovation"),
+            innovation_invite: switchOn("notifyInnovationInvite"),
+            innovation_feedback: switchOn("notifyInnovationFeedback"),
+            general: switchOn("notifyGeneral")
+        };
+    }
+    function collectCareer() {
+        var looking = [];
+        all("#lookingForChips input[type=checkbox]:checked").forEach(function (c) {
+            if (c.value) looking.push(c.value);
+        });
+        return {
+            target_job_role: (($("carTargetRole") || {}).value || "").trim(),
+            preferred_industry: (($("carIndustry") || {}).value || "").trim(),
+            looking_for: looking
+        };
+    }
+
+    function same(a, b) {
+        return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    /* =======================================================
+       DIRTY TRACKING + SAVE BAR VISIBILITY
+       ======================================================= */
+    function refreshDirty(section) {
+        if (!baseline[section]) return;
+        var current;
+        if (section === "account") current = collectAccount();
+        else if (section === "privacy") current = collectPrivacy();
+        else if (section === "notifications") current = collectNotifications();
+        else if (section === "career") current = collectCareer();
+        else return;
+
+        SAVE_DIRTY[section] = !same(current, baseline[section]);
+        var bar = document.querySelector('[data-save-for="' + section + '"]');
+        var btn = $("save" + section.charAt(0).toUpperCase() + section.slice(1));
+        if (bar) bar.hidden = !SAVE_DIRTY[section];
+        if (btn) btn.disabled = !SAVE_DIRTY[section] || !!state.saving[section];
+        if (SAVE_DIRTY[section]) setStatus(section, "Unsaved changes", null);
+        else if (!state.saving[section]) setStatus(section, "", null);
+    }
+    function anyDirty() {
+        return Object.keys(SAVE_DIRTY).some(function (k) { return SAVE_DIRTY[k]; });
+    }
+
+    /* =======================================================
+       RENDERERS
+       ======================================================= */
+    function renderIdentity() {
+        var u = state.user || {};
+        var name = u.name || "Member";
+        $("identityName").textContent = name;
+        $("identityEmail").textContent = u.email || "";
+
+        var avatar = $("identityAvatar");
+        var fallback = $("identityFallback");
+        if (u.avatar_url) {
+            avatar.src = u.avatar_url;
+            avatar.hidden = false;
+            fallback.hidden = true;
+        } else {
+            avatar.hidden = true;
+            fallback.hidden = false;
+            fallback.textContent = initialsOf(name);
         }
 
+        var role = normalizeRole(u.role);
+        var rolePill = $("identityRole");
+        rolePill.textContent = role;
 
-        settings.appearance.darkMode =
-            event.matches;
+        var status = String(u.account_status || "active").toLowerCase();
+        var statusPill = $("identityStatus");
+        statusPill.textContent = status === "active" ? "Active" : status;
+        statusPill.className = "pill pill-status " +
+            (status === "active" ? "is-active" : "is-deactivated");
 
+        var pub = $("identityPublicId");
+        if (u.public_id) {
+            pub.hidden = false;
+            pub.textContent = u.public_id;
+        } else { pub.hidden = true; }
 
-        applyAppearance();
+        var react = $("reactivateBtn");
+        if (react) react.hidden = (status === "active");
 
+        var secLine = $("secStatusLine");
+        if (secLine) {
+            secLine.textContent = status === "active" ? "Account active" :
+                ("Account " + status);
+        }
     }
-);
 
+    function renderAccountForm() {
+        var u = state.user || {};
+        $("acctName").value = u.name || "";
+        $("acctUsername").value = u.username || "";
+        $("acctEmail").value = u.email || "";
+        $("acctPhone").value = u.phone || "";
+        $("acctPublicId").textContent = u.public_id || "-";
+        $("acctRole").textContent = normalizeRole(u.role);
+        var status = String(u.account_status || "active").toLowerCase();
+        $("acctStatus").textContent = status;
+        $("acctCreated").textContent = fmtDate(u.created_at);
 
-/* =========================================================
-   PREVENT UNSAVED DATA LOSS
-   ========================================================= */
+        var img = $("acctAvatar");
+        var fb = $("acctAvatarFallback");
+        if (u.avatar_url) {
+            img.src = u.avatar_url;
+            img.hidden = false;
+            fb.hidden = true;
+            $("acctAvatarClear").hidden = false;
+        } else {
+            img.hidden = true;
+            fb.hidden = false;
+            fb.textContent = initialsOf(u.name);
+            $("acctAvatarClear").hidden = true;
+        }
+        state.pendingAvatar = null;
+        state.avatarCleared = false;
+        baseline.account = collectAccount();
+        refreshDirty("account");
+    }
 
-let settingsChanged =
-    false;
+    function renderPrivacy() {
+        var s = (state.settings && state.settings) || {};
+        setRadio("profileVisibility", s.profile_visibility === "private" ? "private" : "public");
+        setSwitch("privDiscoverable", s.discoverable !== false);
+        setSwitch("privAllowMessages", s.allow_messages !== false);
+        baseline.privacy = collectPrivacy();
+        refreshDirty("privacy");
+    }
 
+    function applyNotificationRowState() {
+        var master = switchOn("notifyInApp");
+        ["notifyApplicationStatus", "notifyInnovation", "notifyInnovationInvite",
+            "notifyInnovationFeedback", "notifyGeneral"].forEach(function (id) {
+            var el = $(id);
+            if (el) el.disabled = !master;
+        });
+        var rows = $("notifyCategoryRows");
+        if (rows) rows.style.opacity = master ? "" : ".55";
+    }
 
-document.addEventListener(
-    "input",
-    event => {
+    function renderNotifications() {
+        var prefs = (state.settings && state.settings.notifications) || {};
+        var get = function (k) { return prefs[k] !== false; }; /* default ON */
+        setSwitch("notifyInApp", get("in_app"));
+        setSwitch("notifyApplicationStatus", get("application_status"));
+        setSwitch("notifyInnovation", get("innovation"));
+        setSwitch("notifyInnovationInvite", get("innovation_invite"));
+        setSwitch("notifyInnovationFeedback", get("innovation_feedback"));
+        setSwitch("notifyGeneral", get("general"));
+        applyNotificationRowState();
+        baseline.notifications = collectNotifications();
+        refreshDirty("notifications");
+    }
 
-        if (
-            event.target.closest(
-                ".settings-content"
-            )
-        ) {
+    function ensureLookingForChips(values) {
+        var box = $("lookingForChips");
+        if (!box) return;
+        var known = {};
+        all("input[type=checkbox]", box).forEach(function (c) {
+            known[String(c.value).toLowerCase()] = true;
+        });
+        (values || []).forEach(function (v) {
+            var key = String(v || "").trim().toLowerCase();
+            if (!key || known[key]) return;
+            known[key] = true;
+            var label = document.createElement("label");
+            label.className = "chip";
+            var input = document.createElement("input");
+            input.type = "checkbox";
+            input.value = String(v).trim();
+            var span = document.createElement("span");
+            span.textContent = String(v).trim();
+            label.appendChild(input);
+            label.appendChild(span);
+            box.appendChild(label);
+        });
+    }
 
-            settingsChanged =
-                true;
+    function setLookingFor(values) {
+        ensureLookingForChips(values);
+        var wanted = {};
+        (values || []).forEach(function (v) { wanted[String(v).toLowerCase()] = true; });
+        all("#lookingForChips input[type=checkbox]").forEach(function (c) {
+            c.checked = !!wanted[String(c.value).toLowerCase()];
+        });
+    }
 
+    function renderCareer() {
+        var role = state.role;
+        var form = $("careerForm");
+        var readonly = $("careerReadonly");
+        var navLabel = $("navCareerLabel");
+        var intro = $("careerIntro");
+
+        if (role === "student") {
+            navLabel.textContent = "Career preferences";
+            intro.textContent = "These values feed real personalization: opportunity " +
+                "recommendations, the AI Career Coach and CareerVerse all read your " +
+                "target role and preferred industry.";
+            form.hidden = false;
+            readonly.hidden = true;
+            if (state.roleProfileError) {
+                $("carTargetRole").value = "";
+                $("carIndustry").value = "";
+                setLookingFor([]);
+                baseline.career = collectCareer();
+                var saveCareer = $("saveCareer");
+                if (saveCareer) saveCareer.disabled = true;
+                setStatus("career", "Preferences unavailable: " +
+                    errText(state.roleProfileError, "profile could not be loaded"), "error");
+                return;
+            }
+            var p = state.roleProfile || {};
+            $("carTargetRole").value = p.target_job_role || "";
+            $("carIndustry").value = p.preferred_industry || "";
+            setLookingFor(Array.isArray(p.looking_for) ? p.looking_for : []);
+            baseline.career = collectCareer();
+            refreshDirty("career");
+            return;
         }
 
+        /* recruiters / mentors / other roles: read-only summary + link */
+        form.hidden = true;
+        readonly.hidden = false;
+        var grid = $("careerSummary");
+        if (role === "recruiter") {
+            navLabel.textContent = "Hiring preferences";
+            intro.textContent = "Company and hiring preferences are presented on your profile " +
+                "pages. This section shows a read-only summary.";
+            $("careerReadonlyTitle").textContent = "Your hiring preferences";
+            grid.hidden = false;
+            var rp = state.roleProfile || {};
+            var join = function (v) {
+                if (Array.isArray(v)) return v.join(", ") || "-";
+                return v || "-";
+            };
+            var cell = function (key, value) {
+                var dd = grid.querySelector('[data-summary="' + key + '"]');
+                if (dd) dd.textContent = value;
+            };
+            cell("company", rp.company_name || "-");
+            cell("hiring", join(rp.hiring_for));
+            cell("roles", join(rp.job_roles));
+            cell("skills", join(rp.required_skills));
+        } else {
+            navLabel.textContent = "Career profile";
+            intro.textContent = "Your career presentation is managed on the Profile page, so " +
+                "everything stays in one place.";
+            $("careerReadonlyTitle").textContent = "Managed on your profile";
+            grid.hidden = true;
+        }
+        baseline.career = collectCareer();
+        refreshDirty("career");
     }
-);
 
+    /* =======================================================
+       SECTION NAVIGATION (URL hash + mobile list/detail flow)
+       ======================================================= */
+    function normalizeSection(id) {
+        if (!id) return null;
+        id = String(id).replace(/^#/, "");
+        if (LEGACY_HASH[id]) id = LEGACY_HASH[id];
+        return SECTION_IDS.indexOf(id) !== -1 ? id : null;
+    }
 
-document.addEventListener(
-    "change",
-    event => {
+    function activateSection(id, opts) {
+        id = normalizeSection(id) || "account";
+        opts = opts || {};
 
-        if (
-            event.target.closest(
-                ".settings-content"
-            )
-        ) {
+        all(".settings-panel").forEach(function (panel) {
+            var match = panel.getAttribute("data-panel") === id;
+            panel.hidden = !match;
+            if (match && opts.focusHeading) {
+                var h = panel.querySelector(".panel-head h2");
+                if (h) {
+                    try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); }
+                }
+            }
+        });
+        all("#settingsNav .nav-item[data-section]").forEach(function (btn) {
+            var match = btn.getAttribute("data-section") === id;
+            btn.classList.toggle("active", match);
+            if (match) btn.setAttribute("aria-current", "page");
+            else btn.removeAttribute("aria-current");
+        });
 
-            settingsChanged =
-                true;
+        var shell = $("settingsShell");
+        if (shell && opts.mobileView) shell.classList.add("mobile-active");
+        var back = $("settingsBack");
+        if (back) back.hidden = !(shell && shell.classList.contains("mobile-active"));
 
+        if (opts.pushHash !== false) {
+            var target = "#" + id;
+            if (window.location.hash !== target) {
+                try { window.history.replaceState(null, "", target); }
+                catch (e) { window.location.hash = id; }
+            }
+        }
+    }
+
+    /* =======================================================
+       SAVE OPERATIONS (controlled, locked, real APIs)
+       ======================================================= */
+    function saveAccount() {
+        if (state.saving.account) return;
+        if (!validateAccountFields()) {
+            setStatus("account", "Fix the highlighted fields first.", "error");
+            return;
+        }
+        var current = collectAccount();
+        var base = baseline.account || {};
+        var payload = {};
+        if (current.name !== base.name) payload.name = current.name;
+        if (current.username !== base.username) payload.username = current.username;
+        if (current.phone !== base.phone) payload.phone = current.phone;
+        if (current.avatar !== base.avatar) payload.avatar_url = current.avatar || null;
+
+        if (!Object.keys(payload).length) {
+            refreshDirty("account");
+            return;
         }
 
+        var btn = $("saveAccount");
+        state.saving.account = true;
+        setBusy(btn, true);
+        setStatus("account", "Saving...", null);
+
+        window.SkillShareAPI.updateMyProfile(payload).then(function (res) {
+            if (res && res.user) state.user = Object.assign({}, state.user, res.user);
+            renderIdentity();
+            renderAccountForm();   /* also re-baselines */
+            setStatus("account", "Account updated.", "success");
+            setBtnSaved(btn);
+            toast("Account settings saved.", "success");
+        }).catch(function (error) {
+            setStatus("account", errText(error, "Could not save account settings."), "error");
+        }).then(function () {
+            state.saving.account = false;
+            setBusy(btn, false);
+            refreshDirty("account");
+        });
     }
-);
 
+    function savePrivacy() {
+        if (state.saving.privacy) return;
+        var current = collectPrivacy();
+        var base = baseline.privacy || {};
+        var payload = {};
+        if (current.profile_visibility !== base.profile_visibility)
+            payload.profile_visibility = current.profile_visibility;
+        if (current.discoverable !== base.discoverable)
+            payload.discoverable = current.discoverable;
+        if (current.allow_messages !== base.allow_messages)
+            payload.allow_messages = current.allow_messages;
+        if (!Object.keys(payload).length) { refreshDirty("privacy"); return; }
 
-/* =========================================================
-   SETTINGS SAVED STATE
-   ========================================================= */
+        var btn = $("savePrivacy");
+        state.saving.privacy = true;
+        setBusy(btn, true);
+        setStatus("privacy", "Saving...", null);
 
-document.addEventListener(
-    "click",
-    event => {
+        window.SkillShareAPI.updateSettings(payload).then(function (res) {
+            if (res && res.settings) state.settings = res.settings;
+            renderPrivacy();
+            setStatus("privacy", "Privacy updated.", "success");
+            setBtnSaved(btn);
+            toast("Privacy settings saved.", "success");
+        }).catch(function (error) {
+            setStatus("privacy", errText(error, "Could not save privacy settings."), "error");
+        }).then(function () {
+            state.saving.privacy = false;
+            setBusy(btn, false);
+            refreshDirty("privacy");
+        });
+    }
 
-        if (
-            event.target.closest(
-                "#saveAllSettings"
-            )
-        ) {
+    function saveNotifications() {
+        if (state.saving.notifications) return;
+        var current = collectNotifications();
+        var btn = $("saveNotifications");
+        state.saving.notifications = true;
+        setBusy(btn, true);
+        setStatus("notifications", "Saving...", null);
 
-            settingsChanged =
-                false;
+        window.SkillShareAPI.updateSettings({ notifications: current }).then(function (res) {
+            if (res && res.settings) state.settings = res.settings;
+            renderNotifications();
+            setStatus("notifications", "Preferences updated.", "success");
+            setBtnSaved(btn);
+            toast("Notification preferences saved.", "success");
+        }).catch(function (error) {
+            setStatus("notifications",
+                errText(error, "Could not save notification preferences."), "error");
+        }).then(function () {
+            state.saving.notifications = false;
+            setBusy(btn, false);
+            refreshDirty("notifications");
+        });
+    }
 
+    function saveCareer() {
+        if (state.saving.career || state.role !== "student" || state.roleProfileError) return;
+        var current = collectCareer();
+        var btn = $("saveCareer");
+        state.saving.career = true;
+        setBusy(btn, true);
+        setStatus("career", "Saving...", null);
+
+        window.SkillShareAPI.updateMyRoleProfile({
+            profile: {
+                target_job_role: current.target_job_role || "",
+                preferred_industry: current.preferred_industry || "",
+                looking_for: current.looking_for
+            }
+        }).then(function (res) {
+            if (res && res.profile) state.roleProfile = res.profile;
+            renderCareer();
+            setStatus("career", "Career preferences updated.", "success");
+            setBtnSaved(btn);
+            toast("Career preferences saved - recommendations will use them.", "success");
+        }).catch(function (error) {
+            setStatus("career", errText(error, "Could not save career preferences."), "error");
+        }).then(function () {
+            state.saving.career = false;
+            setBusy(btn, false);
+            refreshDirty("career");
+        });
+    }
+
+    /* =======================================================
+       PASSWORD CHANGE
+       ======================================================= */
+    function submitPasswordForm(event) {
+        if (event) event.preventDefault();
+        if (state.saving.password) return;
+
+        var current = ($("curPassword") || {}).value || "";
+        var next = ($("newPassword") || {}).value || "";
+        var confirm = ($("confirmPassword") || {}).value || "";
+        var errEl = $("pwFormError");
+        var msg = null;
+        if (!current) msg = "Enter your current password.";
+        else if (next.length < 8) msg = "New password must be at least 8 characters.";
+        else if (next !== confirm) msg = "New passwords do not match.";
+        else if (next === current) msg = "New password must be different from the current one.";
+
+        if (errEl) { errEl.hidden = !msg; errEl.textContent = msg || ""; }
+        if (msg) { setStatus("pw", "", null); return; }
+
+        var btn = $("savePassword");
+        state.saving.password = true;
+        setBusy(btn, true);
+
+        window.SkillShareAPI.changeMyPassword({
+            current_password: current,
+            new_password: next
+        }).then(function () {
+            ($("curPassword")).value = "";
+            ($("newPassword")).value = "";
+            ($("confirmPassword")).value = "";
+            updatePasswordMeter();
+            if (errEl) errEl.hidden = true;
+            setBtnSaved(btn, "Updated");
+            toast("Password updated successfully.", "success");
+        }).catch(function (error) {
+            if (errEl) {
+                errEl.hidden = false;
+                errEl.textContent = errText(error, "Could not update password.");
+            }
+        }).then(function () {
+            state.saving.password = false;
+            setBusy(btn, false);
+        });
+    }
+
+    /* =======================================================
+       AVATAR (staged locally, saved with the account form)
+       ======================================================= */
+    function handleAvatarFile(event) {
+        var input = event && event.target;
+        var file = input && input.files && input.files[0];
+        var errEl = $("acctAvatarError");
+        if (!file) return;
+        if (errEl) { errEl.hidden = true; errEl.textContent = ""; }
+
+        if (["image/png", "image/jpeg", "image/webp"].indexOf(file.type) === -1) {
+            if (errEl) { errEl.hidden = false; errEl.textContent = "Use a JPG, PNG or WebP image."; }
+            input.value = "";
+            return;
+        }
+        if (file.size > 500 * 1024) {
+            if (errEl) { errEl.hidden = false; errEl.textContent = "Image must be 500 KB or smaller."; }
+            input.value = "";
+            return;
         }
 
+        var reader = new FileReader();
+        reader.onload = function () {
+            state.pendingAvatar = String(reader.result || "");
+            state.avatarCleared = false;
+            var img = $("acctAvatar");
+            var fb = $("acctAvatarFallback");
+            if (img && state.pendingAvatar) {
+                img.src = state.pendingAvatar;
+                img.hidden = false;
+                if (fb) fb.hidden = true;
+                $("acctAvatarClear").hidden = false;
+            }
+            refreshDirty("account");
+        };
+        reader.onerror = function () {
+            if (errEl) { errEl.hidden = false; errEl.textContent = "Could not read that file."; }
+        };
+        reader.readAsDataURL(file);
     }
-);
 
+    function clearAvatar() {
+        state.avatarCleared = true;
+        state.pendingAvatar = null;
+        var img = $("acctAvatar");
+        var fb = $("acctAvatarFallback");
+        if (img) img.hidden = true;
+        if (fb) { fb.hidden = false; fb.textContent = initialsOf((state.user || {}).name); }
+        $("acctAvatarClear").hidden = true;
+        refreshDirty("account");
+    }
 
-/* =========================================================
-   FINAL INITIALIZATION MESSAGE
-   ========================================================= */
+    /* =======================================================
+       DEVICE PREFERENCES (appearance + accessibility)
+       ======================================================= */
+    function uiPrefs() {
+        return window.SkillShareUIPrefs || null;
+    }
 
-console.log(
-    "%cSkillShare Settings loaded successfully.",
-    "font-weight:700;"
-);
+    function loadPrefsIntoUI() {
+        var prefsApi = uiPrefs();
+        var prefs = prefsApi ? prefsApi.load() : {};
+        var choice = prefsApi ? prefsApi.themeChoice() : "dark";
+        /* One legacy key: a light theme chosen on the old dashboard still wins. */
+        if (!prefs.themeChoice) {
+            try {
+                if (localStorage.getItem("skillshare_theme") === "light") choice = "light";
+            } catch (e) { /* storage unavailable */ }
+        }
+        setRadio("themeChoice", ["light", "dark", "system"].indexOf(choice) !== -1 ? choice : "dark");
+        setRadio("densityChoice", prefs.density === "compact" ? "compact" : "comfortable");
+        setSwitch("a11yReducedMotion", !!prefs.reducedMotion);
+        setSwitch("a11yLargeText", !!prefs.largeText);
+    }
+
+    function pushPrefs() {
+        var prefsApi = uiPrefs();
+        var payload = {
+            themeChoice: radioValue("themeChoice") || "dark",
+            density: radioValue("densityChoice") || "comfortable",
+            reducedMotion: switchOn("a11yReducedMotion"),
+            largeText: switchOn("a11yLargeText")
+        };
+        if (prefsApi) {
+            try { prefsApi.set(payload); return; } catch (e) { /* fall through */ }
+        }
+        /* Minimal fallback when neither shell script loaded. */
+        try {
+            localStorage.setItem("skillshare_ui_prefs", JSON.stringify(payload));
+            localStorage.setItem("skillshare_theme",
+                payload.themeChoice === "system" ? "dark" : payload.themeChoice);
+        } catch (e) { /* storage unavailable */ }
+    }
+
+    /* =======================================================
+       DATA EXPORT
+       ======================================================= */
+    function exportData() {
+        var btn = $("exportData");
+        if (state.saving.exporting) return;
+        state.saving.exporting = true;
+        setBusy(btn, true);
+        var label = btn.innerHTML;
+        btn.textContent = "Preparing...";
+
+        window.SkillShareAPI.exportMyAccount().then(function (res) {
+            var payload = (res && res.export) || res;
+            var blob = new Blob([JSON.stringify(payload, null, 2)], {
+                type: "application/json"
+            });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            var pid = ((state.user || {}).public_id || "data").toString().toLowerCase();
+            a.href = url;
+            a.download = "skillshare-export-" + pid + ".json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+            toast("Your data export has downloaded.", "success");
+        }).catch(function (error) {
+            toast(errText(error, "Export failed. Please try again."), "error");
+        }).then(function () {
+            state.saving.exporting = false;
+            setBusy(btn, false);
+            btn.innerHTML = label;
+        });
+    }
+
+    /* =======================================================
+       MODALS + DESTRUCTIVE ACTIONS
+       ======================================================= */
+    var lastFocused = null;
+
+    function openModal(id) {
+        var modal = $(id);
+        if (!modal) return;
+        lastFocused = document.activeElement;
+        modal.hidden = false;
+        var focusTarget = modal.querySelector("input, button:not(.modal-close)");
+        if (focusTarget) {
+            try { focusTarget.focus({ preventScroll: true }); } catch (e) { focusTarget.focus(); }
+        }
+    }
+    function closeModal(modal) {
+        if (!modal) return;
+        /* Fully clear modal UI state on any close path (Cancel, X,
+           backdrop, Escape) so nothing re-appears or stays gated. */
+        if (modal.id === "deleteModal") {
+            var dText = $("deleteConfirmText");
+            var dPw = $("deletePassword");
+            var dErr = $("deleteError");
+            if (dText) dText.value = "";
+            if (dPw) dPw.value = "";
+            if (dErr) dErr.hidden = true;
+            gateDelete();
+        } else if (modal.id === "deactivateModal") {
+            var aPw = $("deactivatePassword");
+            var aErr = $("deactivateError");
+            if (aPw) aPw.value = "";
+            if (aErr) aErr.hidden = true;
+            gateDeactivate();
+        }
+        modal.hidden = true;
+        if (lastFocused && lastFocused.focus) {
+            try { lastFocused.focus({ preventScroll: true }); } catch (e) { lastFocused.focus(); }
+        }
+    }
+    function activeModal() {
+        return document.querySelector(".modal-backdrop:not([hidden])");
+    }
+
+    function gateDeactivate() {
+        var pw = ($("deactivatePassword") || {}).value || "";
+        var btn = $("confirmDeactivate");
+        if (btn) btn.disabled = !pw || !!state.saving.deactivating;
+    }
+    function gateDelete() {
+        var phrase = ($("deleteConfirmText") || {}).value || "";
+        var pw = ($("deletePassword") || {}).value || "";
+        var btn = $("confirmDelete");
+        if (btn) {
+            btn.disabled = !(phrase.trim().toUpperCase() === "DELETE" && pw) ||
+                !!state.saving.deleting;
+        }
+    }
+
+    function sessionExit() {
+        try { window.SkillShareAPI.clearSession(); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem("skillshare_portal_role"); } catch (e) { /* ignore */ }
+        /* Return here after sign-in so a deactivated user lands on the
+           Reactivate control immediately. */
+        window.location.href = "login.html?next=" + encodeURIComponent("setting.html");
+    }
+
+    function confirmDeactivate() {
+        if (state.saving.deactivating) return;
+        var pw = ($("deactivatePassword") || {}).value || "";
+        if (!pw) return;
+        var btn = $("confirmDeactivate");
+        var errEl = $("deactivateError");
+        if (errEl) errEl.hidden = true;
+        state.saving.deactivating = true;
+        setBusy(btn, true);
+
+        window.SkillShareAPI.deactivateMyAccount({ password: pw }).then(function () {
+            closeModal($("deactivateModal"));
+            toast("Account deactivated. You can reactivate any time by signing in.", "success");
+            setTimeout(sessionExit, 900);
+        }).catch(function (error) {
+            if (errEl) {
+                errEl.hidden = false;
+                errEl.textContent = errText(error, "Could not deactivate the account.");
+            }
+        }).then(function () {
+            state.saving.deactivating = false;
+            setBusy(btn, false);
+            gateDeactivate();
+        });
+    }
+
+    function confirmDelete() {
+        if (state.saving.deleting) return;
+        var phrase = (($("deleteConfirmText") || {}).value || "").trim();
+        var pw = ($("deletePassword") || {}).value || "";
+        if (phrase.toUpperCase() !== "DELETE" || !pw) return;
+        var btn = $("confirmDelete");
+        var errEl = $("deleteError");
+        if (errEl) errEl.hidden = true;
+        state.saving.deleting = true;
+        setBusy(btn, true);
+
+        window.SkillShareAPI.deleteMyAccount({ password: pw, confirm: phrase }).then(function () {
+            closeModal($("deleteModal"));
+            toast("Account deleted.", "success");
+            setTimeout(sessionExit, 700);
+        }).catch(function (error) {
+            if (errEl) {
+                errEl.hidden = false;
+                errEl.textContent = errText(error, "Could not delete the account.");
+            }
+        }).then(function () {
+            state.saving.deleting = false;
+            setBusy(btn, false);
+            gateDelete();
+        });
+    }
+
+    function reactivateAccount() {
+        var btn = $("reactivateBtn");
+        if (state.saving.reactivating) return;
+        state.saving.reactivating = true;
+        setBusy(btn, true);
+        window.SkillShareAPI.reactivateMyAccount().then(function (res) {
+            if (state.user) state.user.account_status = (res && res.account_status) || "active";
+            renderIdentity();
+            renderAccountForm();
+            toast("Welcome back - your account is active again.", "success");
+        }).catch(function (error) {
+            toast(errText(error, "Could not reactivate the account."), "error");
+        }).then(function () {
+            state.saving.reactivating = false;
+            setBusy(btn, false);
+        });
+    }
+
+    /* =======================================================
+       EVENT BINDING (once)
+       ======================================================= */
+    function isMobile() {
+        return window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+    }
+
+    /* Modal open/cancel bindings run independently of auth/boot:
+       Cancel/Escape must work even before requireUser() resolves
+       (they previously stayed dead until bindEvents ran late). */
+    function bindModalEvents() {
+        if (state.modalsBound) return;
+        state.modalsBound = true;
+
+        on($("openDeactivate"), "click", function () {
+            ($("deactivatePassword")).value = "";
+            var errEl = $("deactivateError");
+            if (errEl) errEl.hidden = true;
+            gateDeactivate();
+            openModal("deactivateModal");
+        });
+        on($("openDelete"), "click", function () {
+            ($("deleteConfirmText")).value = "";
+            ($("deletePassword")).value = "";
+            var errEl = $("deleteError");
+            if (errEl) errEl.hidden = true;
+            gateDelete();
+            openModal("deleteModal");
+        });
+        all("[data-close-modal]").forEach(function (btn) {
+            on(btn, "click", function () {
+                closeModal(btn.closest(".modal-backdrop"));
+            });
+        });
+        all(".modal-backdrop").forEach(function (backdrop) {
+            on(backdrop, "click", function (event) {
+                if (event.target === backdrop) closeModal(backdrop);
+            });
+        });
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                var modal = activeModal();
+                if (modal) closeModal(modal);
+            }
+        });
+        on($("deactivatePassword"), "input", gateDeactivate);
+        on($("deleteConfirmText"), "input", gateDelete);
+        on($("deletePassword"), "input", gateDelete);
+        on($("confirmDeactivate"), "click", confirmDeactivate);
+        on($("confirmDelete"), "click", confirmDelete);
+    }
+
+    function bindEvents() {
+        if (state.bound) return;
+        state.bound = true;
+
+        /* --- navigation --- */
+        all("#settingsNav .nav-item[data-section]").forEach(function (btn) {
+            on(btn, "click", function () {
+                activateSection(btn.getAttribute("data-section"), {
+                    mobileView: isMobile(),
+                    focusHeading: isMobile()
+                });
+            });
+        });
+        on($("settingsBack"), "click", function () {
+            var shell = $("settingsShell");
+            if (shell) shell.classList.remove("mobile-active");
+            $("settingsBack").hidden = true;
+            var first = document.querySelector("#settingsNav .nav-item.active") ||
+                document.querySelector("#settingsNav .nav-item");
+            if (first) first.focus();
+        });
+        window.addEventListener("hashchange", function () {
+            activateSection(window.location.hash, { pushHash: false, mobileView: isMobile() });
+        });
+
+        /* --- logout (two entry points) --- */
+        function doLogout() {
+            if (anyDirty() && !window.confirm("You have unsaved changes. Log out anyway?")) return;
+            if (window.SkillShareAuth && window.SkillShareAuth.logout) {
+                window.SkillShareAuth.logout();
+            } else {
+                sessionExit();
+            }
+        }
+        on($("settingsLogout"), "click", doLogout);
+        on($("securityLogout"), "click", doLogout);
+
+        /* --- generic switch behavior --- */
+        all(".switch").forEach(function (sw) {
+            on(sw, "click", function () {
+                if (sw.disabled) return;
+                var next = sw.getAttribute("aria-checked") !== "true";
+                sw.setAttribute("aria-checked", next ? "true" : "false");
+
+                switch (sw.id) {
+                    case "privDiscoverable":
+                    case "privAllowMessages":
+                        refreshDirty("privacy");
+                        break;
+                    case "notifyInApp":
+                        applyNotificationRowState();
+                        refreshDirty("notifications");
+                        break;
+                    case "notifyApplicationStatus":
+                    case "notifyInnovation":
+                    case "notifyInnovationInvite":
+                    case "notifyInnovationFeedback":
+                    case "notifyGeneral":
+                        refreshDirty("notifications");
+                        break;
+                    case "a11yReducedMotion":
+                    case "a11yLargeText":
+                        pushPrefs();
+                        toast("Saved on this device.", "success");
+                        break;
+                    default:
+                        break;
+                }
+            });
+            /* keyboard: role=switch buttons already respond to Enter/Space
+               as native buttons; nothing extra required. */
+        });
+
+        /* --- radio-driven state --- */
+        all('input[name="profileVisibility"]').forEach(function (r) {
+            on(r, "change", function () { refreshDirty("privacy"); });
+        });
+        all('input[name="themeChoice"]').forEach(function (r) {
+            on(r, "change", function () { pushPrefs(); });
+        });
+        all('input[name="densityChoice"]').forEach(function (r) {
+            on(r, "change", function () { pushPrefs(); });
+        });
+        all("#lookingForChips input[type=checkbox]").forEach(function (c) {
+            on(c, "change", function () { refreshDirty("career"); });
+        });
+
+        /* --- account inputs (dirty + inline validation) --- */
+        ["acctName", "acctUsername", "acctPhone"].forEach(function (id) {
+            on($(id), "input", function () {
+                validateAccountFields();
+                refreshDirty("account");
+            });
+        });
+        on($("acctAvatarBtn"), "click", function () { ($("acctAvatarFile")).click(); });
+        on($("acctAvatarFile"), "change", handleAvatarFile);
+        on($("acctAvatarClear"), "click", clearAvatar);
+
+        /* --- career inputs --- */
+        ["carTargetRole", "carIndustry"].forEach(function (id) {
+            on($(id), "input", function () { refreshDirty("career"); });
+        });
+
+        /* --- save buttons --- */
+        on($("saveAccount"), "click", saveAccount);
+        on($("resetAccount"), "click", function () {
+            renderAccountForm();
+            validateAccountFields();
+            setStatus("account", "Changes discarded.", null);
+        });
+        on($("savePrivacy"), "click", savePrivacy);
+        on($("resetPrivacy"), "click", function () {
+            renderPrivacy();
+            setStatus("privacy", "Changes discarded.", null);
+        });
+        on($("saveNotifications"), "click", saveNotifications);
+        on($("resetNotifications"), "click", function () {
+            renderNotifications();
+            setStatus("notifications", "Changes discarded.", null);
+        });
+        on($("saveCareer"), "click", saveCareer);
+        on($("resetCareer"), "click", function () {
+            renderCareer();
+            setStatus("career", "Changes discarded.", null);
+        });
+
+        /* --- password form --- */
+        on($("passwordForm"), "submit", submitPasswordForm);
+        on($("resetPassword"), "click", function () {
+            ($("curPassword")).value = "";
+            ($("newPassword")).value = "";
+            ($("confirmPassword")).value = "";
+            var errEl = $("pwFormError");
+            if (errEl) errEl.hidden = true;
+            updatePasswordMeter();
+        });
+        on($("newPassword"), "input", updatePasswordMeter);
+
+        /* --- export / reactivate --- */
+        on($("exportData"), "click", exportData);
+        on($("reactivateBtn"), "click", reactivateAccount);
+
+        /* --- modals (idempotent; also bound early at init) --- */
+        bindModalEvents();
+
+        /* --- unsaved-change protection (prompt only, never auto-save) --- */
+        window.addEventListener("beforeunload", function (event) {
+            if (!anyDirty()) return;
+            event.preventDefault();
+            event.returnValue = "";
+            return "";
+        });
+    }
+
+    /* =======================================================
+       BOOTSTRAP (real data only; skeleton -> content | error)
+       ======================================================= */
+    function showBootError(message) {
+        ($("settingsLoading")).hidden = true;
+        ($("settingsShell")).hidden = true;
+        var box = $("settingsError");
+        box.hidden = false;
+        var msg = $("settingsErrorMsg");
+        if (msg) msg.textContent = message || "Something went wrong while loading settings.";
+    }
+
+    function boot(isRetry) {
+        ($("settingsError")).hidden = true;
+        ($("settingsLoading")).hidden = false;
+        ($("settingsShell")).hidden = true;
+
+        window.SkillShareAuth.requireUser().then(function (user) {
+            if (!user) return; /* redirect to login already in progress */
+            state.user = user;
+            state.role = normalizeRole(user.role);
+            bindEvents();
+
+            return Promise.all([
+                window.SkillShareAPI.getSettings().catch(function (error) {
+                    return { __error: error };
+                }),
+                window.SkillShareAPI.getMyRoleProfile().catch(function (error) {
+                    return { __error: error };
+                })
+            ]).then(function (results) {
+                var settingsRes = results[0];
+                var roleRes = results[1];
+
+                if (settingsRes && settingsRes.__error) {
+                    showBootError(window.SkillShareAuth.getErrorMessage
+                        ? window.SkillShareAuth.getErrorMessage(settingsRes.__error)
+                        : errText(settingsRes.__error, "Settings service unavailable."));
+                    return;
+                }
+                state.settings = settingsRes.settings || {
+                    profile_visibility: "public",
+                    discoverable: true,
+                    allow_messages: true,
+                    notifications: {}
+                };
+
+                if (roleRes && roleRes.__error) {
+                    state.roleProfile = null;
+                    state.roleProfileError = roleRes.__error;
+                } else {
+                    state.roleProfile = (roleRes && roleRes.profile) || {};
+                    state.roleProfileError = null;
+                }
+
+                renderIdentity();
+                renderAccountForm();
+                renderPrivacy();
+                renderNotifications();
+                renderCareer();
+                loadPrefsIntoUI();
+                updatePasswordMeter();
+
+                ($("settingsLoading")).hidden = true;
+                ($("settingsShell")).hidden = false;
+                state.booted = true;
+
+                /* Deep links (#privacy etc.) open directly; on mobile that
+                   means starting in the section (detail) view. Plain
+                   setting.html (empty/unknown hash) always lands on the
+                   default Account section - Danger/Delete never auto-open. */
+                activateSection(window.location.hash || "account", {
+                    pushHash: false,
+                    mobileView: !!window.location.hash && isMobile()
+                });
+                /* Guarantee no leftover modal state survives a boot. */
+                all(".modal-backdrop").forEach(function (m) { m.hidden = true; });
+            });
+        }).catch(function (error) {
+            if (error && error.status === 401) return; /* auth.js redirects */
+            showBootError(window.SkillShareAuth && window.SkillShareAuth.getErrorMessage
+                ? window.SkillShareAuth.getErrorMessage(error)
+                : errText(error, "Could not load settings."));
+        });
+    }
+
+    /* =======================================================
+       INITIALIZATION
+       ======================================================= */
+    /* Retry must work even when the very first boot failed before
+       bindEvents() ever ran (network failure on requireUser). */
+    on($("settingsRetry"), "click", function () { boot(true); });
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+            bindModalEvents();
+            boot(false);
+        });
+    } else {
+        bindModalEvents();
+        boot(false);
+    }
+})();

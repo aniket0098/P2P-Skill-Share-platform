@@ -1081,3 +1081,18 @@ select:focus-visible {
             auto !important;
     }
 }
+
+
+/* =========================================================
+   STAGE 32 - DYNAMIC RENDERING SUPPORT
+   (notifications.js renders real API rows into .cards)
+   ========================================================= */
+
+.notification-item .note-content {
+    min-width: 0;
+}
+
+.empty-state .outline {
+    margin-left: 8px;
+    vertical-align: middle;
+}

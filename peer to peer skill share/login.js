@@ -329,6 +329,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Login successful! Welcome back."
             );
 
+            /* Stage 32: deactivated accounts may sign in so the user can
+               reactivate - tell them exactly where to go. */
+            if (result.requires_reactivation) {
+                showToast(
+                    "Your account is deactivated - open Settings to reactivate it."
+                );
+            }
+
 
             /* ======================================
                REDIRECT TO DASHBOARD

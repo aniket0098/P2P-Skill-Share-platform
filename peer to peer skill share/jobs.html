@@ -47,6 +47,15 @@
 /* Values shown from the API/profiles can be long and space-less. */
 #jobsCompanyName,#jobsCompanySub{overflow-wrap:anywhere}
 #jobsModalTitle{overflow-wrap:anywhere}
+/* STAGE 9.4 — recruiter pipeline strip. Real per-status totals from
+   GET /api/opportunities/{id}/pipeline; nothing is rendered before the
+   server answers. */
+.app-pipeline{display:flex;gap:8px 16px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;background:rgba(255,255,255,.02)}
+.app-pipeline-stat{display:flex;flex-direction:column;gap:2px;min-width:62px}
+.app-pipeline-stat b{font-size:15px;font-weight:700;line-height:1.1}
+.app-pipeline-stat span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.app-pipeline-note{font-size:11px;color:var(--text-muted);margin:0 0 10px}
+@media (max-width:480px){.app-pipeline{gap:8px 12px;padding:9px 10px}.app-pipeline-stat{min-width:54px}}
 /* STAGE 9.3 — recruiter applicant review. Additive helpers only; every
    value comes from GET /api/opportunities/{id}/applications or
    PATCH /api/applications/{id}/status. Absent API fields are hidden,
@@ -129,10 +138,24 @@
 <!-- STAGE 9.3 — recruiter applicant review. Real data only, from
      GET /api/opportunities/{id}/applications and
      PATCH /api/applications/{id}/status (owner recruiter only).
-     The API returns no per-opportunity applicant counts, so cards show no
-     counts and no fake numbers are ever rendered. -->
+     STAGE 9.4 — the pipeline strip above the list shows REAL per-status
+     totals from GET /api/opportunities/{id}/pipeline (one server-side
+     GROUP BY aggregate). Nothing is rendered before the server answers,
+     so a placeholder is never mistaken for a count. -->
 <section class="panel mt" id="applicantsPanel" hidden>
 <div class="section-head"><h2>Applicants — <span id="appOppTitle">—</span></h2><button class="btn ghost small" id="appCloseList" type="button">Close</button></div>
+<div class="app-pipeline" id="appPipeline" hidden>
+<div class="app-pipeline-stat"><b id="appPipeTotal">—</b><span>Total</span></div>
+<div class="app-pipeline-stat"><b id="appPipeApplied">—</b><span>Applied</span></div>
+<div class="app-pipeline-stat"><b id="appPipeReviewing">—</b><span>Reviewing</span></div>
+<div class="app-pipeline-stat"><b id="appPipeShortlisted">—</b><span>Shortlisted</span></div>
+<div class="app-pipeline-stat"><b id="appPipeInterview">—</b><span>Interview</span></div>
+<div class="app-pipeline-stat"><b id="appPipeSelected">—</b><span>Selected</span></div>
+<div class="app-pipeline-stat"><b id="appPipeRejected">—</b><span>Rejected</span></div>
+<div class="app-pipeline-stat"><b id="appPipeWithdrawn">—</b><span>Withdrawn</span></div>
+</div>
+<p class="app-pipeline-note" id="appPipelineLoading" hidden>Loading pipeline totals…</p>
+<p class="app-pipeline-note" id="appPipelineNote" hidden></p>
 <div class="jobs-toolbar" id="appToolbar" hidden>
 <div class="search-box"><span>⌕</span><input id="appSearch" type="search" placeholder="Search applicants by name or ID..." aria-label="Search applicants" autocomplete="off"></div>
 <select id="appStatusFilter" aria-label="Filter applicants by status">

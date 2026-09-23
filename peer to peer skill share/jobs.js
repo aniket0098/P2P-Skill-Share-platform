@@ -50,7 +50,14 @@ var S = {
     oppId: null, rows: [], total: 0, offset: 0, has_more: false,
     status: "", q: "", loading: false, loaded: false, searchTimer: null
   },
-  review: { item: null, busy: false }
+  review: { item: null, busy: false },
+  /* STAGE 9.4 — owner-only per-status totals for the open opportunity
+     (GET /api/opportunities/{id}/pipeline). `seq` is the stale-response
+     guard: only the newest request for the currently open opportunity
+     may paint, so rapid card switching cannot show another opportunity's
+     counts. `data === null` means "the server has not answered yet" and
+     nothing is rendered. */
+  pipeline: { oppId: null, seq: 0, loading: false, data: null }
 };
 window.__jobs = window.__jobs || {};
 window.__jobs.state = S;
@@ -710,6 +717,11 @@ function openApplicants(opp) {
   S.applicants.oppId = Number(opp.id);
   var t = $("appOppTitle");
   if (t) t.textContent = opp.title || "Untitled role";
+  /* STAGE 9.4 — pipeline is refetched per opportunity; the previous
+     strip is cleared immediately so stale counts never linger. */
+  clearPipeline();
+  S.pipeline.oppId = Number(opp.id);
+  loadPipeline();
   S.applicants.rows = [];
   S.applicants.total = 0;
   S.applicants.offset = 0;
@@ -729,9 +741,76 @@ function openApplicants(opp) {
 function closeApplicants() {
   S.applicants.oppId = null;
   S.applicants.rows = [];
+  clearPipeline();
   show($("applicantsPanel"), false);
   var m = $("appReview");
   if (m && !m.hidden) closeReview();
+}
+
+/* ---------------- STAGE 9.4: pipeline aggregates ----------------
+   Real counts only: one owner-only aggregate call per open opportunity
+   (GET /api/opportunities/{id}/pipeline). The strip stays hidden until
+   the server answers, and a stale response can never overwrite a newer
+   selection because every request carries a monotonically increasing
+   token (S.pipeline.seq). */
+function pipeSet(id, value) {
+  var el = $(id);
+  if (!el) return;
+  var n = Number(value);
+  el.textContent = (value != null && isFinite(n) && n >= 0)
+    ? String(Math.round(n)) : "—";
+}
+function pipelineState(which) {
+  show($("appPipeline"), which === "data");
+  show($("appPipelineLoading"), which === "loading");
+  var note = $("appPipelineNote");
+  if (!note) return;
+  note.hidden = which !== "error";
+  if (which === "error") {
+    note.textContent = "Pipeline totals are unavailable right now.";
+  }
+}
+function renderPipeline(data) {
+  if (!data) { pipelineState("off"); return; }
+  pipeSet("appPipeTotal", data.total);
+  pipeSet("appPipeApplied", data.applied);
+  pipeSet("appPipeReviewing", data.reviewing);
+  pipeSet("appPipeShortlisted", data.shortlisted);
+  pipeSet("appPipeInterview", data.interview);
+  pipeSet("appPipeSelected", data.selected);
+  pipeSet("appPipeRejected", data.rejected);
+  pipeSet("appPipeWithdrawn", data.withdrawn);
+  pipelineState("data");
+}
+function clearPipeline() {
+  S.pipeline.seq++;              /* invalidate any in-flight response */
+  S.pipeline.oppId = null;
+  S.pipeline.data = null;
+  S.pipeline.loading = false;
+  pipelineState("off");
+}
+function loadPipeline() {
+  var oppId = S.pipeline.oppId;
+  if (!oppId) return Promise.resolve();
+  if (!API || typeof API.getOpportunityPipeline !== "function") {
+    /* The endpoint is not available on this client build: show nothing
+       rather than fabricating counts. */
+    pipelineState("off");
+    return Promise.resolve();
+  }
+  var token = ++S.pipeline.seq;
+  S.pipeline.loading = true;
+  if (!S.pipeline.data) pipelineState("loading");
+  return API.getOpportunityPipeline(oppId).then(function (data) {
+    if (token !== S.pipeline.seq || oppId !== S.pipeline.oppId) return;
+    S.pipeline.loading = false;
+    S.pipeline.data = data || null;
+    renderPipeline(data);
+  }).catch(function () {
+    if (token !== S.pipeline.seq || oppId !== S.pipeline.oppId) return;
+    S.pipeline.loading = false;
+    if (!S.pipeline.data) { renderPipeline(null); pipelineState("error"); }
+  });
 }
 function applicantRow(it) {
   var a = (it && it.application) || {};
@@ -951,6 +1030,9 @@ function saveStatus() {
     renderApplicants();
     if (S.applicants.status) loadApplicants(0);
     openReview(updated);
+    /* STAGE 9.4 — a committed status change moves one pipeline bucket;
+       refresh the real aggregate instead of adjusting numbers locally. */
+    if (S.pipeline.oppId) { S.pipeline.data = null; loadPipeline(); }
     toast("Application moved to " + appMeta(updated.application.status).label + ".");
   }).catch(function (e) {
     S.review.busy = false;
@@ -993,6 +1075,9 @@ function reloadConflicted() {
   if (save) save.disabled = true;
   loadApplicants(0).then(function () {
     if (save) save.disabled = false;
+    /* The other actor may have moved any application, so the aggregate is
+       refetched rather than guessed. */
+    if (S.pipeline.oppId) { S.pipeline.data = null; loadPipeline(); }
     if (id == null) return;
     var fresh = appFind(id);
     if (fresh) {

@@ -317,6 +317,65 @@
       b.addEventListener("click", function () { window.location.href = "notifications.html"; });
     });
   }
+  /* ---- Stage 32: shared UI preference applier (device-scoped) ----
+     Theme / density / reduced-motion / larger-text preferences live in
+     localStorage (a genuine device preference, NOT account data). Both
+     shells define this idempotently (first definition wins; behaviour
+     is identical) so any page can read/apply/save them, and Settings
+     can push changes live via window.SkillShareUIPrefs.set(...). */
+  if (!window.SkillShareUIPrefs) {
+    window.SkillShareUIPrefs = (function () {
+      var KEY = "skillshare_ui_prefs";          /* JSON preference blob */
+      var THEME_KEY = "skillshare_theme";       /* same key dashboard.js reads */
+      function load() {
+        try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+      }
+      function save(prefs) {
+        try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {}
+      }
+      function themeChoice() {
+        var c = load().themeChoice;
+        return c === "light" || c === "dark" || c === "system" ? c : "dark";
+      }
+      function resolvedTheme() {
+        if (themeChoice() === "system") {
+          try {
+            return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+          } catch (e) { return "dark"; }
+        }
+        return themeChoice();
+      }
+      function setAttrs(name, value) {
+        try { document.documentElement.setAttribute(name, value); } catch (e) {}
+        try { if (document.body) document.body.setAttribute(name, value); } catch (e) {}
+      }
+      function apply() {
+        var p = load();
+        var theme = resolvedTheme();
+        /* Keep dashboard.js' existing key in sync — one source of truth. */
+        try { localStorage.setItem(THEME_KEY, theme === "light" ? "light" : "dark"); } catch (e) {}
+        setAttrs("data-theme", theme);
+        setAttrs("data-density", p.density === "compact" ? "compact" : "comfortable");
+        setAttrs("data-reduced-motion", p.reducedMotion ? "true" : "false");
+        setAttrs("data-text-scale", p.largeText ? "large" : "normal");
+        try {
+          if (document.body) document.body.classList.toggle("light-theme", theme === "light");
+        } catch (e) {}
+      }
+      function set(patch) {
+        var p = load();
+        for (var k in patch) { if (Object.prototype.hasOwnProperty.call(patch, k)) p[k] = patch[k]; }
+        save(p);
+        apply();
+        return p;
+      }
+      return { load: load, save: save, apply: apply, set: set,
+               resolvedTheme: resolvedTheme, themeChoice: themeChoice };
+    })();
+    document.addEventListener("DOMContentLoaded", function () {
+      try { window.SkillShareUIPrefs.apply(); } catch (e) {}
+    });
+  }
   document.addEventListener("DOMContentLoaded", function () {
     ensureStyle(); ensureSharedAssets();
     mountCreditsChip();

@@ -1,1344 +1,225 @@
 /* =========================================================
-   SKILLSHARE — NOTIFICATIONS
-   Advanced Notification Management
+   SKILLSHARE - NOTIFICATIONS (Stage 32 repair)
+
+   Wired to the REAL single notifications store (PostgreSQL, JWT
+   owner-scoped):
+     GET  /api/notifications        -> items + unread_count
+     POST /api/notifications/{id}/read
+     POST /api/notifications/read-all
+
+   The old static-DOM / localStorage behavior is gone: every row shown
+   here is a row the backend created for THIS user (application status
+   changes, Innovation Lab activity, invites, platform messages).
    ========================================================= */
-
-document.addEventListener("DOMContentLoaded", () => {
-
+document.addEventListener("DOMContentLoaded", function () {
     "use strict";
 
+    var listEl = document.querySelector(".cards");
+    var markReadBtn = document.getElementById("markRead");
+    var subtitle = document.getElementById("notifSubtitle");
+    var toastEl = document.getElementById("toast");
+    if (!listEl) return;
 
-    /* =====================================================
-       ELEMENTS
-       ===================================================== */
+    var items = [];
+    var loading = false;
+    var toastTimer = null;
 
-    const notificationList =
-        document.querySelector(".cards");
+    var TYPE_ICONS = {
+        application_status: "fa-solid fa-briefcase",
+        innovation: "fa-solid fa-lightbulb",
+        innovation_invite: "fa-solid fa-user-group",
+        innovation_feedback: "fa-solid fa-comment-dots",
+        general: "fa-solid fa-bell"
+    };
 
-    const markReadButton =
-        document.getElementById("markRead");
-
-    const toast =
-        document.getElementById("toast");
-
-
-    if (!notificationList) {
-        return;
+    function esc(value) {
+        return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
-
-    /* =====================================================
-       STATE
-       ===================================================== */
-
-    let notifications = [];
-
-    let toastTimer = null;
-
-    let deletedNotification = null;
-
-
-    /* =====================================================
-       LOAD NOTIFICATIONS
-       ===================================================== */
-
-    function loadNotifications() {
-
-        notifications = [
-            ...notificationList.querySelectorAll(
-                ".notification-item"
-            )
-        ];
-
-
-        notifications.forEach(
-            prepareNotification
-        );
-
-
-        restoreReadState();
-
-        updateUnreadCount();
-
-        addTools();
-
-        updateEmptyState();
+    function toast(message, type) {
+        if (!toastEl) return;
+        clearTimeout(toastTimer);
+        toastEl.className = "toast show " + (type || "info");
+        toastEl.textContent = message;
+        toastTimer = setTimeout(function () {
+            toastEl.classList.remove("show");
+        }, 3200);
     }
 
-
-    /* =====================================================
-       PREPARE EACH NOTIFICATION
-       ===================================================== */
-
-    function prepareNotification(card, index) {
-
-        if (!card.dataset.id) {
-            card.dataset.id =
-                `notification-${index + 1}`;
-        }
-
-
-        /*
-         * Existing dot = unread
-         */
-        if (
-            card.querySelector(".dot")
-        ) {
-            card.classList.add("unread");
-        }
-
-
-        /*
-         * Make notification keyboard accessible
-         */
-        card.setAttribute(
-            "tabindex",
-            "0"
-        );
-
-
-        card.setAttribute(
-            "role",
-            "button"
-        );
-
-
-        /*
-         * Add category automatically
-         */
-        const category =
-            detectCategory(card);
-
-
-        card.dataset.category =
-            category;
-
-
-        /*
-         * Add action buttons
-         */
-        addNotificationActions(card);
+    function timeAgo(iso) {
+        if (!iso) return "";
+        var then = new Date(iso);
+        if (isNaN(then.getTime())) return "";
+        var seconds = Math.max(0, Math.floor((Date.now() - then.getTime()) / 1000));
+        if (seconds < 60) return "Just now";
+        var minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + "m ago";
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + "h ago";
+        var days = Math.floor(hours / 24);
+        if (days < 30) return days + "d ago";
+        return then.toLocaleDateString();
     }
 
-
-    /* =====================================================
-       DETECT CATEGORY
-       ===================================================== */
-
-    function detectCategory(card) {
-
-        const text =
-            card.textContent.toLowerCase();
-
-
-        if (
-            text.includes("request") ||
-            text.includes("session")
-        ) {
-            return "session";
-        }
-
-
-        if (
-            text.includes("review") ||
-            text.includes("feedback")
-        ) {
-            return "review";
-        }
-
-
-        if (
-            text.includes("message") ||
-            text.includes("chat")
-        ) {
-            return "message";
-        }
-
-
-        return "general";
+    function unreadCount() {
+        return items.filter(function (n) { return !n.is_read; }).length;
     }
 
+    function updateHeader() {
+        var unread = unreadCount();
+        if (subtitle) {
+            if (!items.length) {
+                subtitle.textContent = "Stay up to date with your skill-sharing activity.";
+            } else if (unread) {
+                subtitle.textContent = unread + " unread of " + items.length +
+                    (items.length === 1 ? " notification." : " notifications.");
+            } else {
+                subtitle.textContent = "You are all caught up (" + items.length +
+                    (items.length === 1 ? " notification)." : " notifications).");
+            }
+        }
+        if (markReadBtn) markReadBtn.disabled = loading || unread === 0;
+    }
 
-    /* =====================================================
-       ADD ACTION BUTTONS
-       ===================================================== */
+    function skeleton() {
+        listEl.setAttribute("aria-busy", "true");
+        listEl.innerHTML =
+            '<div class="empty-state">Loading your notifications&hellip;</div>';
+        if (markReadBtn) markReadBtn.disabled = true;
+    }
 
-    function addNotificationActions(card) {
+    function emptyState() {
+        listEl.innerHTML =
+            '<div class="empty-state">You are all caught up. New notifications appear ' +
+            'here as soon as something happens on the platform.</div>';
+    }
 
-        if (
-            card.querySelector(
-                ".notification-actions"
-            )
-        ) {
+    function errorState(message) {
+        listEl.innerHTML =
+            '<div class="empty-state">' + esc(message) +
+            ' <button type="button" class="outline" id="notifRetry">Retry</button></div>';
+        var retry = document.getElementById("notifRetry");
+        if (retry) retry.addEventListener("click", load);
+    }
+
+    function itemHtml(n) {
+        var icon = TYPE_ICONS[n.type] || TYPE_ICONS.general;
+        var unread = !n.is_read;
+        return '<article class="notification-item ' + (unread ? "unread" : "read") + '"' +
+            ' data-id="' + esc(n.id) + '" tabindex="0" role="button"' +
+            ' aria-label="' + (unread ? "Unread notification: " : "Notification: ") +
+            esc(n.title) + '">' +
+            '<div class="note-icon" aria-hidden="true"><i class="' + icon + '"></i></div>' +
+            '<div class="note-content">' +
+            '<h2>' + esc(n.title) + '</h2>' +
+            (n.message ? '<p>' + esc(n.message) + '</p>' : "") +
+            '<time datetime="' + esc(n.created_at || "") + '">' +
+            esc(timeAgo(n.created_at)) + '</time>' +
+            '</div>' +
+            (unread ? '<span class="dot" aria-hidden="true"></span>' : '<span></span>') +
+            '</article>';
+    }
+
+    function render() {
+        listEl.setAttribute("aria-busy", "false");
+        if (!items.length) {
+            emptyState();
+            updateHeader();
             return;
         }
-
-
-        const actions =
-            document.createElement("div");
-
-
-        actions.className =
-            "notification-actions";
-
-
-        actions.innerHTML = `
-            <button
-                class="notification-action read-action"
-                type="button"
-                title="Mark as read"
-                aria-label="Mark notification as read"
-            >
-                ✓
-            </button>
-
-            <button
-                class="notification-action delete"
-                type="button"
-                title="Delete notification"
-                aria-label="Delete notification"
-            >
-                ×
-            </button>
-        `;
-
-
-        card.appendChild(actions);
+        listEl.innerHTML = items.map(itemHtml).join("");
+        updateHeader();
     }
 
-
-    /* =====================================================
-       ADD SEARCH + FILTER
-       ===================================================== */
-
-    function addTools() {
-
-        if (
-            document.querySelector(
-                ".notification-tools"
-            )
-        ) {
-            return;
+    function findItem(id) {
+        for (var i = 0; i < items.length; i++) {
+            if (String(items[i].id) === String(id)) return items[i];
         }
-
-
-        const tools =
-            document.createElement("div");
-
-
-        tools.className =
-            "notification-tools";
-
-
-        tools.innerHTML = `
-            <div class="notification-search">
-
-                <input
-                    id="notificationSearch"
-                    type="search"
-                    placeholder="Search notifications..."
-                    autocomplete="off"
-                    aria-label="Search notifications"
-                >
-
-            </div>
-
-            <select
-                id="notificationFilter"
-                class="notification-filter"
-                aria-label="Filter notifications"
-            >
-
-                <option value="all">
-                    All notifications
-                </option>
-
-                <option value="unread">
-                    Unread
-                </option>
-
-                <option value="read">
-                    Read
-                </option>
-
-                <option value="session">
-                    Sessions
-                </option>
-
-                <option value="review">
-                    Reviews
-                </option>
-
-                <option value="message">
-                    Messages
-                </option>
-
-            </select>
-        `;
-
-
-        const heading =
-            document.querySelector(
-                ".page-heading"
-            );
-
-
-        heading.after(tools);
-
-
-        const search =
-            document.getElementById(
-                "notificationSearch"
-            );
-
-
-        const filter =
-            document.getElementById(
-                "notificationFilter"
-            );
-
-
-        search.addEventListener(
-            "input",
-            applyFilters
-        );
-
-
-        filter.addEventListener(
-            "change",
-            applyFilters
-        );
+        return null;
     }
 
-
-    /* =====================================================
-       FILTER
-       ===================================================== */
-
-    function applyFilters() {
-
-        const search =
-            document
-                .getElementById(
-                    "notificationSearch"
-                )
-                ?.value
-                .trim()
-                .toLowerCase() || "";
-
-
-        const filter =
-            document
-                .getElementById(
-                    "notificationFilter"
-                )
-                ?.value || "all";
-
-
-        let visibleCount = 0;
-
-
-        notifications.forEach(card => {
-
-            const text =
-                card.textContent.toLowerCase();
-
-
-            const category =
-                card.dataset.category;
-
-
-            const isUnread =
-                card.classList.contains(
-                    "unread"
-                );
-
-
-            const matchesSearch =
-                !search ||
-                text.includes(search);
-
-
-            let matchesFilter = true;
-
-
-            if (filter === "unread") {
-                matchesFilter = isUnread;
-            }
-
-
-            if (filter === "read") {
-                matchesFilter = !isUnread;
-            }
-
-
-            if (
-                [
-                    "session",
-                    "review",
-                    "message"
-                ].includes(filter)
-            ) {
-                matchesFilter =
-                    category === filter;
-            }
-
-
-            const visible =
-                matchesSearch &&
-                matchesFilter;
-
-
-            card.style.display =
-                visible
-                    ? ""
-                    : "none";
-
-
-            if (visible) {
-                visibleCount++;
-            }
-        });
-
-
-        updateSearchEmptyState(
-            visibleCount
-        );
-    }
-
-
-    /* =====================================================
-       EMPTY SEARCH STATE
-       ===================================================== */
-
-    function updateSearchEmptyState(
-        visibleCount
-    ) {
-
-        let empty =
-            document.querySelector(
-                ".search-empty"
-            );
-
-
-        if (visibleCount === 0) {
-
-            if (!empty) {
-
-                empty =
-                    document.createElement(
-                        "div"
-                    );
-
-                empty.className =
-                    "notification-empty search-empty";
-
-
-                empty.innerHTML = `
-                    <div class="notification-empty-icon">
-                        ⌕
-                    </div>
-
-                    <h2>
-                        No notifications found
-                    </h2>
-
-                    <p>
-                        Try changing your search
-                        or notification filter.
-                    </p>
-                `;
-
-
-                notificationList.appendChild(
-                    empty
-                );
-            }
-
-
-            empty.style.display =
-                "flex";
-
-        } else if (empty) {
-
-            empty.style.display =
-                "none";
-        }
-    }
-
-
-    /* =====================================================
-       CLICK HANDLER
-       ===================================================== */
-
-    document.addEventListener(
-        "click",
-        event => {
-
-            const card =
-                event.target.closest(
-                    ".notification-item"
-                );
-
-
-            if (!card) {
-                return;
-            }
-
-
-            /*
-             * Delete
-             */
-            if (
-                event.target.closest(
-                    ".notification-action.delete"
-                )
-            ) {
-
-                event.stopPropagation();
-
-                deleteNotification(card);
-
-                return;
-            }
-
-
-            /*
-             * Mark read
-             */
-            if (
-                event.target.closest(
-                    ".read-action"
-                )
-            ) {
-
-                event.stopPropagation();
-
-                markAsRead(card);
-
-                return;
-            }
-
-
-            /*
-             * Notification itself
-             */
-            markAsRead(card);
-
-            openNotification(card);
-        }
-    );
-
-
-    /* =====================================================
-       KEYBOARD INTERACTION
-       ===================================================== */
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            const card =
-                event.target.closest(
-                    ".notification-item"
-                );
-
-
-            if (!card) {
-                return;
-            }
-
-
-            if (
-                event.key === "Enter" ||
-                event.key === " "
-            ) {
-
-                event.preventDefault();
-
-                markAsRead(card);
-
-                openNotification(card);
-            }
-        }
-    );
-
-
-    /* =====================================================
-       MARK AS READ
-       ===================================================== */
-
-    function markAsRead(card) {
-
-        if (
-            !card.classList.contains(
-                "unread"
-            )
-        ) {
-            return;
-        }
-
-
-        card.classList.remove(
-            "unread"
-        );
-
-
-        card.classList.add(
-            "read"
-        );
-
-
-        const dot =
-            card.querySelector(".dot");
-
-
-        if (dot) {
-            dot.remove();
-        }
-
-
-        const id =
-            card.dataset.id;
-
-
-        saveReadState(
-            id,
-            true
-        );
-
-
-        updateUnreadCount();
-
-        showToast(
-            "Notification marked as read.",
-            "success"
-        );
-    }
-
-
-    /* =====================================================
-       MARK ALL READ
-       ===================================================== */
-
-    if (markReadButton) {
-
-        markReadButton.addEventListener(
-            "click",
-            markAllAsRead
-        );
-    }
-
-
-    function markAllAsRead() {
-
-        const unread =
-            notifications.filter(
-                card =>
-                    card.classList.contains(
-                        "unread"
-                    )
-            );
-
-
-        if (unread.length === 0) {
-
-            showToast(
-                "You're all caught up.",
-                "info"
-            );
-
-            return;
-        }
-
-
-        unread.forEach(card => {
-
-            card.classList.remove(
-                "unread"
-            );
-
-
-            card.classList.add(
-                "read"
-            );
-
-
-            const dot =
-                card.querySelector(
-                    ".dot"
-                );
-
-
-            if (dot) {
-                dot.remove();
-            }
-
-
-            saveReadState(
-                card.dataset.id,
-                true
-            );
-        });
-
-
-        updateUnreadCount();
-
-        applyFilters();
-
-
-        showToast(
-            `${unread.length} notification${unread.length === 1
-                ? ""
-                : "s"
-            } marked as read.`,
-            "success"
-        );
-    }
-
-
-    /* =====================================================
-       DELETE
-       ===================================================== */
-
-    function deleteNotification(card) {
-
-        const title =
-            card.querySelector("h2")
-                ?.textContent
-                .trim() ||
-            "Notification";
-
-
-        deletedNotification = {
-            card,
-            parent: card.parentNode,
-            nextSibling: card.nextSibling,
-            title
+    function openItem(n, card) {
+        if (!n) return;
+        var go = function () {
+            if (n.link) window.location.href = n.link;
         };
-
-
-        card.classList.add(
-            "removing"
-        );
-
-
-        setTimeout(() => {
-
-            if (card.parentNode) {
-                card.remove();
-            }
-
-
-            notifications =
-                notifications.filter(
-                    item =>
-                        item !== card
-                );
-
-
-            updateUnreadCount();
-
-            updateEmptyState();
-
-
-            showUndoToast(
-                "Notification deleted."
-            );
-
-        }, 400);
-    }
-
-
-    /* =====================================================
-       UNDO DELETE
-       ===================================================== */
-
-    function showUndoToast(
-        message
-    ) {
-
-        if (!toast) return;
-
-
-        clearTimeout(
-            toastTimer
-        );
-
-
-        toast.className =
-            "toast show info";
-
-
-        toast.innerHTML = `
-            <span>✓</span>
-
-            <span>
-                ${escapeHTML(message)}
-            </span>
-
-            <button
-                id="undoDelete"
-                type="button"
-                style="
-                    margin-left:auto;
-                    border:0;
-                    background:transparent;
-                    color:#a5b4fc;
-                    font-weight:800;
-                    cursor:pointer;
-                "
-            >
-                Undo
-            </button>
-        `;
-
-
-        const undo =
-            document.getElementById(
-                "undoDelete"
-            );
-
-
-        if (undo) {
-
-            undo.addEventListener(
-                "click",
-                restoreDeleted
-            );
-        }
-
-
-        toastTimer =
-            setTimeout(() => {
-
-                deletedNotification =
-                    null;
-
-                toast.classList.remove(
-                    "show"
-                );
-
-            }, 5000);
-    }
-
-
-    /* =====================================================
-       RESTORE DELETED
-       ===================================================== */
-
-    function restoreDeleted() {
-
-        if (
-            !deletedNotification
-        ) {
+        if (n.is_read) {
+            go();
             return;
         }
-
-
-        const {
-            card,
-            parent,
-            nextSibling
-        } = deletedNotification;
-
-
-        card.classList.remove(
-            "removing"
-        );
-
-
-        if (
-            nextSibling &&
-            nextSibling.parentNode === parent
-        ) {
-
-            parent.insertBefore(
-                card,
-                nextSibling
-            );
-
-        } else {
-
-            parent.appendChild(
-                card
-            );
-        }
-
-
-        notifications.push(
-            card
-        );
-
-
-        updateUnreadCount();
-
-        updateEmptyState();
-
-        showToast(
-            "Notification restored.",
-            "success"
-        );
-
-
-        deletedNotification =
-            null;
+        /* Optimistic local read + server confirmation; a failed confirm
+           is corrected on the next load (never blocks navigation). */
+        n.is_read = true;
+        card.classList.remove("unread");
+        card.classList.add("read");
+        var dot = card.querySelector(".dot");
+        if (dot) dot.remove();
+        updateHeader();
+        window.SkillShareAPI.markNotificationRead(n.id).then(go).catch(go);
     }
 
-
-    /* =====================================================
-       OPEN NOTIFICATION
-       ===================================================== */
-
-    function openNotification(card) {
-
-        const title =
-            card.querySelector("h2")
-                ?.textContent
-                .trim() ||
-            "Notification";
-
-
-        const text =
-            card.querySelector("p")
-                ?.textContent
-                .trim() ||
-            "";
-
-
-        showToast(
-            title,
-            "info"
-        );
-
-
-        /*
-         * You can later replace this with
-         * real application routing.
-         *
-         * Example:
-         *
-         * window.location.href =
-         *     "requests.html";
-         */
-
-
-        if (
-            title.toLowerCase()
-                .includes("request")
-        ) {
-
-            setTimeout(() => {
-
-                window.location.href =
-                    "requests.html";
-
-            }, 650);
-
-        }
+    function cardActivate(target) {
+        var card = target && target.closest ? target.closest(".notification-item") : null;
+        if (!card) return null;
+        return card;
     }
 
-
-    /* =====================================================
-       UNREAD COUNT
-       ===================================================== */
-
-    function updateUnreadCount() {
-
-        const count =
-            notifications.filter(
-                card =>
-                    card.classList.contains(
-                        "unread"
-                    )
-            ).length;
-
-
-        document.title =
-            count > 0
-                ? `(${count}) Notifications | SkillShare`
-                : "Notifications | SkillShare";
-
-
-        updateNotificationBadge(
-            count
-        );
-    }
-
-
-    /* =====================================================
-       HEADER NOTIFICATION BADGE
-       ===================================================== */
-
-    function updateNotificationBadge(
-        count
-    ) {
-
-        let badge =
-            document.querySelector(
-                ".notification-count"
-            );
-
-
-        if (!badge) {
-
-            badge =
-                document.createElement(
-                    "span"
-                );
-
-            badge.className =
-                "notification-count";
-
-
-            const style =
-                document.createElement(
-                    "style"
-                );
-
-
-            style.textContent = `
-                .notification-count {
-                    position: fixed;
-                    top: 18px;
-                    right: 82px;
-                    z-index: 2000;
-
-                    min-width: 19px;
-                    height: 19px;
-
-                    display: grid;
-                    place-items: center;
-
-                    padding: 0 5px;
-
-                    color: white;
-
-                    background: #ef4444;
-
-                    border: 2px solid white;
-
-                    border-radius: 50%;
-
-                    font-size: 9px;
-                    font-weight: 800;
-
-                    box-shadow:
-                        0 4px 12px
-                        rgba(239,68,68,.25);
-
-                    pointer-events: none;
-                }
-
-                @media(max-width:650px) {
-                    .notification-count {
-                        top: 12px;
-                        right: 18px;
-                    }
-                }
-            `;
-
-
-            document.head.appendChild(
-                style
-            );
-
-
-            document.body.appendChild(
-                badge
-            );
-        }
-
-
-        if (count > 0) {
-
-            badge.textContent =
-                count > 99
-                    ? "99+"
-                    : count;
-
-
-            badge.style.display =
-                "grid";
-
-        } else {
-
-            badge.style.display =
-                "none";
-        }
-    }
-
-
-    /* =====================================================
-       EMPTY STATE
-       ===================================================== */
-
-    function updateEmptyState() {
-
-        const existing =
-            document.querySelector(
-                ".notification-main-empty"
-            );
-
-
-        if (notifications.length === 0) {
-
-            if (!existing) {
-
-                const empty =
-                    document.createElement(
-                        "div"
-                    );
-
-                empty.className =
-                    "notification-empty notification-main-empty";
-
-
-                empty.innerHTML = `
-                    <div class="notification-empty-icon">
-                        ✓
-                    </div>
-
-                    <h2>
-                        You're all caught up
-                    </h2>
-
-                    <p>
-                        You don't have any notifications
-                        right now.
-                    </p>
-                `;
-
-
-                notificationList.appendChild(
-                    empty
-                );
-            }
-
-        } else if (existing) {
-
-            existing.remove();
-        }
-    }
-
-
-    /* =====================================================
-       LOCAL STORAGE
-       ===================================================== */
-
-    function saveReadState(
-        id,
-        value
-    ) {
-
-        try {
-
-            const state =
-                JSON.parse(
-                    localStorage.getItem(
-                        "skillshare_notification_read"
-                    )
-                ) || {};
-
-
-            state[id] =
-                value;
-
-
-            localStorage.setItem(
-                "skillshare_notification_read",
-                JSON.stringify(state)
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "Unable to save notification state.",
-                error
-            );
-        }
-    }
-
-
-    /* =====================================================
-       RESTORE READ STATE
-       ===================================================== */
-
-    function restoreReadState() {
-
-        try {
-
-            const state =
-                JSON.parse(
-                    localStorage.getItem(
-                        "skillshare_notification_read"
-                    )
-                ) || {};
-
-
-            notifications.forEach(card => {
-
-                const id =
-                    card.dataset.id;
-
-
-                if (state[id]) {
-
-                    card.classList.remove(
-                        "unread"
-                    );
-
-                    card.classList.add(
-                        "read"
-                    );
-
-
-                    const dot =
-                        card.querySelector(
-                            ".dot"
-                        );
-
-
-                    if (dot) {
-                        dot.remove();
-                    }
-                }
+    listEl.addEventListener("click", function (event) {
+        var card = cardActivate(event.target);
+        if (!card) return;
+        openItem(findItem(card.getAttribute("data-id")), card);
+    });
+
+    listEl.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        var card = cardActivate(event.target);
+        if (!card) return;
+        event.preventDefault();
+        openItem(findItem(card.getAttribute("data-id")), card);
+    });
+
+    if (markReadBtn) {
+        markReadBtn.addEventListener("click", function () {
+            if (markReadBtn.disabled || loading) return;
+            markReadBtn.disabled = true;
+            window.SkillShareAPI.markAllNotificationsRead().then(function () {
+                items.forEach(function (n) { n.is_read = true; });
+                render();
+                toast("All notifications marked as read.", "success");
+            }).catch(function (error) {
+                updateHeader();
+                toast((error && (error.detail || error.message)) ||
+                    "Could not update notifications.", "error");
             });
-
-        } catch (error) {
-
-            console.warn(
-                "Unable to restore notification state.",
-                error
-            );
-        }
-    }
-
-
-    /* =====================================================
-       TOAST
-       ===================================================== */
-
-    function showToast(
-        message,
-        type = "info"
-    ) {
-
-        if (!toast) {
-            return;
-        }
-
-
-        clearTimeout(
-            toastTimer
-        );
-
-
-        toast.className =
-            `toast show ${type}`;
-
-
-        toast.innerHTML = `
-            <span>
-                ${type === "success"
-                ? "✓"
-                : type === "error"
-                    ? "!"
-                    : "i"
-            }
-            </span>
-
-            <span>
-                ${escapeHTML(message)}
-            </span>
-        `;
-
-
-        toastTimer =
-            setTimeout(() => {
-
-                toast.classList.remove(
-                    "show"
-                );
-
-            }, 3000);
-    }
-
-
-    /* =====================================================
-       ESCAPE HTML
-       ===================================================== */
-
-    function escapeHTML(
-        value
-    ) {
-
-        return String(value)
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            )
-            .replace(
-                /"/g,
-                "&quot;"
-            )
-            .replace(
-                /'/g,
-                "&#039;"
-            );
-    }
-
-
-    /* =====================================================
-       ACTIVE NAVIGATION
-       ===================================================== */
-
-    const currentPage =
-        window.location.pathname
-            .split("/")
-            .pop()
-            .toLowerCase();
-
-
-    document
-        .querySelectorAll(
-            ".app-nav a"
-        )
-        .forEach(link => {
-
-            const href =
-                link
-                    .getAttribute("href")
-                    ?.split("/")
-                    .pop()
-                    .toLowerCase();
-
-
-            if (
-                href === currentPage
-            ) {
-
-                link.style.color =
-                    "var(--primary)";
-
-                link.style.background =
-                    "rgba(99,91,255,.07)";
-            }
         });
+    }
 
+    function load() {
+        if (loading) return;
+        loading = true;
+        skeleton();
+        if (window.SkillShareAuth && window.SkillShareAuth.requireUser) {
+            /* 401 redirects are handled globally by auth.js. */
+            window.SkillShareAuth.requireUser().catch(function () { /* handled */ });
+        }
+        window.SkillShareAPI.getNotifications({ limit: 50 }).then(function (res) {
+            items = (res && res.items) || [];
+            loading = false;
+            render();
+        }).catch(function (error) {
+            loading = false;
+            if (error && error.status === 401) return;
+            listEl.setAttribute("aria-busy", "false");
+            errorState((error && (error.detail || error.message)) ||
+                "Could not load notifications. Check your connection.");
+            updateHeader();
+        });
+    }
 
-    /* =====================================================
-       INITIALIZE
-       ===================================================== */
-
-    loadNotifications();
-
+    load();
 });

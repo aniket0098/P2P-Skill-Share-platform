@@ -4,42 +4,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile | SkillShare</title>
+    <title>Profile | CareerBridge &middot; SkillShare</title>
+    <meta name="robots" content="noindex">
 
-    <!-- Google Font & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <link rel="stylesheet" href="profile.css?v=4">
-    <link rel="stylesheet" href="profile-role.css">
-
-    <script src="config.js"></script>
-    <script src="api-client.js"></script>
-    <script src="auth.js"></script>
-    <script src="profile.js?v=4" defer></script>
-    <link rel="stylesheet" href="components/profile-dropdown.css">
-    <script src="components/profile-dropdown.js"></script>
+    <!-- Shared design tokens first, page sheet second (page wins on ties).
+         design-system.css is ALSO injected at runtime by portal-unify.js;
+         linking it explicitly keeps cascade order deterministic. -->
+    <link rel="stylesheet" href="design-system.css" data-ds="1">
+    <link rel="stylesheet" href="profile.css?v=5">
+    <link rel="stylesheet" href="profile-role.css?v=2">
 </head>
 
-<body>
+<body data-page="profile.html">
 
-    <!-- =====================================================
-         TOP NAVIGATION
-    ====================================================== -->
+    <!-- ========================= TOP NAVIGATION ========================= -->
     <header class="topbar">
-        <!-- BRAND -->
         <a href="dashboard.html" class="brand" aria-label="SkillShare Dashboard">
-            <div class="brand-mark">✦</div>
+            <div class="brand-mark" aria-hidden="true">&#10022;</div>
             <div>
                 <strong>SkillShare</strong>
-                <span>Learn • Share • Grow</span>
+                <span>Learn &bull; Share &bull; Grow</span>
             </div>
         </a>
 
-        <!-- NAVIGATION -->
-        <nav>
+        <nav aria-label="Primary">
             <a href="dashboard.html">Dashboard</a>
             <a href="explore.html">Explore</a>
             <a href="projects.html">Projects</a>
@@ -47,749 +40,729 @@
             <a href="community.html">Community</a>
         </nav>
 
-        <!-- TOP RIGHT -->
         <div class="top-actions">
-            <button class="icon-btn" type="button" title="Notifications" id="notificationBtn">
-                🔔
-            </button>
+            <a class="icon-btn" href="notifications.html" title="Notifications" aria-label="Notifications">&#128276;</a>
 
-            <!-- CREDITS (real balance via the shared chip component) -->
             <a class="credits-chip" href="credits.html" data-credits-chip title="Your credit balance">
                 <span class="cc-coin">&#129473;</span>
-                <span class="cc-num" data-credits-value>—</span>
+                <span class="cc-num" data-credits-value>&mdash;</span>
                 <span class="cc-label">Credits</span>
             </a>
 
-            <!-- DIRECT PROFILE LINK -->
             <a href="profile.html" class="mini-profile active-profile" id="openProfile">
-                <span class="mini-avatar" id="topNavAvatar">—</span>
+                <span class="mini-avatar" id="topNavAvatar">&mdash;</span>
                 <span id="topNavName">member</span>
-                <span class="profile-arrow">▾</span>
+                <span class="profile-arrow" aria-hidden="true">&#9662;</span>
             </a>
         </div>
     </header>
 
-
-    <!-- =====================================================
-         MAIN PROFILE PAGE
-    ====================================================== -->
-    <main class="profile-page">
-
-        <!-- =================================================
-             1. PROFILE HEADER
-        ================================================== -->
-        <section class="profile-hero">
-            <div class="cover-pattern"></div>
-
-            <!-- BACK BUTTON -->
-            <a href="dashboard.html" class="back-button">
-                ← Back to Dashboard
-            </a>
-
-            <!-- PROFILE MAIN -->
-            <div class="hero-main">
-                <!-- Profile Image -->
-                <div class="avatar-wrap">
-                    <div class="avatar" id="profileAvatar">
-                        —
-                    </div>
-                    <span class="online-dot"></span>
-                </div>
-
-                <!-- Identity: First Name, Last Name, Username, Location, Bio -->
-                <div class="identity">
-                    <div class="name-row">
-                        <h1 id="heroName">
-                            Loading Profile...
-                        </h1>
-                        <span class="verified" title="Verified Member">✓</span>
-                        <span class="role-badge" id="roleBadge"></span>
-                    </div>
-
-                    <p class="role" id="profileUsername">
-                        @username
-                    </p>
-
-                    <p class="location" id="heroLocation">
-                        📍 Location not set
-                    </p>
-
-                    <p class="public-id" id="profilePublicId">
-                        User ID: —
-                    </p>
-                </div>
-            </div>
-
-            <!-- Bio -->
-            <p class="bio" id="heroBio">
-                Loading bio...
-            </p>
-
-            <!-- Profile Completion -->
-            <div class="profile-completion" id="profileCompletion">
-                <div class="completion-header">
-                    <span>Profile Completion</span>
-                    <strong id="completionPct">0%</strong>
-                </div>
-                <div class="completion-bar">
-                    <div class="completion-bar-fill" id="completionBarFill" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="hero-actions">
-                <!-- Shown when viewing another user's profile -->
-                <button class="primary-btn" id="messageBtn" type="button" style="display: none;">
-                    💬 Message
-                </button>
-
-                <button class="secondary-btn" id="followBtn" type="button" style="display: none;">
-                    + Send Request
-                </button>
-
-                <button class="secondary-btn" id="shareBtn" type="button">
-                    ↗ Share
-                </button>
-
-                <!-- Edit Profile Button (Opens 3-field editor) -->
-                <button class="primary-btn" id="editBtn" type="button">
-                    ✎ Edit Profile
-                </button>
-            </div>
-        </section>
-
-
-        <!-- =================================================
-             14. PROFILE STATISTICS (Real PostgreSQL values)
-        ================================================== -->
-        <section class="quick-stats">
-            <div>
-                <strong data-count="0" id="statProjects">0</strong>
-                <span>Projects Shared</span>
-            </div>
-            <div>
-                <strong data-count="0" id="statConnections">0</strong>
-                <span>Connections</span>
-            </div>
-            <div>
-                <strong data-count="0" id="statSkills">0</strong>
-                <span>Skills</span>
-            </div>
-            <div>
-                <strong data-count="0" id="statDaysMember">0</strong>
-                <span>Days as Member</span>
-            </div>
-            <div>
-                <strong data-count="0" id="statLearning">0%</strong>
-                <span>Learning Progress</span>
-            </div>
-        </section>
-
-
-        <!-- =================================================
-             PROFILE CONTENT (Structured Sections)
-        ================================================== -->
-        <div class="profile-content">
-            <div class="profile-layout-grid">
-
-                <!-- =========================================
-                     MAIN LEFT COLUMN
-                ========================================== -->
-                <div class="layout-main-col">
-
-                    <!-- =====================================
-                         ROLE PROFILE (Phase 2)
-                         Database-driven role-based profile card.
-                         Rendered by profile.js from GET /profile/me.
-                    ====================================== -->
-                    <div class="panel-card" id="roleProfileCard">
-                        <div class="card-heading">
-                            <h2>ROLE PROFILE</h2>
-                            <button class="text-btn" id="roleEditBtn" type="button" hidden>✎ Edit</button>
-                        </div>
-                        <p class="section-subtitle" id="roleSubtitle">Loading your role profile…</p>
-                        <div id="roleProfileBody">
-                            <div class="empty-state-box">
-                                <div class="empty-state-icon">⏳</div>
-                                <h4>Loading profile…</h4>
-                                <p>Fetching the latest data from the database.</p>
-                            </div>
-                        </div>
-                        <div id="roleEditForm" hidden></div>
-                    </div>
-
-                    <!-- =====================================
-                         2 & 4. ABOUT & EDIT PROFILE (3 FIELDS ONLY)
-                         Directly editable: First Name, Last Name, Bio
-                    ====================================== -->
-                    <div class="panel-card" id="aboutSectionCard">
-                        <div class="card-heading">
-                            <h2>About</h2>
-                            <button class="text-btn" id="triggerEditSection" type="button">
-                                ✎ Edit Profile
-                            </button>
-                        </div>
-
-                        <!-- DISPLAY MODE (Normal View) -->
-                        <div id="aboutDisplayMode">
-                            <div class="field-display-row">
-                                <div class="field-label-group">
-                                    <span class="field-title">First Name</span>
-                                    <b class="field-val" id="dispFirstName">—</b>
-                                </div>
-                                <button class="inline-edit-btn" id="editFirstNameBtn" type="button">Edit</button>
-                            </div>
-
-                            <div class="field-display-row">
-                                <div class="field-label-group">
-                                    <span class="field-title">Last Name</span>
-                                    <b class="field-val" id="dispLastName">—</b>
-                                </div>
-                                <button class="inline-edit-btn" id="editLastNameBtn" type="button">Edit</button>
-                            </div>
-
-                            <div class="field-display-row full-bio-row">
-                                <div class="field-label-group">
-                                    <span class="field-title">Bio</span>
-                                    <p class="field-val-bio" id="aboutText">No bio added yet.</p>
-                                </div>
-                                <button class="inline-edit-btn" id="editBioBtn" type="button">Edit</button>
-                            </div>
-                        </div>
-
-                        <!-- INTERACTIVE EDIT MODE (Only First Name, Last Name, Bio) -->
-                        <div id="aboutEditMode" style="display: none;">
-                            <div class="inline-edit-box">
-                                <div class="field-grid">
-                                    <label class="field">
-                                        <span>First Name</span>
-                                        <input type="text" id="inlineFirstName" maxlength="40" placeholder="First Name">
-                                    </label>
-
-                                    <label class="field">
-                                        <span>Last Name</span>
-                                        <input type="text" id="inlineLastName" maxlength="40" placeholder="Last Name">
-                                    </label>
-                                </div>
-
-                                <label class="field" style="margin-top: 12px;">
-                                    <span>Bio (Directly editable here)</span>
-                                    <textarea id="inlineBio" maxlength="300" placeholder="Tell the community about yourself..."></textarea>
-                                </label>
-
-                                <div class="edit-guidance-note">
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    <span>
-                                        Username, location, skills & interests are managed in
-                                        <a href="setting.html">Settings → Profile</a>.
-                                    </span>
-                                </div>
-
-                                <div class="inline-edit-actions">
-                                    <button class="secondary-btn" id="cancelEditBtn" type="button">Cancel</button>
-                                    <button class="primary-btn" id="saveEditBtn" type="button">Save</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- EDUCATION SECTION -->
-                    <div class="panel-card" id="educationSectionCard">
-                        <div class="card-heading">
-                            <h2>EDUCATION</h2>
-                            <button class="text-btn" id="addEducationBtn" type="button">+ Add Education</button>
-                        </div>
-                        <p class="section-subtitle">Your academic background and qualifications.</p>
-                        <div class="education-list" id="educationList"></div>
-                        <div class="empty-state-box" id="educationEmptyState">
-                            <div class="empty-state-icon">🎓</div>
-                            <h4>No education added yet.</h4>
-                            <p>Add your academic background to improve your career profile.</p>
-                            <button class="primary-btn mini-btn" id="addEducationEmptyBtn">+ Add Education</button>
-                        </div>
-                    </div>
-
-                    <!-- =====================================
-                         8. SHARED PROJECTS (MY PROJECTS)
-                         Shows ONLY projects shared by this user
-                    ====================================== -->
-                    <div class="panel-card" id="myProjectsCard">
-                        <div class="card-heading">
-                            <div class="heading-with-badge">
-                                <h2>MY PROJECTS</h2>
-                                <span class="count-badge" id="projectCountBadge">0</span>
-                            </div>
-                            <a href="projects.html" class="action-link-btn" id="viewAllProjectsLink">
-                                [View All My Projects] →
-                            </a>
-                        </div>
-
-                        <p class="section-subtitle">
-                            Projects actually shared and created by this user.
-                        </p>
-
-                        <!-- Real project cards from PostgreSQL table 'projects' -->
-                        <div class="profile-projects-grid" id="myProjectsGrid">
-                            <!-- Populated dynamically by profile.js -->
-                        </div>
-
-                        <!-- Empty state -->
-                        <div class="empty-state-box" id="projectsEmptyState" style="display: none;">
-                            <div class="empty-state-icon">📁</div>
-                            <h4>No projects shared yet.</h4>
-                            <p>Share projects you've built to showcase your skills to peers.</p>
-                            <a href="projects.html" class="primary-btn mini-btn">
-                                Explore Project Gallery
-                            </a>
-                        </div>
-                    </div>
-
-
-                    <!-- =====================================
-                         11. LEARNING PROGRESS
-                         Based on user's REAL learning activity
-                    ====================================== -->
-                    <div class="panel-card" id="learningProgressCard">
-                        <div class="card-heading">
-                            <h2>LEARNING PROGRESS</h2>
-                            <a href="explore.html" class="action-link-btn">
-                                Explore Skills →
-                            </a>
-                        </div>
-
-                        <p class="section-subtitle">
-                            Overall learning progress and progress across tracked skills.
-                        </p>
-
-                        <!-- Overall Progress Bar UI -->
-                        <div class="overall-progress-card">
-                            <div class="progress-meta">
-                                <span>Overall Learning Progress</span>
-                                <strong id="learningOverallPct">0%</strong>
-                            </div>
-                            <div class="progress-track-bg">
-                                <div class="progress-fill-bar" id="learningOverallBar" style="width: 0%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Top Learning Skills (Real database progress only) -->
-                        <div class="learning-skills-section" id="learningSkillsSection" style="display: none;">
-                            <h3 class="subsection-title">Top Learning Skills</h3>
-                            <div class="learning-skills-list" id="learningSkillsList">
-                                <!-- Populated dynamically if real tracking exists -->
-                            </div>
-                        </div>
-
-                        <!-- Empty state when no learning tracking exists in DB -->
-                        <div class="empty-state-box" id="learningEmptyState">
-                            <div class="empty-state-icon">🎓</div>
-                            <h4>Start learning from Explore Skills to build your learning activity.</h4>
-                            <p>Discover peer mentors, join live sessions, and track your learning progress here.</p>
-                            <a href="explore.html" class="primary-btn mini-btn">
-                                Explore Skills
-                            </a>
-                        </div>
-                    </div>
-
-
-                    <!-- =====================================
-                         12. RECENT LEARNING
-                         User's actual recent learning activity
-                    ====================================== -->
-                    <div class="panel-card" id="recentLearningCard">
-                        <div class="card-heading">
-                            <h2>RECENT LEARNING</h2>
-                            <a href="my-learning.html" class="action-link-btn">
-                                My Learning →
-                            </a>
-                        </div>
-
-                        <p class="section-subtitle">
-                            Actual courses, videos, and learning materials recently practiced.
-                        </p>
-
-                        <div class="recent-learning-list" id="recentLearningList">
-                            <!-- Populated from PostgreSQL LearningRecord table -->
-                        </div>
-
-                        <!-- Empty state -->
-                        <div class="empty-state-box" id="recentLearningEmptyState">
-                            <div class="empty-state-icon">📖</div>
-                            <h4>Start learning from Explore Skills to build your learning activity.</h4>
-                            <p>Pick a topic to start your peer learning journey.</p>
-                            <a href="explore.html" class="primary-btn mini-btn">
-                                Browse Topics
-                            </a>
-                        </div>
-                    </div>
-
-
-                    <!-- =====================================
-                         13. RECENT ACTIVITY
-                         Actual activities performed by the user
-                    ====================================== -->
-                    <div class="panel-card" id="recentActivityCard">
-                        <div class="card-heading">
-                            <h2>RECENT ACTIVITY</h2>
-                            <select id="activityFilter" class="activity-select">
-                                <option value="all">All Activity</option>
-                                <option value="project">Projects</option>
-                                <option value="teaching">Skills</option>
-                                <option value="community">Community</option>
-                                <option value="learning">Learning</option>
-                            </select>
-                        </div>
-
-                        <p class="section-subtitle">
-                            Authentic timeline of actions recorded in PostgreSQL.
-                        </p>
-
-                        <!-- Activity timeline -->
-                        <div class="activity-timeline" id="activityList">
-                            <!-- Populated dynamically from PostgreSQL events -->
-                        </div>
-
-                        <!-- Empty state -->
-                        <div class="empty-state-box" id="activityEmptyState" style="display: none;">
-                            <div class="empty-state-icon">⏱️</div>
-                            <h4>Start learning from Explore Skills to build your learning activity.</h4>
-                        </div>
-                    </div>
-
-                </div>
-
-
-                <!-- =========================================
-                     SIDEBAR RIGHT COLUMN
-                ========================================== -->
-                <div class="layout-side-col">
-
-                    <!-- =====================================
-                         5. PROFILE FIELDS MANAGED IN SETTINGS
-                         Username, Location, Skills, Interests
-                    ====================================== -->
-                    <div class="panel-card" id="managedFieldsCard">
-                        <div class="card-heading">
-                            <h2>Managed in Settings</h2>
-                        </div>
-                        <p class="section-subtitle">
-                            These fields cannot be edited directly on Profile.
-                        </p>
-
-                        <div class="managed-field-item">
-                            <div class="managed-field-head">
-                                <span class="managed-field-label">Username</span>
-                                <a href="setting.html" class="manage-in-settings-badge">
-                                    Manage in Settings →
-                                </a>
-                            </div>
-                            <b class="managed-field-value" id="sideUsername">@username</b>
-                        </div>
-
-                        <div class="managed-field-item">
-                            <div class="managed-field-head">
-                                <span class="managed-field-label">Location</span>
-                                <a href="setting.html" class="manage-in-settings-badge">
-                                    Manage in Settings →
-                                </a>
-                            </div>
-                            <b class="managed-field-value" id="sideLocation">Location not set</b>
-                        </div>
-
-                        <div class="managed-field-item">
-                            <div class="managed-field-head">
-                                <span class="managed-field-label">Skills</span>
-                                <a href="setting.html" class="manage-in-settings-badge">
-                                    Manage in Settings →
-                                </a>
-                            </div>
-                            <span class="managed-field-summary" id="sideSkillsSummary">No skills added yet</span>
-                        </div>
-
-                        <div class="managed-field-item">
-                            <div class="managed-field-head">
-                                <span class="managed-field-label">Interests</span>
-                                <a href="setting.html" class="manage-in-settings-badge">
-                                    Manage in Settings →
-                                </a>
-                            </div>
-                            <span class="managed-field-summary" id="sideInterestsSummary">No interests added yet</span>
-                        </div>
-                    </div>
-
-
-                    <!-- =====================================
-                         7. WORKING SKILLS
-                         Shows real saved skills as interactive cards/tags
-                    ====================================== -->
-                    <div class="panel-card" id="workingSkillsCard">
-                        <div class="card-heading">
-                            <h2>WORKING SKILLS</h2>
-                            <a href="setting.html" class="action-link-btn" title="Manage through Settings → Profile">
-                                [Manage Skills] →
-                            </a>
-                        </div>
-                        <p class="section-subtitle">
-                            Real skills saved in your database record.
-                        </p>
-
-                        <div class="interactive-chips" id="workingSkillChips">
-                            <!-- Real saved skills rendered here -->
-                        </div>
-
-                        <div class="empty-chip-state" id="skillsEmptyState" style="display: none;">
-                            No skills added yet.
-                        </div>
-                    </div>
-
-
-                    <!-- =====================================
-                         3. INTERESTS
-                         Real interests from the database
-                    ====================================== -->
-                    <div class="panel-card" id="interestsCard">
-                        <div class="card-heading">
-                            <h2>INTERESTS</h2>
-                            <a href="setting.html" class="action-link-btn" title="Manage through Settings → Profile">
-                                [Manage Interests] →
-                            </a>
-                        </div>
-                        <p class="section-subtitle">
-                            Skills and subjects you want to learn.
-                        </p>
-
-                        <div class="interactive-chips interests-color" id="interestChips">
-                            <!-- Real saved interests rendered here -->
-                        </div>
-
-                        <div class="empty-chip-state" id="interestsEmptyState" style="display: none;">
-                            No interests added yet.
-                        </div>
-                    </div>
-
-
-                    <!-- =====================================
-                         9 & 10. CONNECTIONS & MEMBERSHIP DETAILS
-                    ====================================== -->
-                    <div class="panel-card" id="detailsCard">
-                        <div class="card-heading">
-                            <h2>CONNECTIONS & ACCOUNT</h2>
-                        </div>
-
-                        <div class="detail-list">
-                            <div>
-                                <span>🤝</span>
-                                <b id="detailConnectionsCount">0</b>
-                                <small>Active Connections</small>
-                            </div>
-                            <div>
-                                <span>📅</span>
-                                <b id="detailMemberSince">—</b>
-                                <small>Member Since</small>
-                            </div>
-                            <div>
-                                <span>⏳</span>
-                                <b id="detailDaysMember">0 days</b>
-                                <small>Days as Member</small>
-                            </div>
-                            <div>
-                                <span>📧</span>
-                                <b id="detailEmail">—</b>
-                                <small>Account Email</small>
-                            </div>
-                        </div>
-
-                        <div class="settings-hint">
-                            <i class="fa-solid fa-gear"></i>
-                            <span>Settings & Account security:
-                                <a href="setting.html">Settings → Profile</a>
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
+    <!-- ========================= PROFILE PAGE ========================= -->
+    <main class="profile-page" id="profilePage" data-mode="">
+
+        <!-- Whole-page state: 404 / private profile / network failure -->
+        <div class="pf-state pf-state-error" id="profileFatal" hidden role="alert">
+            <div class="pf-state-icon" aria-hidden="true">&#9888;</div>
+            <h1 id="profileFatalTitle">Unable to load this profile</h1>
+            <p id="profileFatalMsg">Something went wrong while loading the profile.</p>
+            <div class="pf-state-actions">
+                <button type="button" class="pf-btn pf-btn-primary" id="profileRetryBtn">Try again</button>
+                <a class="pf-btn pf-btn-ghost" href="dashboard.html" id="profileFatalHome">Back to dashboard</a>
             </div>
         </div>
+
+        <!-- ========================= HERO ========================= -->
+        <section class="pf-hero" id="pfHero" aria-labelledby="heroName" hidden>
+            <div class="pf-hero-cover" aria-hidden="true"></div>
+
+            <div class="pf-hero-inner">
+                <div class="pf-avatar-wrap">
+                    <div class="pf-avatar" id="heroAvatar"><span class="pf-skel" aria-hidden="true"></span></div>
+                    <!-- Presence is rendered ONLY when the platform reports real
+                         presence. Never shown by default (no fabricated online dot). -->
+                    <span class="pf-presence" id="heroPresence" hidden>
+                        <span class="pf-presence-dot" aria-hidden="true"></span>
+                        <span class="pf-presence-label" id="heroPresenceLabel">Online</span>
+                    </span>
+                </div>
+
+                <div class="pf-identity">
+                    <div class="pf-name-row">
+                        <h1 class="pf-name" id="heroName">Loading profile&hellip;</h1>
+                        <span class="pf-role-pill" id="heroRole" hidden></span>
+                        <span class="pf-verified" id="heroVerified" hidden>
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                            <span id="heroVerifiedLabel">Verified</span>
+                        </span>
+                    </div>
+
+                    <p class="pf-headline" id="heroHeadline"></p>
+
+                    <p class="pf-handle">
+                        <span id="heroHandle"></span>
+                        <span class="pf-sep" aria-hidden="true">&middot;</span>
+                        <span id="heroPublicId"></span>
+                    </p>
+
+                    <ul class="pf-meta" id="heroMeta" aria-label="Profile details"></ul>
+
+                    <p class="pf-bio" id="heroBio"></p>
+
+                    <div class="pf-hero-actions">
+                        <button type="button" class="pf-btn pf-btn-primary" id="editProfileBtn" hidden>
+                            <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit profile
+                        </button>
+                        <button type="button" class="pf-btn pf-btn-primary" id="connectBtn" hidden>Connect</button>
+                        <button type="button" class="pf-btn pf-btn-primary" id="messageBtn" hidden>
+                            <i class="fa-regular fa-comment" aria-hidden="true"></i> Message
+                        </button>
+                        <a class="pf-btn pf-btn-ghost" href="setting.html" id="privacyBtn" hidden>
+                            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Privacy
+                        </a>
+                        <button type="button" class="pf-btn pf-btn-ghost" id="shareBtn">
+                            <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+                            <span id="shareBtnLabel">Share</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Own profile only: completion computed from real rows -->
+                <div class="pf-completion" id="completionCard" hidden>
+                    <div class="pf-completion-head">
+                        <span>Profile completion</span>
+                        <strong id="completionPct">0%</strong>
+                    </div>
+                    <div class="pf-completion-bar" role="progressbar" id="completionBar"
+                         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                         aria-label="Profile completion">
+                        <span class="pf-completion-fill" id="completionBarFill"></span>
+                    </div>
+                    <ul class="pf-completion-missing" id="completionMissing"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ CAREER SIGNALS (real counts) ============ -->
+        <section class="pf-signals" id="signalStrip" aria-label="Profile at a glance" hidden>
+            <ul class="pf-signal-list" id="signalList"></ul>
+            <p class="pf-signal-note">Every figure above is a count of real records on this platform.</p>
+        </section>
+
+        <!-- ============ SECTION SUB-NAV ============ -->
+        <nav class="pf-subnav" id="pfSubnav" aria-label="Profile sections" hidden>
+            <ul>
+                <li><a href="#sec-summary" data-subnav>Summary</a></li>
+                <li><a href="#sec-skills" data-subnav>Skills</a></li>
+                <li><a href="#sec-experience" data-subnav>Experience</a></li>
+                <li><a href="#sec-education" data-subnav>Education</a></li>
+                <li><a href="#sec-projects" data-subnav>Projects</a></li>
+                <li><a href="#sec-innovation" data-subnav>Innovation</a></li>
+                <li><a href="#sec-industry" data-subnav>Industry</a></li>
+                <li><a href="#sec-learning" data-subnav>Learning</a></li>
+                <li><a href="#sec-activity" data-subnav>Activity</a></li>
+            </ul>
+        </nav>
+
+        <div class="pf-layout">
+            <!-- ================= MAIN COLUMN ================= -->
+            <div class="pf-main">
+
+                <!-- 1. PROFESSIONAL SUMMARY -->
+                <section class="pf-section" id="sec-summary" aria-labelledby="h-summary">
+                    <div class="pf-section-head">
+                        <h2 id="h-summary">Professional summary</h2>
+                        <span class="pf-section-hint" id="summaryHint"></span>
+                    </div>
+                    <div class="pf-section-body" data-section="summary">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p>No public summary yet.</p>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load the summary.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="summary">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <dl class="pf-summary-grid" id="summaryGrid"></dl>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. MAJOR SKILLS -->
+                <section class="pf-section" id="sec-skills" aria-labelledby="h-skills">
+                    <div class="pf-section-head">
+                        <h2 id="h-skills">Major skills</h2>
+                        <button type="button" class="pf-text-btn" id="addSkillBtn" hidden>+ Add skill</button>
+                    </div>
+                    <p class="pf-section-hint">Levels, verification and evidence come from your records &mdash; no invented proficiency scores.</p>
+                    <div class="pf-section-body" data-section="skills">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p id="skillsEmptyMsg">No skills added yet.</p>
+                            <button type="button" class="pf-btn pf-btn-primary" id="addSkillEmptyBtn" hidden>Add your first skill</button>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load skills.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="skills">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <div class="pf-skill-groups" id="skillGroups"></div>
+                            <div class="pf-chip-block" id="skillChipsBlock" hidden>
+                                <div class="pf-chip-row" id="chipRow"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. EXPERIENCE -->
+                <section class="pf-section" id="sec-experience" aria-labelledby="h-experience">
+                    <div class="pf-section-head">
+                        <h2 id="h-experience">Experience</h2>
+                    </div>
+                    <div class="pf-section-body" data-section="experience">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p>No work experience added yet.</p>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load experience.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="experience">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <div class="pf-exp-list" id="experienceList"></div>
+                            <p class="pf-foot-note" id="experienceNote" hidden></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. EDUCATION -->
+                <section class="pf-section" id="sec-education" aria-labelledby="h-education">
+                    <div class="pf-section-head">
+                        <h2 id="h-education">Education</h2>
+                        <button type="button" class="pf-text-btn" id="addEducationBtn" hidden>+ Add education</button>
+                    </div>
+                    <div class="pf-section-body" data-section="education">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p id="educationEmptyMsg">No education added yet.</p>
+                            <button type="button" class="pf-btn pf-btn-primary" id="addEducationEmptyBtn" hidden>Add education</button>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load education.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="education">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <div class="pf-edu-list" id="educationList"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. PROJECT PORTFOLIO -->
+                <section class="pf-section" id="sec-projects" aria-labelledby="h-projects">
+                    <div class="pf-section-head">
+                        <h2 id="h-projects">Projects <span class="pf-count" id="projectCount" hidden>0</span></h2>
+                        <a class="pf-text-btn" href="projects.html" id="viewAllProjects" hidden>View all projects &rarr;</a>
+                    </div>
+                    <p class="pf-section-hint">Active work first, then published evidence. Every card is a real project row.</p>
+                    <div class="pf-section-body" data-section="projects">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p id="projectsEmptyMsg">Projects will appear here when you publish one.</p>
+                            <a class="pf-btn pf-btn-primary" href="projects.html" id="projectsEmptyAction" hidden>Explore project gallery</a>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load projects.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="projects">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <div class="pf-project-grid" id="projectGrid"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. INNOVATION -->
+                <section class="pf-section" id="sec-innovation" aria-labelledby="h-innovation">
+                    <div class="pf-section-head">
+                        <h2 id="h-innovation">Innovation</h2>
+                        <a class="pf-text-btn" href="innovation-lab.html" id="innovationLabLink" hidden>Open Innovation Lab &rarr;</a>
+                    </div>
+                    <div class="pf-section-body" data-section="innovation">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p id="innovationEmptyMsg">No public innovations yet.</p>
+                            <a class="pf-btn pf-btn-primary" href="innovation-lab.html" id="innovationEmptyAction" hidden>Start an idea</a>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load innovations.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="innovation">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <div class="pf-idea-grid" id="ideaGrid"></div>
+                            <div class="pf-sub-block" id="collabBlock" hidden>
+                                <h3 class="pf-subhead">Collaborating on</h3>
+                                <div class="pf-idea-grid" id="collabGrid"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. INDUSTRY PROBLEM-SOLVING (accessible tabs) -->
+                <section class="pf-section" id="sec-industry" aria-labelledby="h-industry">
+                    <div class="pf-section-head">
+                        <h2 id="h-industry">Industry problem-solving</h2>
+                    </div>
+
+                    <div class="pf-tabs" role="tablist" aria-label="Industry problem-solving views">
+                        <button type="button" class="pf-tab" role="tab" id="tab-problems"
+                                aria-controls="panel-problems" aria-selected="true"
+                                data-tab="problems">Problem Hub</button>
+                        <button type="button" class="pf-tab" role="tab" id="tab-challenges"
+                                aria-controls="panel-challenges" aria-selected="false"
+                                tabindex="-1" data-tab="challenges">Industry challenges</button>
+                    </div>
+
+                    <div class="pf-section-body" data-section="industry">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load industry activity.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="industry">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <div id="panel-problems" role="tabpanel" aria-labelledby="tab-problems" tabindex="0">
+                                <div class="pf-empty pf-inline-empty" id="problemsEmpty" hidden>
+                                    <p>No public industry problems yet.</p>
+                                </div>
+                                <ul class="pf-industry-list" id="problemList"></ul>
+                            </div>
+                            <div id="panel-challenges" role="tabpanel" aria-labelledby="tab-challenges" tabindex="0" hidden>
+                                <div class="pf-empty pf-inline-empty" id="challengesEmpty" hidden>
+                                    <p>No public industry challenges yet.</p>
+                                </div>
+                                <ul class="pf-industry-list" id="challengeList"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. LEARNING / DEVELOPMENT -->
+                <section class="pf-section" id="sec-learning" aria-labelledby="h-learning">
+                    <div class="pf-section-head">
+                        <h2 id="h-learning">Learning &amp; development</h2>
+                        <a class="pf-text-btn" href="my-learning.html" id="learningLink" hidden>Open My Learning &rarr;</a>
+                    </div>
+                    <p class="pf-section-hint">Progress, time and status come from your real learning records.</p>
+                    <div class="pf-section-body" data-section="learning">
+                        <div class="pf-skel-block" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p id="learningEmptyMsg">No public learning activity yet.</p>
+                            <a class="pf-btn pf-btn-primary" href="explore.html" id="learningEmptyAction" hidden>Explore skills to learn</a>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load learning activity.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="learning">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <ul class="pf-stat-tiles" id="learningStats"></ul>
+                            <div class="pf-learning-cols">
+                                <div class="pf-learning-col">
+                                    <h3 class="pf-subhead">In progress</h3>
+                                    <div class="pf-learn-list" id="learningActive"></div>
+                                    <p class="pf-inline-empty" id="learningActiveEmpty" hidden>Nothing in progress right now.</p>
+                                </div>
+                                <div class="pf-learning-col">
+                                    <h3 class="pf-subhead">Completed</h3>
+                                    <div class="pf-learn-list" id="learningCompleted"></div>
+                                    <p class="pf-inline-empty" id="learningCompletedEmpty" hidden>No completed learning yet.</p>
+                                </div>
+                            </div>
+                            <div class="pf-chip-block" id="learningSkillsBlock" hidden>
+                                <h3 class="pf-subhead">Skills being developed</h3>
+                                <div class="pf-chip-row" id="learningSkillChips"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 9. ACTIVITY TIMELINE (real events only) -->
+                <section class="pf-section" id="sec-activity" aria-labelledby="h-activity">
+                    <div class="pf-section-head">
+                        <h2 id="h-activity">Activity</h2>
+                        <span class="pf-section-hint" id="activityOrigin"></span>
+                    </div>
+                    <p class="pf-section-hint">Every entry is a recorded event on this platform &mdash; nothing is generated for display.</p>
+                    <div class="pf-section-body" data-section="activity">
+                        <div class="pf-skel-timeline" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-empty" data-state="empty" hidden>
+                            <p id="activityEmptyMsg">No activity recorded yet.</p>
+                        </div>
+                        <div class="pf-err" data-state="error" hidden>
+                            <p>Could not load activity.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="activity">Retry</button>
+                        </div>
+                        <div class="pf-content" data-state="content" hidden>
+                            <ol class="pf-timeline" id="activityTimeline"></ol>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-more" id="activityMoreBtn" hidden>
+                                Load more activity
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+            <!-- ================= /MAIN COLUMN ================= -->
+            <!-- ================= SUPPORTING RAIL ================= -->
+            <aside class="pf-rail" aria-label="Supporting profile information">
+
+                <!-- Connections -->
+                <section class="pf-card" id="connectionCard" aria-labelledby="h-connections" hidden>
+                    <div class="pf-card-head">
+                        <h2 id="h-connections" class="pf-card-title">Connections</h2>
+                        <a class="pf-text-btn" href="requests.html" id="connectionsManageLink" hidden>Manage</a>
+                    </div>
+                    <div class="pf-section-body" data-section="connections">
+                        <div class="pf-skel-line" data-state="loading" aria-hidden="true"></div>
+                        <div class="pf-err pf-err-inline" data-state="error" hidden>
+                            <p>Could not load connections.</p>
+                            <button type="button" class="pf-btn pf-btn-ghost pf-retry" data-retry="connections">Retry</button>
+                        </div>
+                        <div data-state="content" hidden>
+                            <p class="pf-conn-count" id="connectionCount"></p>
+                            <p class="pf-conn-mutual" id="connectionMutual" hidden></p>
+                            <ul class="pf-conn-list" id="connectionList"></ul>
+                            <p class="pf-inline-empty" id="connectionEmpty" hidden>No connections yet.</p>
+                            <p class="pf-inline-empty" id="connectionPrivate" hidden>This member keeps their connections private.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Real profile links -->
+                <section class="pf-card" id="linksCard" aria-labelledby="h-links" hidden>
+                    <div class="pf-card-head">
+                        <h2 id="h-links" class="pf-card-title">Profile links</h2>
+                    </div>
+                    <ul class="pf-link-list" id="linkList"></ul>
+                    <p class="pf-inline-empty" id="linksEmpty" hidden>No links added yet.</p>
+                    <div class="pf-copy-row">
+                        <label class="pf-visually-hidden" for="profileUrlInput">Link to this profile</label>
+                        <input class="pf-copy-input" id="profileUrlInput" readonly>
+                        <button type="button" class="pf-btn pf-btn-ghost pf-btn-sm" id="copyLinkBtn">Copy</button>
+                    </div>
+                </section>
+
+                <!-- Visibility (own) / privacy explanation (other) -->
+                <section class="pf-card" id="privacyCard" aria-labelledby="h-privacy" hidden>
+                    <div class="pf-card-head">
+                        <h2 id="h-privacy" class="pf-card-title">Visibility</h2>
+                    </div>
+                    <ul class="pf-privacy-list" id="privacyList"></ul>
+                    <a class="pf-btn pf-btn-ghost pf-btn-sm" href="setting.html" id="privacyManageLink" hidden>Manage in Settings</a>
+                </section>
+
+                <!-- Registered on this platform (real created_at) -->
+                <section class="pf-card" id="memberCard" aria-labelledby="h-member" hidden>
+                    <div class="pf-card-head">
+                        <h2 id="h-member" class="pf-card-title">On SkillShare</h2>
+                    </div>
+                    <ul class="pf-privacy-list" id="memberList"></ul>
+                </section>
+
+            </aside>
+            <!-- ================= /SUPPORTING RAIL ================= -->
+        </div>
+        <!-- /pf-layout -->
+
+        <!-- Status announcements for async sections (screen readers) -->
+        <div class="pf-visually-hidden" id="pfLive" role="status" aria-live="polite"></div>
 
     </main>
 
 
-    <!-- =====================================================
-         EDIT PROFILE MODAL (Alternative quick modal)
-         Directly editable: ONLY First Name, Last Name, Bio
-    ====================================================== -->
-    <div class="modal" id="editModal" aria-hidden="true">
-        <div class="modal-box">
-            <div class="modal-head">
-                <h2>Edit Profile</h2>
-                <button class="close-modal" type="button" aria-label="Close modal">×</button>
+    <!-- ========================= EDIT MODALS (own profile only) ========================= -->
+
+    <div class="pf-modal" id="editProfileModal" role="dialog" aria-modal="true"
+         aria-labelledby="editProfileTitle" hidden>
+        <div class="pf-modal-card pf-modal-wide">
+            <div class="pf-modal-head">
+                <h2 id="editProfileTitle">Edit profile</h2>
+                <button type="button" class="pf-modal-close" id="editProfileClose" aria-label="Close">&times;</button>
             </div>
+            <div class="pf-modal-body">
+                <fieldset class="pf-fieldset">
+                    <legend>Identity</legend>
+                    <div class="pf-field pf-field-full">
+                        <label for="efName">Full name</label>
+                        <input id="efName" maxlength="120" autocomplete="name">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efUsername">Username</label>
+                        <input id="efUsername" maxlength="40" autocomplete="username"
+                               placeholder="lowercase letters, numbers, _">
+                        <p class="pf-hint">Your public handle &mdash; 3 to 40 characters.</p>
+                    </div>
+                    <div class="pf-field">
+                        <label for="efLocation">Location</label>
+                        <input id="efLocation" maxlength="120" autocomplete="address-level2">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efWebsite">Website</label>
+                        <input id="efWebsite" maxlength="300" placeholder="https://">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efAvatar">Avatar image URL</label>
+                        <input id="efAvatar" maxlength="500" placeholder="https://">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efPhone">Phone (never shown publicly)</label>
+                        <input id="efPhone" maxlength="32" autocomplete="tel">
+                    </div>
+                    <div class="pf-field pf-field-full">
+                        <label for="efBio">Professional bio</label>
+                        <textarea id="efBio" rows="4" maxlength="1200"
+                                  placeholder="What you do, what you are building, what you want next."></textarea>
+                    </div>
+                </fieldset>
 
-            <div class="field-grid">
-                <label>
-                    First Name
-                    <input type="text" id="modalFirstName" maxlength="40" placeholder="First name" required>
-                </label>
+                <fieldset class="pf-fieldset" id="efStudentFields" hidden>
+                    <legend>Career direction</legend>
+                    <div class="pf-field">
+                        <label for="efTargetRole">Target job role</label>
+                        <input id="efTargetRole" maxlength="160" placeholder="e.g. Backend Developer">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efPreferredIndustry">Preferred industry</label>
+                        <input id="efPreferredIndustry" maxlength="160" placeholder="e.g. Fintech">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efTopSkills">Core skills (comma separated)</label>
+                        <input id="efTopSkills" maxlength="600">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efLanguages">Programming languages (comma separated)</label>
+                        <input id="efLanguages" maxlength="600">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efTechnologies">Tools &amp; technologies (comma separated)</label>
+                        <input id="efTechnologies" maxlength="600">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efLookingFor">Looking for (comma separated)</label>
+                        <input id="efLookingFor" maxlength="400" placeholder="Internship, Mentorship">
+                    </div>
+                </fieldset>
+                <fieldset class="pf-fieldset" id="efRecruiterFields" hidden>
+                    <legend>Professional details</legend>
+                    <div class="pf-field">
+                        <label for="efJobTitle">Job title</label>
+                        <input id="efJobTitle" maxlength="160">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efCompanyName">Company name</label>
+                        <input id="efCompanyName" maxlength="160">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efCompanyWebsite">Company website</label>
+                        <input id="efCompanyWebsite" maxlength="300" placeholder="https://">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efIndustry">Industry</label>
+                        <input id="efIndustry" maxlength="160">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efCompanySize">Company size</label>
+                        <input id="efCompanySize" maxlength="80" placeholder="e.g. 51-200">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efCompanyLocation">Company location</label>
+                        <input id="efCompanyLocation" maxlength="160">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efHiringFor">Hiring for (comma separated)</label>
+                        <input id="efHiringFor" maxlength="600">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efJobRoles">Job roles (comma separated)</label>
+                        <input id="efJobRoles" maxlength="600">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efRequiredSkills">Required skills (comma separated)</label>
+                        <input id="efRequiredSkills" maxlength="600">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efInternship">Internship availability</label>
+                        <input id="efInternship" maxlength="160" placeholder="e.g. Summer 2026">
+                    </div>
+                </fieldset>
 
-                <label>
-                    Last Name
-                    <input type="text" id="modalLastName" maxlength="40" placeholder="Last name">
-                </label>
-            </div>
+                <fieldset class="pf-fieldset" id="efMentorFields" hidden>
+                    <legend>Professional details</legend>
+                    <div class="pf-field">
+                        <label for="efMentorJobTitle">Job title</label>
+                        <input id="efMentorJobTitle" maxlength="160">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efMentorCompany">Company</label>
+                        <input id="efMentorCompany" maxlength="160">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efMentorIndustry">Industry</label>
+                        <input id="efMentorIndustry" maxlength="160">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efYearsExperience">Years of experience</label>
+                        <input id="efYearsExperience" type="number" min="0" max="60" step="0.5">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efExpertise">Expertise areas (comma separated)</label>
+                        <input id="efExpertise" maxlength="600">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efLinkedin">LinkedIn URL</label>
+                        <input id="efLinkedin" maxlength="300" placeholder="https://linkedin.com/in/...">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efGithub">GitHub URL</label>
+                        <input id="efGithub" maxlength="300" placeholder="https://github.com/...">
+                    </div>
+                    <div class="pf-field">
+                        <label for="efPortfolio">Portfolio URL</label>
+                        <input id="efPortfolio" maxlength="300" placeholder="https://">
+                    </div>
+                </fieldset>
 
-            <div class="modal-settings-notice">
-                <i class="fa-solid fa-circle-info"></i>
-                <div>
-                    Username, location, skills and interests are managed in
-                    <a href="setting.html">Settings → Profile</a>.
+                <p class="pf-form-error" id="editProfileError" role="alert" hidden></p>
+                <div class="pf-modal-foot">
+                    <button type="button" class="pf-btn pf-btn-ghost" id="editProfileCancel">Cancel</button>
+                    <button type="button" class="pf-btn pf-btn-primary" id="editProfileSave">Save changes</button>
                 </div>
-            </div>
 
-            <label style="margin-top: 14px;">
-                Bio
-                <textarea id="modalBio" maxlength="300" placeholder="Tell the community about yourself..."></textarea>
-            </label>
-
-            <div class="modal-actions">
-                <button class="secondary-btn close-modal" type="button">
-                    Cancel
-                </button>
-                <button class="primary-btn" id="modalSaveBtn" type="button">
-                    Save Changes
-                </button>
             </div>
         </div>
     </div>
 
-    <!-- EDUCATION MODAL -->
-    <div class="modal" id="educationModal" aria-hidden="true">
-        <div class="modal-box modal-box-lg">
-            <div class="modal-head">
-                <h2 id="educationModalTitle">Add Education</h2>
-                <button class="close-modal" type="button" aria-label="Close modal" id="closeEducationModal">×</button>
+    <div class="pf-modal" id="educationModal" role="dialog" aria-modal="true"
+         aria-labelledby="educationModalTitle" hidden>
+        <div class="pf-modal-card">
+            <div class="pf-modal-head">
+                <h2 id="educationModalTitle">Add education</h2>
+                <button type="button" class="pf-modal-close" id="educationModalClose" aria-label="Close">&times;</button>
             </div>
-            <form id="educationForm" novalidate>
-                <div class="field-grid">
-                    <label class="field">
-                        <span>Institution Name <em class="req">*</em></span>
-                        <input type="text" id="eduInstitution" maxlength="200" placeholder="e.g. Indian Institute of Technology" required>
-                        <small class="field-error" id="eduInstitutionError"></small>
-                    </label>
-                    <label class="field">
-                        <span>Degree</span>
-                        <input type="text" id="eduDegree" maxlength="100" placeholder="e.g. B.Tech, M.Sc">
-                    </label>
+            <div class="pf-modal-body">
+                <div class="pf-field pf-field-full">
+                    <label for="edInstitution">Institution name</label>
+                    <input id="edInstitution" maxlength="200">
                 </div>
-                <div class="field-grid">
-                    <label class="field">
-                        <span>Field of Study</span>
-                        <input type="text" id="eduField" maxlength="100" placeholder="e.g. Computer Science">
-                    </label>
-                    <label class="field">
-                        <span>Education Level</span>
-                        <select id="eduLevel">
-                            <option value="">Select level</option>
-                            <option value="secondary">Secondary (10th)</option>
-                            <option value="higher_secondary">Higher Secondary (12th)</option>
-                            <option value="undergraduate">Undergraduate</option>
-                            <option value="postgraduate">Postgraduate</option>
-                            <option value="doctorate">Doctorate</option>
-                            <option value="certification">Certification</option>
-                        </select>
-                    </label>
+                <div class="pf-field">
+                    <label for="edDegree">Degree</label>
+                    <input id="edDegree" maxlength="160" placeholder="e.g. B.Tech">
                 </div>
-                <div class="field-grid">
-                    <label class="field">
-                        <span>Start Date</span>
-                        <input type="month" id="eduStartDate">
-                    </label>
-                    <label class="field">
-                        <span>End Date</span>
-                        <input type="month" id="eduEndDate">
-                        <small class="field-error" id="eduDateError"></small>
-                    </label>
+                <div class="pf-field">
+                    <label for="edField">Field of study</label>
+                    <input id="edField" maxlength="160" placeholder="e.g. Computer Science">
                 </div>
-                <label class="field checkbox-field">
-                    <input type="checkbox" id="eduCurrentlyStudying">
-                    <span>Currently studying here</span>
-                </label>
-                <div class="field-grid">
-                    <label class="field">
-                        <span>CGPA (0-10)</span>
-                        <input type="number" id="eduCGPA" min="0" max="10" step="0.01" placeholder="e.g. 8.5">
-                        <small class="field-error" id="eduCGPAError"></small>
-                    </label>
-                    <label class="field">
-                        <span>Percentage (0-100)</span>
-                        <input type="number" id="eduPercentage" min="0" max="100" step="0.01" placeholder="e.g. 85">
-                    </label>
+                <div class="pf-field">
+                    <label for="edLevel">Education level</label>
+                    <input id="edLevel" maxlength="80" placeholder="e.g. Bachelor">
                 </div>
-                <label class="field">
-                    <span>Grade / Division</span>
-                    <input type="text" id="eduGrade" maxlength="50" placeholder="e.g. First Division">
-                </label>
-                <label class="field">
-                    <span>Description</span>
-                    <textarea id="eduDescription" maxlength="500" placeholder="Activities, achievements..."></textarea>
-                </label>
-                <div class="modal-actions">
-                    <button class="secondary-btn" type="button" id="cancelEducationBtn">Cancel</button>
-                    <button class="primary-btn" type="button" id="saveEducationBtn">Save Education</button>
+                <div class="pf-field">
+                    <label for="edStart">Start</label>
+                    <input id="edStart" maxlength="32" placeholder="2022 or 2022-08">
                 </div>
-            </form>
+                <div class="pf-field">
+                    <label for="edEnd">End</label>
+                    <input id="edEnd" maxlength="32" placeholder="2026 or 2026-05">
+                </div>
+                <div class="pf-field">
+                    <label for="edGrade">Grade</label>
+                    <input id="edGrade" maxlength="40" placeholder="e.g. A">
+                </div>
+                <div class="pf-field">
+                    <label for="edCgpa">CGPA (0-10)</label>
+                    <input id="edCgpa" type="number" min="0" max="10" step="0.01">
+                </div>
+                <div class="pf-field">
+                    <label for="edPercentage">Percentage (0-100)</label>
+                    <input id="edPercentage" type="number" min="0" max="100" step="0.01">
+                </div>
+                <div class="pf-field pf-field-check">
+                    <input id="edCurrent" type="checkbox">
+                    <label for="edCurrent">Currently studying here</label>
+                </div>
+                <div class="pf-field pf-field-full">
+                    <label for="edDescription">Notes</label>
+                    <textarea id="edDescription" rows="3" maxlength="600"></textarea>
+                </div>
+                <p class="pf-form-error" id="educationError" role="alert" hidden></p>
+                <div class="pf-modal-foot">
+                    <button type="button" class="pf-btn pf-btn-ghost" id="educationCancel">Cancel</button>
+                    <button type="button" class="pf-btn pf-btn-primary" id="educationSave">Save education</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ADD SKILL MODAL -->
-    <div class="modal" id="skillModal" aria-hidden="true">
-        <div class="modal-box">
-            <div class="modal-head">
-                <h2>Add Skill</h2>
-                <button class="close-modal" type="button" aria-label="Close modal" id="closeSkillModal">×</button>
+    <div class="pf-modal" id="skillModal" role="dialog" aria-modal="true"
+         aria-labelledby="skillModalTitle" hidden>
+        <div class="pf-modal-card">
+            <div class="pf-modal-head">
+                <h2 id="skillModalTitle">Add skill</h2>
+                <button type="button" class="pf-modal-close" id="skillModalClose" aria-label="Close">&times;</button>
             </div>
-            <form id="skillForm" novalidate>
-                <label class="field">
-                    <span>Search skills <em class="req">*</em></span>
-                    <input type="text" id="skillSearchInput" maxlength="100" placeholder="e.g. Python, JavaScript" autocomplete="off" required>
-                    <div class="skill-search-results" id="skillSearchResults"></div>
-                    <small class="field-error" id="skillSearchError"></small>
-                </label>
-                <label class="field">
-                    <span>Level <em class="req">*</em></span>
-                    <select id="skillLevel" required>
+            <div class="pf-modal-body">
+                <div class="pf-field pf-field-full">
+                    <label for="skName">Skill name</label>
+                    <input id="skName" maxlength="120" list="skCatalog" autocomplete="off">
+                    <datalist id="skCatalog"></datalist>
+                    <p class="pf-hint">Pick an existing catalogue skill so it can link to your projects and learning.</p>
+                </div>
+                <div class="pf-field">
+                    <label for="skLevel">Level</label>
+                    <select id="skLevel">
                         <option value="beginner">Beginner</option>
                         <option value="intermediate">Intermediate</option>
                         <option value="advanced">Advanced</option>
                         <option value="expert">Expert</option>
                     </select>
-                </label>
-                <div class="field-grid">
-                    <label class="field">
-                        <span>Years of Experience</span>
-                        <input type="number" id="skillYears" min="0" max="50" step="1" placeholder="e.g. 2">
-                    </label>
-                    <label class="field">
-                        <span>Self Rating (1-5)</span>
-                        <input type="number" id="skillRating" min="1" max="5" step="1" placeholder="e.g. 4">
-                    </label>
                 </div>
-                <div class="modal-actions">
-                    <button class="secondary-btn" type="button" id="cancelSkillBtn">Cancel</button>
-                    <button class="primary-btn" type="button" id="saveSkillBtn">Save Skill</button>
+                <div class="pf-field">
+                    <label for="skYears">Years of experience</label>
+                    <input id="skYears" type="number" min="0" max="60" step="1">
                 </div>
-            </form>
+                <div class="pf-field">
+                    <label for="skRating">Self rating (1-5)</label>
+                    <input id="skRating" type="number" min="1" max="5" step="1">
+                </div>
+                <p class="pf-form-error" id="skillError" role="alert" hidden></p>
+                <div class="pf-modal-foot">
+                    <button type="button" class="pf-btn pf-btn-ghost" id="skillCancel">Cancel</button>
+                    <button type="button" class="pf-btn pf-btn-primary" id="skillSave">Add skill</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- =====================================================
-         TOAST NOTIFICATION
-    ====================================================== -->
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="pf-toast" id="pfToast" role="status" aria-live="polite" hidden></div>
+    <!-- ========================= SHARED ROOTS (portal-unify.js) ========================= -->
+    <div id="modal-root"></div>
+    <div id="toast-root"></div>
 
-    <!-- STAGE 2 unify adapter: active nav + mobile drawer. No UI rewrite. -->
+    <!-- ========================= JAVASCRIPT ========================= -->
+    <!-- config.js MUST load before api-client.js (API base URL) -->
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+
+    <!-- Page controller (own + other-user profile, one aggregate call each) -->
+    <script src="profile.js?v=5" defer></script>
+
+    <!-- Shared shell / credits chip / design-system injection -->
     <script src="portal-unify.js"></script>
     <script src="stage5-shared-bridge.js"></script>
 </body>
 
 </html>
+
+
+
+
+
 
